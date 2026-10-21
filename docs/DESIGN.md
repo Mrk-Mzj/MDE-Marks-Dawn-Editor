@@ -2,6 +2,26 @@ ogólne uwagi:
 - Program ma mieć ciemny szablon kolorów
 - Ikony użyte w projekcie mają być obrysowe (złożone z linii, a nie pełnych kształtów z tłem), minimalistyczne i nowoczesne.
 
+## Układ MDE (stan wdrożenia)
+
+Tokeny z sekcji 3 (tylko wartości `.dark`) są w `src/styles.css`.
+
+- **Okno:** systemowy pasek tytułu w trybie ciemnym. Tło okna i webview `background` (`#0a0a0a`) od pierwszej klatki, bez białego błysku.
+- **Górny pasek:** 40px, tło `card`, dolna krawędź 1px `border`. Po lewej przycisk menu (ikona hamburgera, `ghost`, 32×32, ikona 16px, kolor `muted-foreground`, hover `accent`).
+- **Zakładka:** aktywna zakładka ma tło `background`, obramowanie 1px `border` bez dolnej krawędzi, zaokrąglone górne rogi `radius-md`, tekst 14px/500 i maks. szerokość 240px z wielokropkiem. Kropka niezapisanych zmian to koło 8px w kolorze `foreground`.
+- **Menu:** powierzchnia `popover`, 1px `border`, `radius-lg`, padding 4px, min. 232px, cień średni, wejście fade + slide 150ms. Pozycje mają 32px wysokości, `radius-sm`, a hover/focus `accent`. Skrót po prawej: 12px `muted-foreground`. Separatory 1px `border`.
+- **Panele:** dwa panele 50/50 na tle `background`, oddzielone linią 1px `border`. Treść 16px Segoe UI, interlinia 1.6, padding poziomy 32px.
+- **Podgląd:**
+  - H1/H2 z dolną linią `border`, nagłówki 600 z ujemnym trackingiem.
+  - Kod w linii: tło `muted`, `radius-sm`, Cascadia Mono.
+  - Bloki kodu: tło `card`, 1px `border`, `radius-lg`, zawijane.
+  - Cytat: lewa krawędź 3px `input`, tekst `muted-foreground`.
+  - Linki: kolor `foreground` z podkreśleniem `muted-foreground`.
+  - Tabele: 1px `border`, nagłówek na tle `card`.
+  - Obrazek: ramka 1px `border` z ikoną obrazka i tekstem alt w `muted-foreground`.
+- **Paski przewijania:** 12px, uchwyt `input` (hover `ring`), przezroczysty tor.
+- **Okna dialogowe:** na razie systemowe (jasne). Docelowo własne, ciemne (`popover`) według sekcji 7.
+
 
 # DESIGN.md — system wzorowany na shadcn/ui
 

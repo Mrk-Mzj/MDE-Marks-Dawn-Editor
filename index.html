@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MDE</title>
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <header class="topbar" data-slot="topbar">
+      <div class="menu-anchor">
+        <button id="menu-button" class="icon-button" data-slot="button" type="button" aria-label="Menu">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+      <div class="doc-tab" data-slot="tab" aria-current="page">
+        <span id="doc-title" class="doc-title"></span>
+        <span id="doc-dirty" class="doc-dirty" hidden></span>
+      </div>
+    </header>
+    <main class="workspace">
+      <section class="pane pane-editor" data-slot="editor-pane">
+        <div id="editor" class="editor-host"></div>
+      </section>
+      <div class="pane-divider" role="separator" aria-orientation="vertical"></div>
+      <section class="pane pane-preview" data-slot="preview-pane">
+        <article id="preview" class="preview markdown-body"></article>
+      </section>
+    </main>
+  </body>
+</html>

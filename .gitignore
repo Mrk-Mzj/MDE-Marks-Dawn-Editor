@@ -17,6 +17,9 @@ $RECYCLE.BIN/
 # Claude Code local settings
 .claude/settings.local.json
 
+# Tauri generated files
+src-tauri/gen/
+
 # Dependencies
 node_modules/
 
