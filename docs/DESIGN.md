@@ -73,8 +73,10 @@ Motyw podmienia tylko `primary`, `primary-foreground`, `ring`, `sidebar-primary*
 
 ## 4. Typografia
 
-- **Sans:** Geist (`--font-sans`), fallback „Geist Fallback" → system sans-serif.
-- **Mono:** Geist Mono (`--font-mono`) — kod, bloki instalacyjne, motyw „sketch".
+> **MDE:** używamy czcionek systemowych Windows 11 zamiast Geist (bez dołączania plików czcionek do exe).
+
+- **Sans:** Segoe UI (`--font-sans`), fallback → system-ui, sans-serif. Używana w całym interfejsie oraz w obu panelach (edytor i podgląd).
+- **Mono:** Cascadia Mono (`--font-mono`), fallback → Consolas, ui-monospace, monospace. Tylko dla kodu (bloki kodu i kod w linii).
 - Podstawa: 16px (body), komponenty UI: 14px (`text-sm`), drobne etykiety/badge: 12px (`text-xs`).
 
 | Rola | Rozmiar / interlinia | Waga | Dodatki |
@@ -209,8 +211,8 @@ Krótko i subtelnie: `transition-colors` / `transition-[color,box-shadow]` 150ms
 }
 
 @theme inline {
-  --font-sans: "Geist", system-ui, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --font-sans: "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
