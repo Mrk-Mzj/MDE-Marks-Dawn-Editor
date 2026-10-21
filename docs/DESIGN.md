@@ -10,6 +10,7 @@ Tokeny z sekcji 3 (tylko wartości `.dark`) są w `src/styles.css`.
 - **Górny pasek:** 40px, tło `card`, dolna krawędź 1px `border`. Po lewej przycisk menu (ikona hamburgera, `ghost`, 32×32, ikona 16px, kolor `muted-foreground`, hover `accent`).
 - **Zakładka:** aktywna zakładka ma tło `background`, obramowanie 1px `border` bez dolnej krawędzi, zaokrąglone górne rogi `radius-md`, tekst 14px/500 i maks. szerokość 240px z wielokropkiem. Kropka niezapisanych zmian to koło 8px w kolorze `foreground`.
 - **Menu:** powierzchnia `popover`, 1px `border`, `radius-lg`, padding 4px, min. 232px, cień średni, wejście fade + slide 150ms. Pozycje mają 32px wysokości, `radius-sm`, a hover/focus `accent`. Skrót po prawej: 12px `muted-foreground`. Separatory 1px `border`.
+- **Pasek ostrzeżenia** (np. plik otwarty jako Windows-1250): pod górnym paskiem, pełna szerokość, min. 40px, tło `card`, dolna krawędź 1px `border`, tekst 14px `card-foreground`. Po lewej obrysowa ikona trójkąta ostrzegawczego 16px w `muted-foreground`, po prawej przycisk zamknięcia (ikona X, `ghost` 32×32 jak przycisk menu). Wejście fade + slide 150ms. Bez koloru — czerwień tylko dla `destructive`.
 - **Panele:** dwa panele 50/50 na tle `background`, oddzielone linią 1px `border`. Treść 16px Segoe UI, interlinia 1.6, padding poziomy 32px.
 - **Podgląd:**
   - H1/H2 z dolną linią `border`, nagłówki 600 z ujemnym trackingiem.
@@ -19,6 +20,7 @@ Tokeny z sekcji 3 (tylko wartości `.dark`) są w `src/styles.css`.
   - Linki: kolor `foreground` z podkreśleniem `muted-foreground`.
   - Tabele: 1px `border`, nagłówek na tle `card`.
   - Obrazek: ramka 1px `border` z ikoną obrazka i tekstem alt w `muted-foreground`.
+  - Wiele pustych linii: każda dodatkowa pusta linia to pusty odstęp o wysokości jednej linii tekstu (1.6em), dodany do zwykłego odstępu akapitowego.
 - **Paski przewijania:** 12px, uchwyt `input` (hover `ring`), przezroczysty tor.
 - **Okna dialogowe:** na razie systemowe (jasne). Docelowo własne, ciemne (`popover`) według sekcji 7.
 

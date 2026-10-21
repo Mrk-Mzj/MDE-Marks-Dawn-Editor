@@ -20,6 +20,18 @@
         <span id="doc-dirty" class="doc-dirty" hidden></span>
       </div>
     </header>
+    <div id="notice" class="notice" data-slot="notice" role="status" hidden>
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+        <path d="M12 9v4M12 17h.01" />
+      </svg>
+      <span id="notice-text" class="notice-text"></span>
+      <button id="notice-close" class="icon-button notice-close" data-slot="button" type="button">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
     <main class="workspace">
       <section class="pane pane-editor" data-slot="editor-pane">
         <div id="editor" class="editor-host"></div>

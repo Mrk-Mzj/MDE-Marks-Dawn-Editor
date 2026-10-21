@@ -4,7 +4,7 @@ import { Editor } from "./editor";
 import { t } from "./i18n";
 import { Menu } from "./menu";
 import * as platform from "./platform";
-import type { Eol } from "./platform";
+import type { FileFormat, LineBreak } from "./platform";
 import { Preview } from "./preview";
 
 /** The single open document of this version. */
@@ -12,8 +12,9 @@ interface Doc {
   id: string;
   path: string | null;
   name: string;
-  bom: boolean;
-  eol: Eol;
+  format: FileFormat;
+  /** Line breaks that differ from the dominant style, as loaded. */
+  breaks: LineBreak[];
   /** Text as last loaded or saved, used to tell whether there are unsaved changes. */
   savedText: string;
 }
@@ -28,11 +29,26 @@ const dirtyEl = $("#doc-dirty");
 dirtyEl.title = t.unsavedChanges;
 dirtyEl.setAttribute("aria-label", t.unsavedChanges);
 $("#menu-button").setAttribute("aria-label", t.menu);
+const noticeEl = $("#notice");
+const noticeText = $("#notice-text");
+const noticeClose = $<HTMLButtonElement>("#notice-close");
+noticeClose.setAttribute("aria-label", t.closeNotice);
+noticeClose.title = t.closeNotice;
+noticeClose.addEventListener("click", () => showNotice(null));
 const preview = new Preview($("#preview"));
 const editor = new Editor($("#editor"), onEdit);
 
 // New files: UTF-8 without BOM, LF line endings.
-let doc: Doc = { id: newDocId(), path: null, name: t.untitled, bom: false, eol: "lf", savedText: "" };
+const newDoc = (): Doc => ({
+  id: newDocId(),
+  path: null,
+  name: t.untitled,
+  format: { encoding: "utf8", eol: "lf" },
+  breaks: [],
+  savedText: "",
+});
+
+let doc: Doc = newDoc();
 let dirty = false;
 // Prevents overlapping dialogs when shortcuts are pressed repeatedly.
 let busy = false;
@@ -54,11 +70,18 @@ function updateTitle(): void {
   void platform.setWindowTitle(`${dirty ? "• " : ""}${doc.name} — MDE`);
 }
 
+/** Shows a warning bar above the panels, or hides it for `null`. */
+function showNotice(text: string | null): void {
+  noticeText.textContent = text ?? "";
+  noticeEl.hidden = text === null;
+}
+
 function showDoc(next: Doc): void {
   const previous = doc;
   doc = next;
   dirty = false;
-  editor.load(next.savedText);
+  showNotice(next.format.encoding === "windows1250" ? t.windows1250Notice : null);
+  editor.load(next.savedText, next.breaks);
   preview.render(next.savedText);
   preview.resetScroll();
   updateTitle();
@@ -67,8 +90,7 @@ function showDoc(next: Doc): void {
 }
 
 function errorText(code: string): string {
-  if (code === "not_utf8") return t.notUtf8;
-  if (code === "utf16_unsupported") return t.utf16Unsupported;
+  if (code === "invalid_utf16") return t.invalidUtf16;
   return code.replace(/^io:/, "");
 }
 
@@ -92,7 +114,7 @@ async function exclusive(action: () => Promise<unknown>): Promise<void> {
 
 async function newFile(): Promise<void> {
   if (!(await confirmDiscard())) return;
-  showDoc({ id: newDocId(), path: null, name: t.untitled, bom: false, eol: "lf", savedText: "" });
+  showDoc(newDoc());
 }
 
 async function openPath(path: string): Promise<void> {
@@ -100,7 +122,14 @@ async function openPath(path: string): Promise<void> {
   const id = newDocId();
   try {
     const file = await platform.openFile(id, path);
-    showDoc({ id, path: file.path, name: file.name, bom: file.bom, eol: file.eol, savedText: file.text });
+    showDoc({
+      id,
+      path: file.path,
+      name: file.name,
+      format: { encoding: file.encoding, eol: file.eol },
+      breaks: file.breaks,
+      savedText: file.text,
+    });
   } catch (err) {
     // The window may still be hidden when the start-up file fails to open.
     await platform.showWindow();
@@ -113,16 +142,26 @@ async function openWithDialog(): Promise<void> {
   if (path) await openPath(path);
 }
 
-async function writeTo(path: string): Promise<boolean> {
+async function writeTo(path: string, format = doc.format): Promise<boolean> {
   const text = editor.text();
+  const breaks = editor.lineBreaks();
   try {
-    const name = await platform.saveFile(doc.id, path, text, doc.bom, doc.eol);
-    doc = { ...doc, path, name, savedText: text };
+    const name = await platform.saveFile(doc.id, path, text, format, breaks);
+    doc = { ...doc, path, name, format, breaks, savedText: text };
+    if (format.encoding !== "windows1250") showNotice(null);
     // Typing may have happened while the file was being written.
     dirty = editor.text() !== text;
     updateTitle();
     return true;
   } catch (err) {
+    const code = String(err);
+    // The text has characters Windows-1250 cannot store: offer UTF-8 instead
+    // of replacing them.
+    if (code.startsWith("unrepresentable:")) {
+      const chars = [...code.slice("unrepresentable:".length)].slice(0, 20).join(" ");
+      if (!(await platform.askSaveAsUtf8(doc.name, chars))) return false;
+      return writeTo(path, { ...format, encoding: "utf8" });
+    }
     await platform.showError(`${t.saveFailed(platform.fileNameOf(path))}\n\n${errorText(String(err))}`);
     return false;
   }

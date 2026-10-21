@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "portable": "tauri build && node -e \"require('fs').mkdirSync('portable',{recursive:true});require('fs').copyFileSync('src-tauri/target/release/MDE.exe','portable/MDE.exe')\""
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

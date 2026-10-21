@@ -20,9 +20,15 @@ const en = {
   errorTitle: "MDE",
   openFailed: (name: string) => `Could not open “${name}”.`,
   saveFailed: (name: string) => `Could not save “${name}”.`,
-  notUtf8:
-    "The file is not valid UTF-8 (it may use an older encoding such as Windows-1250). This version of MDE can only open UTF-8 files.",
-  utf16Unsupported: "UTF-16 files are not supported yet.",
+  invalidUtf16: "The file is marked as UTF-16 but contains invalid data.",
+  windows1250Notice:
+    "This file is not UTF-8, so it was opened as Windows-1250. Check that accented letters look right; the file will be saved in Windows-1250.",
+  askUtf8: (name: string, chars: string) =>
+    `“${name}” uses the Windows-1250 encoding, which cannot store these characters: ${chars}
+
+Save the file in UTF-8 instead?`,
+  saveUtf8Button: "Save in UTF-8",
+  closeNotice: "Close",
   emptyPreview: "The preview of the document will appear here.",
 };
 
@@ -47,9 +53,15 @@ const pl: Strings = {
   errorTitle: "MDE",
   openFailed: (name) => `Nie udało się otworzyć pliku „${name}”.`,
   saveFailed: (name) => `Nie udało się zapisać pliku „${name}”.`,
-  notUtf8:
-    "Plik nie jest zapisany w UTF-8 (może używać starszego kodowania, np. Windows-1250). Ta wersja MDE otwiera tylko pliki UTF-8.",
-  utf16Unsupported: "Pliki UTF-16 nie są jeszcze obsługiwane.",
+  invalidUtf16: "Plik jest oznaczony jako UTF-16, ale zawiera nieprawidłowe dane.",
+  windows1250Notice:
+    "Plik nie jest zapisany w UTF-8, więc otwarto go jako Windows-1250. Sprawdź, czy polskie znaki wyglądają poprawnie; plik zostanie zapisany w Windows-1250.",
+  askUtf8: (name, chars) =>
+    `Plik „${name}” używa kodowania Windows-1250, w którym nie da się zapisać znaków: ${chars}
+
+Zapisać plik w UTF-8?`,
+  saveUtf8Button: "Zapisz w UTF-8",
+  closeNotice: "Zamknij",
   emptyPreview: "Tu pojawi się podgląd dokumentu.",
 };
 

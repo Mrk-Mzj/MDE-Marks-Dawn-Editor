@@ -9,13 +9,13 @@ use std::sync::Mutex;
 
 use serde::Serialize;
 use tauri::{State, WebviewUrl, WebviewWindowBuilder};
-use textfile::Eol;
+use textfile::{Encoding, Eol, LineBreak};
 
 /// What a document looked like on disk when it was last opened or saved.
-/// Saving unchanged text writes these bytes back, so files with mixed line
-/// endings or lone `\r` stay byte-identical.
+/// Saving unchanged text in the same encoding writes these bytes back.
 struct Original {
     text: String,
+    encoding: Encoding,
     bytes: Vec<u8>,
 }
 
@@ -27,8 +27,10 @@ struct OpenedFile {
     path: String,
     name: String,
     text: String,
-    bom: bool,
+    encoding: Encoding,
     eol: Eol,
+    /// Line breaks that differ from `eol` (files with mixed line endings).
+    breaks: Vec<LineBreak>,
 }
 
 fn display_name(path: &Path) -> String {
@@ -51,6 +53,7 @@ fn open_file(doc_id: String, path: String, docs: State<Documents>) -> Result<Ope
         doc_id,
         Original {
             text: decoded.text.clone(),
+            encoding: decoded.encoding,
             bytes,
         },
     );
@@ -58,8 +61,9 @@ fn open_file(doc_id: String, path: String, docs: State<Documents>) -> Result<Ope
         name: display_name(&path),
         path: path.to_string_lossy().into_owned(),
         text: decoded.text,
-        bom: decoded.bom,
+        encoding: decoded.encoding,
         eol: decoded.eol,
+        breaks: decoded.breaks,
     })
 }
 
@@ -68,20 +72,21 @@ fn save_file(
     doc_id: String,
     path: String,
     text: String,
-    bom: bool,
+    encoding: Encoding,
     eol: Eol,
+    breaks: Vec<LineBreak>,
     docs: State<Documents>,
 ) -> Result<String, String> {
     let path = PathBuf::from(path);
     let mut docs = docs.0.lock().unwrap();
 
     let bytes = match docs.get(&doc_id) {
-        Some(original) if original.text == text => original.bytes.clone(),
-        _ => textfile::encode(&text, bom, eol),
+        Some(original) if original.text == text && original.encoding == encoding => original.bytes.clone(),
+        _ => textfile::encode(&text, encoding, eol, &breaks).map_err(|e| e.code())?,
     };
     std::fs::write(&path, &bytes).map_err(io_error)?;
 
-    docs.insert(doc_id, Original { text, bytes });
+    docs.insert(doc_id, Original { text, encoding, bytes });
     Ok(display_name(&path))
 }
 

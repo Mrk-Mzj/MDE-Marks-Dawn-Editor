@@ -7,14 +7,27 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { message, open, save } from "@tauri-apps/plugin-dialog";
 import { t } from "./i18n";
 
-export type Eol = "lf" | "crlf";
+export type Eol = "lf" | "crlf" | "cr";
+export type Encoding = "utf8" | "utf8bom" | "utf16le" | "utf16be" | "windows1250";
 
-export interface OpenedFile {
+/** A line break that differs from the file's dominant style; `line` is 0-based. */
+export interface LineBreak {
+  line: number;
+  eol: Eol;
+}
+
+/** How a document is written to disk. */
+export interface FileFormat {
+  encoding: Encoding;
+  /** Dominant line ending. */
+  eol: Eol;
+}
+
+export interface OpenedFile extends FileFormat {
   path: string;
   name: string;
   text: string;
-  bom: boolean;
-  eol: Eol;
+  breaks: LineBreak[];
 }
 
 export type SaveChoice = "save" | "discard" | "cancel";
@@ -33,8 +46,14 @@ export async function openFile(docId: string, path: string): Promise<OpenedFile>
 }
 
 /** Writes the document and returns the new display name. */
-export async function saveFile(docId: string, path: string, text: string, bom: boolean, eol: Eol): Promise<string> {
-  return invoke<string>("save_file", { docId, path, text, bom, eol });
+export async function saveFile(
+  docId: string,
+  path: string,
+  text: string,
+  format: FileFormat,
+  breaks: LineBreak[],
+): Promise<string> {
+  return invoke<string>("save_file", { docId, path, text, encoding: format.encoding, eol: format.eol, breaks });
 }
 
 export async function closeDocument(docId: string): Promise<void> {
@@ -66,6 +85,17 @@ export async function askSaveChanges(name: string): Promise<SaveChoice> {
   if (result === t.saveButton || result === "Yes") return "save";
   if (result === t.discardButton || result === "No") return "discard";
   return "cancel";
+}
+
+/** Asks whether to save in UTF-8 because the file's encoding cannot store `chars`. */
+export async function askSaveAsUtf8(name: string, chars: string): Promise<boolean> {
+  if (!inTauri) return window.confirm(t.askUtf8(name, chars));
+  const result = await message(t.askUtf8(name, chars), {
+    title: t.errorTitle,
+    kind: "warning",
+    buttons: { ok: t.saveUtf8Button, cancel: t.cancelButton },
+  });
+  return result === t.saveUtf8Button || result === "Ok";
 }
 
 export async function showError(text: string): Promise<void> {

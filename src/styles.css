@@ -218,6 +218,31 @@ button {
   background: var(--border);
 }
 
+/* ---------- Notice bar ---------- */
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  flex-shrink: 0;
+  padding: 4px 4px 4px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  color: var(--card-foreground);
+  animation: menu-in 150ms ease-out;
+}
+
+.notice > .icon {
+  color: var(--muted-foreground);
+}
+
+.notice-text {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+
 /* ---------- Panels ---------- */
 
 .workspace {
@@ -321,6 +346,11 @@ button {
 
 .markdown-body :is(ul, ol) {
   padding-left: 1.75em;
+}
+
+/* One extra empty line of text (see the multiple-blank-lines extension). */
+.markdown-body .blank-line {
+  height: 1.6em;
 }
 
 .markdown-body li + li,
