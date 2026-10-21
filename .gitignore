@@ -1,0 +1,48 @@
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Editors / IDEs
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.swp
+*~
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Dependencies
+node_modules/
+
+# Build output (Rust / .NET / Go / Node / Electron / Tauri)
+target/
+bin/
+obj/
+dist/
+build/
+out/
+release/
+*.exe
+*.dll
+*.pdb
+*.msi
+
+# Logs and temp files
+*.log
+npm-debug.log*
+*.tmp
+*.temp
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Test output
+coverage/
