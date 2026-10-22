@@ -8,9 +8,15 @@ Tokeny z sekcji 3 (tylko wartości `.dark`) są w `src/styles.css`.
 
 - **Okno:** systemowy pasek tytułu w trybie ciemnym. Tło okna i webview `background` (`#0a0a0a`) od pierwszej klatki, bez białego błysku.
 - **Górny pasek:** 40px, tło `card`, dolna krawędź 1px `border`. Po lewej przycisk menu (ikona hamburgera, `ghost`, 32×32, ikona 16px, kolor `muted-foreground`, hover `accent`).
-- **Zakładka:** aktywna zakładka ma tło `background`, obramowanie 1px `border` bez dolnej krawędzi, zaokrąglone górne rogi `radius-md`, tekst 14px/500 i maks. szerokość 240px z wielokropkiem. Kropka niezapisanych zmian to koło 8px w kolorze `foreground`.
+- **Zakładki:** pasek zakładek wypełnia górny pasek na prawo od menu, odstęp 2px między zakładkami. Zakładka: tekst 14px/500, szerokość według nazwy, maks. 240px, min. 100px (nazwa z wielokropkiem), zaokrąglone górne rogi `radius-md`.
+  - Aktywna: tło `background`, obramowanie 1px `border` bez dolnej krawędzi, tekst `foreground`; łączy się z panelem pod spodem.
+  - Nieaktywna: bez tła i obramowania, tekst `muted-foreground`; hover tło `accent`, tekst `accent-foreground` (150ms).
+  - Na prawo od nazwy pole 20×20: kropka niezapisanych zmian (koło 8px, `foreground`). Po najechaniu na zakładkę w tym miejscu pojawia się przycisk zamknięcia (ikona X 14px, `muted-foreground`, `radius-sm`, hover: tło `foreground` 10%, ikona `foreground`).
+  - Przeciągana zakładka leży nad pozostałymi, z cieniem średnim.
+  - Gdy zakładki się nie mieszczą, zwężają się do min. szerokości, a potem pasek przesuwa się tak, by aktywna zakładka była widoczna (bez paska przewijania).
 - **Menu:** powierzchnia `popover`, 1px `border`, `radius-lg`, padding 4px, min. 232px, cień średni, wejście fade + slide 150ms. Pozycje mają 32px wysokości, `radius-sm`, a hover/focus `accent`. Skrót po prawej: 12px `muted-foreground`. Separatory 1px `border`.
 - **Pasek ostrzeżenia** (np. plik otwarty jako Windows-1250): pod górnym paskiem, pełna szerokość, min. 40px, tło `card`, dolna krawędź 1px `border`, tekst 14px `card-foreground`. Po lewej obrysowa ikona trójkąta ostrzegawczego 16px w `muted-foreground`, po prawej przycisk zamknięcia (ikona X, `ghost` 32×32 jak przycisk menu). Wejście fade + slide 150ms. Bez koloru — czerwień tylko dla `destructive`.
+  - Pasek z wyborem (plik zmieniony przez inny program): przed przyciskiem X przycisk tekstowy `outline` „Odśwież”: wysokość 32px, padding 0 12px, 14px/500, tło `background`, 1px `border`, `radius-md`, hover `accent`, odstęp 8px. X zamyka pasek i zachowuje zmiany użytkownika (podpowiedź „Zamknij i zachowaj moje zmiany”).
 - **Panele:** dwa panele 50/50 na tle `background`, oddzielone linią 1px `border`. Treść 16px Segoe UI, interlinia 1.6, padding poziomy 32px.
 - **Podgląd:**
   - H1/H2 z dolną linią `border`, nagłówki 600 z ujemnym trackingiem.

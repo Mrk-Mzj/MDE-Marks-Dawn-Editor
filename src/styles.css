@@ -130,36 +130,118 @@ button {
   box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
 }
 
-/* The single document looks like the active tab of the future tab strip. */
-.doc-tab {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 240px;
-  margin-top: 6px;
-  padding: 0 14px;
-  border: 1px solid var(--border);
-  border-bottom: 0;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-  background: var(--background);
-  color: var(--foreground);
-  font-weight: 500;
+/* ---------- Tabs ---------- */
+
+/* Tabs shrink to their minimum width first; beyond that the strip scrolls
+   (programmatically) so the active tab stays visible. */
+.tabs {
   position: relative;
-  top: 1px;
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+  padding-top: 6px;
+  overflow: hidden;
 }
 
-.doc-title {
+.tab {
+  position: relative;
+  top: 1px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 100px;
+  max-width: 240px;
+  padding: 0 6px 0 14px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  color: var(--muted-foreground);
+  font-weight: 500;
+  transition: color 150ms, background-color 150ms;
+}
+
+.tab:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.tab[aria-selected="true"] {
+  z-index: 1;
+  border-color: var(--border);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.tab-dragging {
+  z-index: 2;
+  transition: none;
+  box-shadow: var(--shadow-md);
+}
+
+.tab-title {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.doc-dirty {
+/* Holds the unsaved-changes dot; the close button takes its place on hover. */
+.tab-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.tab-dot {
+  display: none;
   width: 8px;
   height: 8px;
-  flex-shrink: 0;
   border-radius: 50%;
   background: var(--foreground);
+}
+
+.tab-dirty .tab-dot {
+  display: block;
+}
+
+.tab-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: default;
+  transition: color 150ms, background-color 150ms;
+}
+
+.tab-close .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.tab-close:hover {
+  background: color-mix(in oklch, var(--foreground) 10%, transparent);
+  color: var(--foreground);
+}
+
+.tab:hover .tab-close {
+  display: flex;
+}
+
+.tab:hover .tab-dot {
+  display: none;
 }
 
 /* ---------- Menu ---------- */
@@ -241,6 +323,42 @@ button {
   flex: 1;
   min-width: 0;
   line-height: 1.4;
+}
+
+.notice-actions {
+  display: flex;
+  gap: 8px;
+  padding-right: 4px;
+}
+
+/* Button, variant outline (docs/DESIGN.md, section 7). */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: default;
+  transition: color 150ms, background-color 150ms, box-shadow 150ms;
+}
+
+.button-outline {
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.button-outline:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.button:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
 }
 
 /* ---------- Panels ---------- */

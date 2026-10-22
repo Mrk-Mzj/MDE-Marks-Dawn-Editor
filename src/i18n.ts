@@ -7,6 +7,7 @@ const en = {
   open: "Open…",
   save: "Save",
   saveAs: "Save as…",
+  closeTab: "Close tab",
   exit: "Exit",
   untitled: "Untitled",
   unsavedChanges: "Unsaved changes",
@@ -21,6 +22,10 @@ const en = {
   openFailed: (name: string) => `Could not open “${name}”.`,
   saveFailed: (name: string) => `Could not save “${name}”.`,
   invalidUtf16: "The file is marked as UTF-16 but contains invalid data.",
+  notFound: "The file does not exist.",
+  changedOnDisk: (name: string) => `“${name}” was changed by another program. Your changes are not saved yet.`,
+  reload: "Refresh",
+  keepMine: "Close and keep my changes",
   windows1250Notice:
     "This file is not UTF-8, so it was opened as Windows-1250. Check that accented letters look right; the file will be saved in Windows-1250.",
   askUtf8: (name: string, chars: string) =>
@@ -40,6 +45,7 @@ const pl: Strings = {
   open: "Otwórz…",
   save: "Zapisz",
   saveAs: "Zapisz jako…",
+  closeTab: "Zamknij zakładkę",
   exit: "Wyjdź",
   untitled: "Bez tytułu",
   unsavedChanges: "Niezapisane zmiany",
@@ -54,6 +60,10 @@ const pl: Strings = {
   openFailed: (name) => `Nie udało się otworzyć pliku „${name}”.`,
   saveFailed: (name) => `Nie udało się zapisać pliku „${name}”.`,
   invalidUtf16: "Plik jest oznaczony jako UTF-16, ale zawiera nieprawidłowe dane.",
+  notFound: "Plik nie istnieje.",
+  changedOnDisk: (name) => `Plik „${name}” został zmieniony przez inny program. Twoje zmiany nie są jeszcze zapisane.`,
+  reload: "Odśwież",
+  keepMine: "Zamknij i zachowaj moje zmiany",
   windows1250Notice:
     "Plik nie jest zapisany w UTF-8, więc otwarto go jako Windows-1250. Sprawdź, czy polskie znaki wyglądają poprawnie; plik zostanie zapisany w Windows-1250.",
   askUtf8: (name, chars) =>

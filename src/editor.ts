@@ -1,7 +1,7 @@
 // Markdown source editor (left panel).
 
 import { defaultKeymap, history, historyKeymap, insertTab } from "@codemirror/commands";
-import { EditorState, StateField } from "@codemirror/state";
+import { EditorSelection, EditorState, StateField } from "@codemirror/state";
 import { drawSelection, EditorView, keymap } from "@codemirror/view";
 import type { Eol, LineBreak } from "./platform";
 
@@ -64,6 +64,18 @@ const theme = EditorView.theme(
   { dark: true },
 );
 
+/** Where the editor is scrolled to: the first visible line and how far it sticks out above the top. */
+export interface ScrollPosition {
+  pos: number;
+  margin: number;
+}
+
+/** What is selected, as document offsets. */
+export interface Selection {
+  anchor: number;
+  head: number;
+}
+
 export class Editor {
   readonly view: EditorView;
 
@@ -83,11 +95,20 @@ export class Editor {
     });
   }
 
-  private createState(text: string, breaks: readonly LineBreak[] = []): EditorState {
+  /**
+   * A complete editor state for a document. Each tab keeps its own state, so
+   * switching tabs keeps undo history, selection and line break tracking.
+   */
+  createState(text: string, breaks: readonly LineBreak[] = [], selection?: Selection): EditorState {
+    const length = text.length;
+    const clamp = (pos: number) => Math.max(0, Math.min(pos, length));
     return EditorState.create({
       doc: text,
+      selection: selection ? EditorSelection.single(clamp(selection.anchor), clamp(selection.head)) : undefined,
       extensions: [
-        lineBreaks.init((state) => breaks.map(({ line, eol }) => ({ pos: state.doc.line(line + 1).to, eol }))),
+        lineBreaks.init((state) =>
+          breaks.filter(({ line }) => line < state.doc.lines).map(({ line, eol }) => ({ pos: state.doc.line(line + 1).to, eol })),
+        ),
         history(),
         drawSelection(),
         theme,
@@ -99,10 +120,30 @@ export class Editor {
     });
   }
 
-  /** Replaces the whole document, clearing undo history. */
-  load(text: string, breaks: readonly LineBreak[] = []): void {
-    this.view.setState(this.createState(text, breaks));
-    this.view.scrollDOM.scrollTop = 0;
+  /** Shows `state` (another tab's document), scrolled to `scroll`. */
+  setState(state: EditorState, scroll: ScrollPosition | null = null): void {
+    this.view.setState(state);
+    if (scroll && scroll.pos <= state.doc.length) {
+      this.view.dispatch({ effects: EditorView.scrollIntoView(scroll.pos, { y: "start", yMargin: scroll.margin }) });
+    } else {
+      this.view.scrollDOM.scrollTop = 0;
+    }
+  }
+
+  get state(): EditorState {
+    return this.view.state;
+  }
+
+  scrollPosition(): ScrollPosition {
+    const { scrollTop } = this.view.scrollDOM;
+    const top = scrollTop - this.view.documentPadding.top;
+    const block = this.view.lineBlockAtHeight(Math.max(0, top));
+    return { pos: block.from, margin: block.top - top };
+  }
+
+  selection(): Selection {
+    const { anchor, head } = this.view.state.selection.main;
+    return { anchor, head };
   }
 
   text(): string {
@@ -110,9 +151,9 @@ export class Editor {
   }
 
   /** Line breaks that differ from the file's dominant style, by line index. */
-  lineBreaks(): LineBreak[] {
-    const { doc } = this.view.state;
-    return this.view.state.field(lineBreaks).map(({ pos, eol }) => ({ line: doc.lineAt(pos).number - 1, eol }));
+  lineBreaks(state = this.view.state): LineBreak[] {
+    const { doc } = state;
+    return state.field(lineBreaks).map(({ pos, eol }) => ({ line: doc.lineAt(pos).number - 1, eol }));
   }
 
   length(): number {

@@ -2,6 +2,8 @@
 
 Program ma mieć możliwość otwierania kilku plików na raz, w zakładkach umieszczonych u góry programu. Zakładki mają zamykać się po kliknięciu środkowym przyciskiem myszy. Mają nie mieć widocznego przycisku do zamykania X do momentu aż najedzie się kursorem na daną zakładkę. Zakładki mają zawierać nazwę otwartego pliku (bez rozszerzenia) i symbol kropki który pojawi się, gdy zmiany w danej zakładce nie zostały zapisane.
 
+Między zakładkami przełączamy się skrótami Ctrl+Tab / Ctrl+Shift+Tab i Ctrl+PgDn / Ctrl+PgUp, a także kółkiem myszy nad paskiem zakładek. Kolejność zakładek można zmieniać przeciąganiem. Gdy zakładki nie mieszczą się na pasku, zwężają się, a potem pasek przesuwa się tak, by aktywna zakładka była widoczna. Zamknięcie ostatniej zakładki zostawia nową, pustą zakładkę „Bez tytułu”.
+
 
 
 W lewej górnej części ekranu ma znajdować się menu hamburgerowe, czyli przycisk dający dostęp do opcji takich, jak Nowy plik, Otwórz, Zapisz, Zapisz jako, Znajdź, Zamknij zakładkę, Wyjdź.
@@ -64,7 +66,9 @@ Zamknięcie programu (Ctrl+Q lub X okna) nie wywołuje pytania o zapis: niezapis
 
 
 
-Po zamknięciu programu zapamiętujemy sesje, czyli listy otwartych zakładek, proporcje rozmiaru między lewym i prawym panelem, a także miejsca, do których pliki zostały przewinięte. Zapamiętujemy także edycje plików nawet jeśli nie zostały zapisane.
+Po zamknięciu programu zapamiętujemy sesje, czyli listy otwartych zakładek, proporcje rozmiaru między lewym i prawym panelem, a także miejsca, do których pliki zostały przewinięte. Zapamiętujemy także edycje plików nawet jeśli nie zostały zapisane oraz rozmiar, położenie i maksymalizację okna.
+
+Jeśli przy przywracaniu sesji pliku nie ma już na dysku (usunięty lub przeniesiony), zakładka wraca z zapamiętaną treścią i kropką niezapisanych zmian, a zapis otwiera okno „Zapisz jako”. Dlatego sesja przechowuje kopię treści każdej otwartej zakładki; kopię usuwamy przy zamknięciu zakładki.
 
 Proporcje między lewym i prawym panelem są wspólne dla wszystkich zakładek i zapamiętywane jako ustawienie aplikacji.
 
@@ -74,13 +78,13 @@ Zakładka po zamknięciu znika z sesji, to znaczy nie przechowujemy dłużej zap
 
 
 
-Otwieranie pliku ma odbywać się w nowej zakładce po prawej strony listy otwartych zakładek. Dostęp do funkcji Otwórz ma miejsce przez menu, przez skrót klawiszowy (te dwa warianty otwierają okno Eksploratora do wskazania pliku), a także przez przeciągnięcie pliku z Eksploratora w okno programu (ten wariant otwiera plik bezpośrednio, bez dodatkowego okna).
+Otwieranie pliku ma odbywać się w nowej zakładce po prawej strony listy otwartych zakładek. Dostęp do funkcji Otwórz ma miejsce przez menu, przez skrót klawiszowy (te dwa warianty otwierają okno Eksploratora do wskazania pliku), a także przez przeciągnięcie pliku z Eksploratora w okno programu (ten wariant otwiera plik bezpośrednio, bez dodatkowego okna). Upuszczenie kilku plików otwiera każdy w osobnej zakładce.
 
 Plik można też otworzyć przez „Otwórz za pomocą” w Eksploratorze, czyli przez argument wiersza poleceń (`MDE.exe plik.md`). Program jest portable, więc sam nie rejestruje skojarzeń plików; użytkownik wskazuje exe w oknie „Otwórz za pomocą”.
 
 Program działa w jednej instancji. Ponowne uruchomienie (także z plikiem jako argumentem) przenosi fokus do już otwartego okna i otwiera w nim plik w nowej zakładce, zamiast uruchamiać drugie okno. Jeśli plik jest już otwarty, przełączamy się na jego zakładkę.
 
-Zmiany pliku na dysku dokonane poza programem: jeśli zakładka nie ma niezapisanych zmian, plik przeładowujemy po cichu. Jeśli ma, pokazujemy pasek z wyborem „Przeładuj / Zachowaj moje”. Tak samo postępujemy przy przywracaniu sesji.
+Zmiany pliku na dysku dokonane poza programem sprawdzamy przy przywracaniu sesji i za każdym razem, gdy okno programu odzyskuje fokus. Jeśli zakładka nie ma niezapisanych zmian, plik przeładowujemy po cichu. Jeśli ma, zostaje kropka niezapisanych zmian i pokazujemy pasek z przyciskiem „Odśwież” (wczytuje wersję z dysku, odrzucając zmiany) i ikoną X (zamyka pasek, zachowując nasze zmiany). Plik usunięty z dysku podczas pracy: zakładka zachowuje treść i dostaje kropkę niezapisanych zmian.
 
 
 

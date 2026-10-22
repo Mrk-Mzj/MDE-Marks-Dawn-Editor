@@ -2,6 +2,7 @@
 // development) the calls fall back to harmless stand-ins.
 
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { message, open, save } from "@tauri-apps/plugin-dialog";
@@ -28,6 +29,13 @@ export interface OpenedFile extends FileFormat {
   name: string;
   text: string;
   breaks: LineBreak[];
+  /** Identifies this version of the file on disk (modification time and size). */
+  stamp: string;
+}
+
+export interface SavedFile {
+  name: string;
+  stamp: string;
 }
 
 export type SaveChoice = "save" | "discard" | "cancel";
@@ -45,29 +53,69 @@ export async function openFile(docId: string, path: string): Promise<OpenedFile>
   return invoke<OpenedFile>("open_file", { docId, path });
 }
 
-/** Writes the document and returns the new display name. */
+/** Writes the document and returns its new display name and stamp. */
 export async function saveFile(
   docId: string,
   path: string,
   text: string,
   format: FileFormat,
   breaks: LineBreak[],
-): Promise<string> {
-  return invoke<string>("save_file", { docId, path, text, encoding: format.encoding, eol: format.eol, breaks });
+): Promise<SavedFile> {
+  return invoke<SavedFile>("save_file", { docId, path, text, encoding: format.encoding, eol: format.eol, breaks });
 }
 
 export async function closeDocument(docId: string): Promise<void> {
   if (inTauri) await invoke("close_document", { docId });
 }
 
-export async function initialFile(): Promise<string | null> {
-  return inTauri ? invoke<string | null>("initial_file") : null;
+/** The file's current stamp, or `null` when it no longer exists. */
+export async function fileStamp(path: string): Promise<string | null> {
+  return inTauri ? invoke<string | null>("file_stamp", { path }) : null;
 }
 
-export async function pickFileToOpen(): Promise<string | null> {
-  if (!inTauri) return null;
-  const picked = await open({ multiple: false, directory: false, filters: [markdownFilter, allFilter] });
-  return typeof picked === "string" ? picked : null;
+/** Files named on the command line. */
+export async function initialFiles(): Promise<string[]> {
+  return inTauri ? invoke<string[]>("initial_files") : [];
+}
+
+/** Calls `handler` with the files passed to another MDE.exe started while this one runs. */
+export async function onOpenFilesRequested(handler: (paths: string[]) => void): Promise<void> {
+  if (inTauri) await listen<string[]>("open-files", (event) => handler(event.payload));
+}
+
+// ---------- Session memory ----------
+
+export async function readSession(): Promise<string | null> {
+  return inTauri ? invoke<string | null>("read_session") : null;
+}
+
+/** Stores the session; the backend adds the window's size and position. */
+export async function writeSession(json: string): Promise<void> {
+  if (inTauri) await invoke("write_session", { json });
+}
+
+/** The text a tab had when the session was last stored. */
+export async function readTabText(id: string): Promise<string | null> {
+  return inTauri ? invoke<string | null>("read_tab_text", { id }) : null;
+}
+
+export async function writeTabText(id: string, text: string): Promise<void> {
+  if (inTauri) await invoke("write_tab_text", { id, text });
+}
+
+export async function deleteTabText(id: string): Promise<void> {
+  if (inTauri) await invoke("delete_tab_text", { id });
+}
+
+/** Deletes the stored text of every tab not in `keep`. */
+export async function pruneTabTexts(keep: string[]): Promise<void> {
+  if (inTauri) await invoke("prune_tab_texts", { keep });
+}
+
+export async function pickFilesToOpen(): Promise<string[]> {
+  if (!inTauri) return [];
+  const picked = await open({ multiple: true, directory: false, filters: [markdownFilter, allFilter] });
+  return picked ?? [];
 }
 
 export async function pickSavePath(suggestedName: string): Promise<string | null> {
@@ -125,6 +173,14 @@ export async function onCloseRequested(handler: () => void): Promise<void> {
   await getCurrentWindow().onCloseRequested((event) => {
     event.preventDefault();
     handler();
+  });
+}
+
+/** Calls `handler` when the window gets the keyboard focus back. */
+export async function onWindowFocused(handler: () => void): Promise<void> {
+  if (!inTauri) return;
+  await getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+    if (focused) handler();
   });
 }
 

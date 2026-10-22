@@ -84,7 +84,11 @@ export class Preview {
     this.timer = window.setTimeout(() => this.render(getSource()), 60);
   }
 
-  resetScroll(): void {
-    this.root.scrollTop = 0;
+  get scrollTop(): number {
+    return this.root.scrollTop;
+  }
+
+  set scrollTop(value: number) {
+    this.root.scrollTop = value;
   }
 }
