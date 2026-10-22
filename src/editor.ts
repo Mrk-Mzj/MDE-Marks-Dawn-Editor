@@ -1,8 +1,10 @@
 // Markdown source editor (left panel).
 
 import { defaultKeymap, history, historyKeymap, insertTab } from "@codemirror/commands";
+import { defineLanguageFacet, Language } from "@codemirror/language";
 import { EditorSelection, EditorState, StateField } from "@codemirror/state";
 import { drawSelection, EditorView, keymap } from "@codemirror/view";
+import { GFM, parser } from "@lezer/markdown";
 import type { Eol, LineBreak } from "./platform";
 import { spellChecking } from "./spell";
 import type { SpellService } from "./spell";
@@ -30,6 +32,10 @@ const lineBreaks = StateField.define<readonly TrackedBreak[]>({
   },
 });
 
+// GFM syntax tree, kept up to date incrementally while typing. The formatting
+// toolbar reads it to find bold, italic and underlined text; nothing is highlighted.
+const markdown = new Language(defineLanguageFacet(), parser.configure(GFM), [], "markdown");
+
 // Styles use the design tokens (CSS custom properties inherit into the shadow
 // root). See docs/DESIGN.md.
 const theme = EditorView.theme(
@@ -49,7 +55,7 @@ const theme = EditorView.theme(
       overflowY: "auto",
     },
     ".cm-content": { padding: "24px 0", caretColor: "var(--foreground)" },
-    ".cm-line": { padding: "0 32px" },
+    ".cm-line": { padding: "0 var(--content-padding-x)" },
     // Thin orange underline for misspelled words.
     ".cm-spell-error": {
       textDecoration: "underline",
@@ -87,6 +93,7 @@ export interface Selection {
 
 export class Editor {
   readonly view: EditorView;
+  private readonly listeners: (() => void)[] = [];
 
   constructor(
     host: HTMLElement,
@@ -104,6 +111,7 @@ export class Editor {
       dispatch: (tr, view) => {
         view.update([tr]);
         if (tr.docChanged) onChange();
+        if (tr.docChanged || tr.selection) this.notify();
       },
     });
   }
@@ -123,6 +131,7 @@ export class Editor {
           breaks.filter(({ line }) => line < state.doc.lines).map(({ line, eol }) => ({ pos: state.doc.line(line + 1).to, eol })),
         ),
         history(),
+        markdown,
         drawSelection(),
         theme,
         EditorView.lineWrapping,
@@ -142,6 +151,16 @@ export class Editor {
     } else {
       this.view.scrollDOM.scrollTop = 0;
     }
+    this.notify();
+  }
+
+  /** Calls `listener` whenever the text, the selection or the shown document changes. */
+  subscribe(listener: () => void): void {
+    this.listeners.push(listener);
+  }
+
+  private notify(): void {
+    for (const listener of this.listeners) listener();
   }
 
   get state(): EditorState {

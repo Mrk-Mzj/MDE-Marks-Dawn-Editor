@@ -3,6 +3,7 @@ import "./styles.css";
 import type { EditorState } from "@codemirror/state";
 import { Editor } from "./editor";
 import type { ScrollPosition, Selection } from "./editor";
+import { blockState, inlineState, insertLink, insertTable, setHeading, toggleInline, toggleList, toggleQuote } from "./format";
 import { lang, t } from "./i18n";
 import { classifyHref, extensionOf, isMarkdownFile, needsConfirmation } from "./links";
 import { Menu } from "./menu";
@@ -11,6 +12,7 @@ import type { FileFormat, LineBreak, OpenedFile } from "./platform";
 import { Preview } from "./preview";
 import { isSpellMode, SpellService } from "./spell";
 import { TabStrip } from "./tabs";
+import { icons, TablePicker, Toolbar } from "./toolbar";
 
 /** An open document: one tab. */
 interface Doc {
@@ -689,6 +691,87 @@ new Menu($<HTMLButtonElement>("#menu-button"), [
   { label: t.exit, shortcut: "Ctrl+Q", run: commands.exit },
 ]);
 
+// ---------- Formatting toolbar ----------
+
+/** Runs a formatting command on the editor. */
+const format = (command: (view: typeof editor.view) => void) => () => {
+  command(editor.view);
+  editor.focus();
+};
+
+const formatting = {
+  bold: format((view) => toggleInline(view, "bold")),
+  italic: format((view) => toggleInline(view, "italic")),
+  underline: format((view) => toggleInline(view, "underline")),
+  heading: (level: number) => format((view) => setHeading(view, level)),
+  bulletList: format((view) => toggleList(view, "bullet")),
+  orderedList: format((view) => toggleList(view, "ordered")),
+  quote: format(toggleQuote),
+  link: format((view) => insertLink(view, t.linkText)),
+};
+
+const tablePicker = new TablePicker(
+  { columns: 8, rows: 8 },
+  { title: t.table, size: t.tableSize },
+  (columns, rows) => format((view) => insertTable(view, columns, rows, t.tableColumn))(),
+  () => editor.focus(),
+);
+
+const headingEntries = () => {
+  const current = blockState(editor.state).heading;
+  return [1, 2, 3, 4, 5, 0].map((level) => ({
+    label: level === 0 ? t.paragraph : t.heading(level),
+    shortcut: level === 0 ? undefined : `Ctrl+${level}`,
+    checked: current === level,
+    run: formatting.heading(level),
+  }));
+};
+
+// The pressed state of B, I and U, worked out once per editor state.
+let inlineCache: { state: EditorState; styles: ReturnType<typeof inlineState> } | null = null;
+const inlineStyles = () => {
+  if (inlineCache?.state !== editor.state) inlineCache = { state: editor.state, styles: inlineState(editor.state) };
+  return inlineCache.styles;
+};
+
+const toolbar = new Toolbar(
+  $("#toolbar"),
+  [
+    [
+      { kind: "button", label: t.bold, shortcut: "Ctrl+B", icon: icons.bold, run: formatting.bold,
+        pressed: () => inlineStyles().bold },
+      { kind: "button", label: t.italic, shortcut: "Ctrl+I", icon: icons.italic, run: formatting.italic,
+        pressed: () => inlineStyles().italic },
+      { kind: "button", label: t.underline, shortcut: "Ctrl+U", icon: icons.underline, run: formatting.underline,
+        pressed: () => inlineStyles().underline },
+    ],
+    [{ kind: "menu", label: t.headingMenu, icon: icons.heading, entries: headingEntries }],
+    [
+      { kind: "button", label: t.bulletList, icon: icons.bulletList, run: formatting.bulletList,
+        pressed: () => blockState(editor.state).list === "bullet" },
+      { kind: "button", label: t.orderedList, icon: icons.orderedList, run: formatting.orderedList,
+        pressed: () => blockState(editor.state).list === "ordered" },
+      { kind: "button", label: t.quote, icon: icons.quote, run: formatting.quote, pressed: () => blockState(editor.state).quote },
+    ],
+    [
+      { kind: "button", label: t.link, shortcut: "Ctrl+K", icon: icons.link, run: formatting.link },
+      { kind: "picker", label: t.table, icon: icons.table, open: (anchor, align) => tablePicker.show(anchor, align) },
+    ],
+  ],
+  { toolbar: t.formatting, more: t.more },
+  () => editor.focus(),
+);
+
+// The pressed state follows the cursor, at most once per frame.
+let toolbarFrame = 0;
+editor.subscribe(() => {
+  if (toolbarFrame) return;
+  toolbarFrame = requestAnimationFrame(() => {
+    toolbarFrame = 0;
+    toolbar.refresh();
+  });
+});
+
 // Shortcuts use physical key codes so they work on any keyboard layout.
 // Alt is excluded because Ctrl+Alt is AltGr on Polish keyboards.
 const shortcuts: Record<string, () => void> = {
@@ -702,10 +785,19 @@ const shortcuts: Record<string, () => void> = {
   "Shift+Tab": commands.previousTab,
   PageDown: commands.nextTab,
   PageUp: commands.previousTab,
+  KeyB: formatting.bold,
+  KeyI: formatting.italic,
+  KeyU: formatting.underline,
+  KeyK: formatting.link,
+  Digit1: formatting.heading(1),
+  Digit2: formatting.heading(2),
+  Digit3: formatting.heading(3),
+  Digit4: formatting.heading(4),
+  Digit5: formatting.heading(5),
 };
 
 // Browser shortcuts that make no sense in the app (reload, print, find, …).
-const blockedCtrl = new Set(["KeyR", "KeyP", "KeyF", "KeyG", "KeyH", "KeyJ", "KeyU", "KeyL", "KeyT"]);
+const blockedCtrl = new Set(["KeyR", "KeyP", "KeyF", "KeyG", "KeyH", "KeyJ", "KeyL", "KeyT"]);
 const blockedPlain = new Set(["F3", "F5", "F7", "BrowserBack", "BrowserForward", "BrowserRefresh"]);
 
 window.addEventListener(

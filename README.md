@@ -4,9 +4,9 @@ A fast, lightweight Markdown editor for Windows 11. Portable: a single `MDE.exe`
 
 The specification lives in [docs/SPEC.md](docs/SPEC.md) and the visual design in [docs/DESIGN.md](docs/DESIGN.md).
 
-## Status: 0.4
+## Status: 0.5
 
-MVP plus tabs, a single instance, session memory, spell checking, the HTML whitelist and clickable links.
+MVP plus tabs, a single instance, session memory, spell checking, the HTML whitelist, clickable links and the formatting toolbar.
 
 ### Features
 
@@ -20,6 +20,18 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - A relative link to a Markdown file (`.md`, `.markdown`, `.mdown`, `.mkd`) opens it in a new tab (or switches to its tab). Relative paths are counted from the folder of the file; `%20` and the like are decoded; `?query` and `#fragment` are ignored. A file that was never saved has no folder, so such links ask you to save it first.
   - A relative link to any other file opens it in its default Windows program. The first time for each file type MDE asks, with the choice *Open and don't ask for .xxx files* (remembered in the session). Programs, scripts and other risky types (`.exe`, `.bat`, `.cmd`, `.ps1`, `.vbs`, `.msi`, `.lnk`, `.chm`, `.hta`, disk images, …, plus every type Windows itself flags as unsafe via `AssocIsDangerous`), folders and files without an extension are asked about every time.
   - Blocked, shown as plain text: `javascript:`, `data:`, `file:` and any other scheme, drive paths (`C:\…`), rooted and network paths (`/x`, `\\server\x`). Links to `#headings` are inactive.
+- **Formatting toolbar** above the editor; its first icon lines up with the left edge of the text. Every action is one undo step and works on the selection (or the line with the cursor):
+  - **Bold**, *Italic*, Underline (Ctrl+B / Ctrl+I / Ctrl+U) work like in Word. Formatting is recognized from the Markdown syntax tree (`**…**`/`__…__`, `*…*`/`_…_`, `<u>…</u>`), so markers in inline code, escaped `\*` and `snake_case` words never count:
+    - the button shows as pressed when all of the selected text (or the text around the cursor) has the style;
+    - clicking it then removes the style even when the markers do not touch the selection: in `**<u>WORD</u>**` with *WORD* selected, Bold leaves `<u>WORD</u>`. Removing it from part of a stretch splits it: *ma* in `**Ala ma kota**` gives `**Ala** ma **kota**`;
+    - text that is only partly formatted is formatted as a whole and the markers are merged: `**Ala** ma kota` gives `**Ala ma kota**`;
+    - without a selection the cursor acts like a selection of the word it is in: a click inside formatted text removes that formatting, and a click in the middle of an unformatted word formats the whole word (the cursor stays where it was). Next to a space or at the start or end of a line an empty pair of markers is inserted with the cursor inside (clicking again removes it); nothing is inserted right next to other markers or inside code, addresses and HTML tags;
+    - a selection over several lines is formatted line by line; spaces at its edges and block markers (`- `, `## `, `> `) stay outside the markers. Formatting spanning several lines of one paragraph is recognized.
+  - **Paragraph style** menu: *Heading 1–5* (Ctrl+1 … Ctrl+5) and *Paragraph text*. The current style is checked. Choosing the current heading level again turns the line back into paragraph text; a list item made a heading loses its list marker.
+  - **Bulleted list** (`- `), **Numbered list** (`1. `, `2. `, …; numbering continues a numbered list right above) and **Quote** (`> `) toggle on all selected lines; the buttons show as pressed when the line with the cursor already has that format. Empty lines are left alone (inside a quote they get `>` so the quote stays one block).
+  - **Link** (Ctrl+K): the selection becomes `[text](url)` with `url` selected for typing; a selected web address goes into the parentheses and the link text is selected instead.
+  - **Table**: a grid (up to 8 × 8, mouse or arrow keys + Enter) picks the number of columns and rows (the header row included). The table is inserted below the line with the cursor, separated by empty lines, with the first header cell selected.
+  - When the panel is too narrow, the buttons that do not fit move to a *More* (…) menu at the end of the toolbar.
 - **Top bar**: hamburger menu and the tab strip. The top bar always stays visible; only the panels scroll.
 - **Tabs**: every open file has a tab with its name (without extension); a dot marks unsaved changes. While the pointer is over a tab, a close button (×) takes the dot's place. A tab closes with the middle mouse button, the × button or Ctrl+W.
   - New and opened files get a new tab on the right. Opening a file that is already open switches to its tab. A lone, empty *Untitled* tab is replaced by the opened file.
@@ -38,6 +50,9 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   | Close tab | Ctrl+W |
   | Next / previous tab | Ctrl+Tab / Ctrl+Shift+Tab, Ctrl+PgDn / Ctrl+PgUp |
   | Exit | Ctrl+Q |
+  | Bold / italic / underline | Ctrl+B / Ctrl+I / Ctrl+U |
+  | Heading 1–5 | Ctrl+1 … Ctrl+5 |
+  | Link | Ctrl+K |
 
 - **Opening files**: Open dialog (several files can be selected), dragging files from Explorer onto the window (each file gets its own tab), or the command line (`MDE.exe file.md`), which makes Explorer's *Open with* work.
 - **Single instance**: starting `MDE.exe` again (also with a file) brings the running window to the front and opens the file there in a new tab, or switches to its tab if it is already open.
@@ -75,7 +90,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 
 ### Not yet implemented
 
-Resizable panels (and remembering their proportions), zoom, formatting toolbar, minimap, moving paragraphs (Ctrl+↑/↓), Find.
+Resizable panels (and remembering their proportions), zoom, minimap, moving paragraphs (Ctrl+↑/↓), Find.
 
 ## Building
 
@@ -124,13 +139,17 @@ src/                  frontend (TypeScript)
   editor.ts           CodeMirror 6 editor (left panel) and its theme; the editor
                       runs in a shadow root so its styles are not blocked by the CSP;
                       it also tracks line breaks that differ from the dominant style
+                      and keeps the GFM syntax tree up to date (used by the toolbar)
   spell.ts            spell checking: word finding, answer cache, underlines in the
                       editor (a CodeMirror plugin)
   preview.ts          markdown-it preview (right panel), incl. the blank-lines extension
                       and link clicks
   sanitize.ts         whitelist sanitizer for raw HTML
   links.ts            which links are followed and how (web, relative, blocked)
-  menu.ts             hamburger menu
+  format.ts           formatting commands (bold, headings, lists, quote, link, table);
+                      bold/italic/underline work on the GFM syntax tree (@lezer/markdown)
+  toolbar.ts          formatting toolbar, its "more" menu and the table size picker
+  menu.ts             drop-down menus (hamburger menu, toolbar menus)
   platform.ts         Tauri backend and dialogs
   i18n.ts             UI strings (Polish, English)
   styles.css          design tokens and styles (docs/DESIGN.md)
@@ -148,4 +167,4 @@ src-tauri/            backend (Rust, Tauri 2)
 
 ## Tech stack
 
-Tauri 2 (Rust + WebView2) with tauri-plugin-single-instance, the `windows` crate (spell checking, opening links), CodeMirror 6, markdown-it, Vite, TypeScript.
+Tauri 2 (Rust + WebView2) with tauri-plugin-single-instance, the `windows` crate (spell checking, opening links), CodeMirror 6 (with the @lezer/markdown parser for the syntax tree), markdown-it, Vite, TypeScript.
