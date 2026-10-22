@@ -4,6 +4,7 @@ import type { EditorState } from "@codemirror/state";
 import { Editor } from "./editor";
 import type { ScrollPosition, Selection } from "./editor";
 import { lang, t } from "./i18n";
+import { classifyHref, extensionOf, isMarkdownFile, needsConfirmation } from "./links";
 import { Menu } from "./menu";
 import * as platform from "./platform";
 import type { FileFormat, LineBreak, OpenedFile } from "./platform";
@@ -58,6 +59,8 @@ interface StoredSession {
   tabs: StoredTab[];
   /** Spell checking mode (an app setting); the language of the system when missing. */
   spell?: string;
+  /** File types the user chose to open from links without asking again (an app setting). */
+  openTypes?: string[];
 }
 
 /** Unique across runs, because tab ids name files in the session folder. */
@@ -73,7 +76,7 @@ const noticeClose = $<HTMLButtonElement>("#notice-close");
 // What the close button of the current warning bar does.
 let onNoticeClose = () => {};
 noticeClose.addEventListener("click", () => onNoticeClose());
-const preview = new Preview($("#preview"));
+const preview = new Preview($("#preview"), followLink);
 const spell = new SpellService(lang);
 const editor = new Editor($("#editor"), onEdit, spell);
 
@@ -404,6 +407,55 @@ async function exit(): Promise<void> {
   }
 }
 
+// ---------- Links ----------
+
+// Extensions whose linked files open without asking.
+let trustedTypes = new Set<string>();
+
+/** Web and mail links open in the default program, relative ones in a tab or the Windows program for the file. */
+function followLink(href: string): void {
+  const link = classifyHref(href);
+  if (link?.kind === "external") {
+    void platform.openUrl(link.url).catch((err) => platform.showError(`${t.linkOpenFailed(link.url)}\n\n${errorText(String(err))}`));
+  } else if (link?.kind === "relative") {
+    void exclusive(() => openRelative(active, link.path));
+  }
+}
+
+async function openRelative(doc: Doc, relative: string): Promise<void> {
+  if (!doc.path) {
+    await platform.showError(t.linkNeedsSave);
+    return;
+  }
+  const target = await platform.resolveLink(doc.path, relative);
+  if (!target) {
+    await platform.showError(t.linkNotFound(relative));
+    return;
+  }
+  const extension = extensionOf(target.path);
+  if (target.kind === "file" && isMarkdownFile(extension)) {
+    await openPath(target.path);
+    return;
+  }
+
+  const name = platform.fileNameOf(target.path);
+  // Programs, scripts and folders are asked about every time, whatever was chosen before.
+  const always = target.kind === "dir" || target.dangerous || needsConfirmation(extension);
+  if (always || !trustedTypes.has(extension)) {
+    const choice = await platform.askOpenLinked(name, target.path, extension, always);
+    if (choice === "cancel") return;
+    if (choice === "always") {
+      trustedTypes.add(extension);
+      scheduleSessionSave();
+    }
+  }
+  try {
+    await platform.openWithDefaultProgram(target.path);
+  } catch (err) {
+    await platform.showError(`${t.linkOpenFailed(name)}\n\n${errorText(String(err))}`);
+  }
+}
+
 // ---------- Changes on disk ----------
 
 /** Loads the file's current version into its tab, dropping unsaved changes. */
@@ -535,7 +587,10 @@ function saveSession(): Promise<void> {
         doc.textStale = true;
       }
     }
-    const session: StoredSession = { version: 1, active: docs.indexOf(active), tabs: docs.map(storedTab), spell: spell.mode };
+    const session: StoredSession = { version: 1, active: docs.indexOf(active), tabs: docs.map(storedTab),
+      spell: spell.mode,
+      openTypes: [...trustedTypes],
+    };
     await platform.writeSession(JSON.stringify(session));
   };
   sessionQueue = sessionQueue.then(run).catch((err) => console.error("Could not store the session", err));
@@ -600,6 +655,9 @@ async function restoreSession(): Promise<number> {
   const session = parseSession(await platform.readSession());
   if (!session) return 0;
   if (isSpellMode(session.spell)) spell.setMode(session.spell);
+  if (Array.isArray(session.openTypes)) {
+    trustedTypes = new Set(session.openTypes.filter((type): type is string => typeof type === "string"));
+  }
   const restored = await Promise.all(session.tabs.map((tab) => restoreTab(tab).catch(() => null)));
   const activeTab = session.tabs[session.active];
   docs = restored.filter((doc): doc is Doc => doc !== null);

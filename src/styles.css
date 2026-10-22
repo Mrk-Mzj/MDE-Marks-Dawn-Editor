@@ -501,11 +501,64 @@ button {
   text-decoration: underline;
   text-decoration-color: var(--muted-foreground);
   text-underline-offset: 3px;
-  cursor: default;
+  cursor: pointer;
+  transition: text-decoration-color 150ms;
 }
 
 .markdown-body a:hover {
   text-decoration-color: var(--foreground);
+}
+
+.markdown-body a:focus-visible,
+.markdown-body summary:focus-visible {
+  outline: 0;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
+}
+
+/* Raw HTML allowed by the whitelist (see src/sanitize.ts). */
+.markdown-body kbd {
+  padding: 0.1em 0.4em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+
+.markdown-body details {
+  margin: 0 0 1em;
+}
+
+.markdown-body summary {
+  list-style: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.markdown-body summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Outline chevron instead of the filled browser marker. */
+.markdown-body summary::before {
+  content: "";
+  display: inline-block;
+  width: 0.4em;
+  height: 0.4em;
+  margin-right: 0.7em;
+  border-right: 1.5px solid var(--muted-foreground);
+  border-bottom: 1.5px solid var(--muted-foreground);
+  transform: translateY(-0.1em) rotate(-45deg);
+  transition: transform 150ms;
+}
+
+.markdown-body details[open] > summary::before {
+  transform: translateY(-0.2em) rotate(45deg);
+}
+
+.markdown-body details[open] > summary {
+  margin-bottom: 0.5em;
 }
 
 .markdown-body code {

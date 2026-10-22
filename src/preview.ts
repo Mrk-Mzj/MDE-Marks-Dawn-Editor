@@ -2,13 +2,21 @@
 
 import MarkdownIt from "markdown-it";
 import { t } from "./i18n";
+import { classifyHref } from "./links";
+import { markRawHtml, sanitize } from "./sanitize";
 
-// Raw HTML is shown as text until the whitelist sanitizer is added.
-// markdown-it's default link validation already drops javascript:, vbscript:,
-// file: and data: URLs.
+// Raw HTML is let through by markdown-it but tagged by `markRawHtml` and
+// reduced to the whitelist by `sanitize` before it reaches the page.
 // `breaks`: every Enter in the file is a line break in the preview (an MDE
 // extension beyond GFM, see docs/SPEC.md).
-const md = new MarkdownIt({ html: false, linkify: true, typographer: false, breaks: true });
+const md = new MarkdownIt({ html: true, linkify: true, typographer: false, breaks: true });
+
+md.renderer.rules.html_block = (tokens, idx) => markRawHtml(tokens[idx].content);
+md.renderer.rules.html_inline = (tokens, idx) => markRawHtml(tokens[idx].content);
+
+// Only http, https, mailto and relative paths become links; anything else
+// (javascript:, data:, file:, unknown schemes) stays plain text.
+md.validateLink = (url) => classifyHref(url) !== null;
 
 // MDE extension beyond GFM (see docs/SPEC.md): N blank lines between two
 // blocks show as the usual paragraph gap plus N−1 empty lines. Only blocks that
@@ -62,20 +70,34 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
 
 export class Preview {
   private timer = 0;
+  // Rendered HTML is parsed here, where nothing runs or loads, and sanitized before it is shown.
+  private readonly staging = document.createElement("template");
 
-  constructor(private readonly root: HTMLElement) {
-    // Links are inactive in this version; they must never navigate the app.
+  /** `onLink` gets the address of a clicked link; links never navigate the app themselves. */
+  constructor(
+    private readonly root: HTMLElement,
+    onLink: (href: string) => void,
+  ) {
     root.addEventListener("click", (event) => {
-      if ((event.target as Element).closest("a")) event.preventDefault();
+      const link = (event.target as Element).closest("a");
+      if (!link) return;
+      event.preventDefault();
+      // Dragging to select text that starts on a link is not a click on it.
+      if (window.getSelection()?.isCollapsed === false) return;
+      onLink(link.getAttribute("href") ?? "");
     });
     root.addEventListener("auxclick", (event) => event.preventDefault());
   }
 
   render(source: string): void {
     window.clearTimeout(this.timer);
-    this.root.innerHTML = source.trim()
-      ? md.render(source)
-      : `<p class="preview-empty">${md.utils.escapeHtml(t.emptyPreview)}</p>`;
+    if (!source.trim()) {
+      this.root.innerHTML = `<p class="preview-empty">${md.utils.escapeHtml(t.emptyPreview)}</p>`;
+      return;
+    }
+    this.staging.innerHTML = md.render(source);
+    sanitize(this.staging.content);
+    this.root.replaceChildren(this.staging.content);
   }
 
   /** Re-renders after a short pause in typing, keeping the editor responsive. */

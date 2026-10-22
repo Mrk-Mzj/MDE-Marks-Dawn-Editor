@@ -39,6 +39,15 @@ export interface SavedFile {
 }
 
 export type SaveChoice = "save" | "discard" | "cancel";
+export type OpenChoice = "open" | "always" | "cancel";
+
+/** Where a relative link leads. */
+export interface ResolvedLink {
+  path: string;
+  kind: "file" | "dir";
+  /** Windows itself treats the file type as unsafe to open. */
+  dangerous: boolean;
+}
 
 const inTauri = isTauri();
 
@@ -71,6 +80,22 @@ export async function closeDocument(docId: string): Promise<void> {
 /** The file's current stamp, or `null` when it no longer exists. */
 export async function fileStamp(path: string): Promise<string | null> {
   return inTauri ? invoke<string | null>("file_stamp", { path }) : null;
+}
+
+/** Where `relative` leads from the folder of the file `document`, or `null` when nothing is there. */
+export async function resolveLink(document: string, relative: string): Promise<ResolvedLink | null> {
+  return inTauri ? invoke<ResolvedLink | null>("resolve_link", { document, relative }) : null;
+}
+
+/** Opens a web or mail address in the default program. */
+export async function openUrl(url: string): Promise<void> {
+  if (inTauri) await invoke("open_url", { url });
+  else window.open(url, "_blank", "noopener");
+}
+
+/** Opens an existing file or folder in the default Windows program. */
+export async function openWithDefaultProgram(path: string): Promise<void> {
+  if (inTauri) await invoke("open_path", { path });
 }
 
 /** Files named on the command line. */
@@ -147,6 +172,31 @@ export async function askSaveChanges(name: string): Promise<SaveChoice> {
   });
   if (result === t.saveButton || result === "Yes") return "save";
   if (result === t.discardButton || result === "No") return "discard";
+  return "cancel";
+}
+
+/**
+ * Asks before a linked file is opened by another program. `extension` is
+ * offered for "don't ask again" unless `program` says the file can run code.
+ */
+export async function askOpenLinked(name: string, path: string, extension: string, program: boolean): Promise<OpenChoice> {
+  if (!inTauri) return window.confirm(t.askOpenLinked(name, path)) ? "open" : "cancel";
+  if (program) {
+    const result = await message(t.askOpenProgram(name, path), {
+      title: t.openLinkTitle,
+      kind: "warning",
+      buttons: { ok: t.openButton, cancel: t.cancelButton },
+    });
+    return result === t.openButton || result === "Ok" ? "open" : "cancel";
+  }
+  const always = t.openAlwaysButton(extension);
+  const result = await message(t.askOpenLinked(name, path), {
+    title: t.openLinkTitle,
+    kind: "info",
+    buttons: { yes: t.openButton, no: always, cancel: t.cancelButton },
+  });
+  if (result === t.openButton || result === "Yes") return "open";
+  if (result === always || result === "No") return "always";
   return "cancel";
 }
 

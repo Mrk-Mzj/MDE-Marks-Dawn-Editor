@@ -24,7 +24,8 @@ Tokeny z sekcji 3 (tylko wartości `.dark`) są w `src/styles.css`.
   - Kod w linii: tło `muted`, `radius-sm`, Cascadia Mono.
   - Bloki kodu: tło `card`, 1px `border`, `radius-lg`, zawijane.
   - Cytat: lewa krawędź 3px `input`, tekst `muted-foreground`.
-  - Linki: kolor `foreground` z podkreśleniem `muted-foreground`.
+  - Linki: kolor `foreground` z podkreśleniem `muted-foreground` (hover: podkreślenie `foreground`, 150ms), kursor wskazujący, focus z pierścieniem `ring`. Pełny adres docelowy w podpowiedzi po najechaniu.
+  - HTML z białej listy: `kbd` jak kod w linii, ale z obramowaniem 1px `border` i tłem `card`; `details`/`summary` z obrysową strzałką (szewron 1.5px, `muted-foreground`) zamiast systemowego znacznika, obracaną o 90° przy otwarciu (150ms), podpis `summary` 500; kolory z `<span style>` pochodzą od użytkownika i są jedynym miejscem poza tokenami.
   - Tabele: 1px `border`, nagłówek na tle `card`.
   - Obrazek: ramka 1px `border` z ikoną obrazka i tekstem alt w `muted-foreground`.
   - Wiele pustych linii: każda dodatkowa pusta linia to pusty odstęp o wysokości jednej linii tekstu (1.6em), dodany do zwykłego odstępu akapitowego.

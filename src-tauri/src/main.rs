@@ -137,6 +137,92 @@ async fn spell_check(lang: String, words: Vec<String>, worker: State<'_, spell::
         .map_err(|e| e.to_string())?
 }
 
+#[derive(Serialize)]
+struct LinkTarget {
+    path: String,
+    /// "file" or "dir".
+    kind: &'static str,
+    /// Windows considers the file type unsafe; see `is_dangerous_type`.
+    dangerous: bool,
+}
+
+/// Where a relative link in the file `document` points, or `None` when nothing is there.
+#[tauri::command]
+fn resolve_link(document: String, relative: String) -> Option<LinkTarget> {
+    let target = std::path::absolute(Path::new(&document).parent()?.join(relative)).ok()?;
+    let meta = std::fs::metadata(&target).ok()?;
+    Some(LinkTarget {
+        dangerous: meta.is_file() && is_dangerous_type(&target),
+        path: target.to_string_lossy().into_owned(),
+        kind: if meta.is_dir() { "dir" } else { "file" },
+    })
+}
+
+/// Whether Windows itself treats the file's type as unsafe to open (programs,
+/// scripts, shortcuts, …), the list behind its "Open File - Security Warning".
+fn is_dangerous_type(path: &Path) -> bool {
+    use windows::core::HSTRING;
+    use windows::Win32::UI::Shell::AssocIsDangerous;
+
+    let Some(extension) = path.extension() else { return true };
+    let extension = format!(".{}", extension.to_string_lossy());
+    // SAFETY: a plain Win32 call with a string that outlives it.
+    unsafe { AssocIsDangerous(&HSTRING::from(extension)).as_bool() }
+}
+
+/// Opens a file or address with the program Windows has registered for it.
+fn shell_open(target: &str) -> Result<(), String> {
+    use windows::core::{w, HSTRING, PCWSTR};
+    use windows::Win32::System::Com::{CoInitializeEx, COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE};
+    use windows::Win32::UI::Shell::ShellExecuteW;
+    use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+
+    // SAFETY: plain Win32 calls with strings that outlive them.
+    let result = unsafe {
+        // Some handlers need COM; an already initialized thread is fine.
+        let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+        ShellExecuteW(None, w!("open"), &HSTRING::from(target), PCWSTR::null(), PCWSTR::null(), SW_SHOWNORMAL)
+    };
+    // Values above 32 mean success.
+    if result.0 as isize > 32 {
+        Ok(())
+    } else {
+        Err(format!("shell:{}", result.0 as isize))
+    }
+}
+
+/// Only web and mail addresses may be handed to Windows.
+fn is_openable_url(url: &str) -> bool {
+    let lower = url.to_ascii_lowercase();
+    let allowed = ["http://", "https://", "mailto:"].iter().any(|scheme| lower.starts_with(scheme));
+    // The preview percent-encodes links, so spaces and quotes never belong
+    // here; refusing them keeps the address a single argument for the browser.
+    let plain = url.chars().all(|c| c.is_ascii_graphic() && !"\"<>\\^`{|}".contains(c));
+    allowed && plain
+}
+
+/// Opens a link to the web or a mail address in the default program.
+#[tauri::command]
+async fn open_url(url: String) -> Result<(), String> {
+    if !is_openable_url(&url) {
+        return Err("blocked".to_owned());
+    }
+    tauri::async_runtime::spawn_blocking(move || shell_open(&url)).await.map_err(|e| e.to_string())?
+}
+
+/// Opens an existing file or folder in the default Windows program. The
+/// frontend asks the user first where that is needed.
+#[tauri::command]
+async fn open_path(path: String) -> Result<(), String> {
+    if !Path::new(&path).is_absolute() {
+        return Err("blocked".to_owned());
+    }
+    if !Path::new(&path).exists() {
+        return Err("not_found".to_owned());
+    }
+    tauri::async_runtime::spawn_blocking(move || shell_open(&path)).await.map_err(|e| e.to_string())?
+}
+
 /// Absolute paths of the files named on a command line (without the program itself).
 fn file_args(args: impl IntoIterator<Item = std::ffi::OsString>, cwd: &Path) -> Vec<String> {
     args.into_iter()
@@ -187,6 +273,9 @@ fn main() {
             close_document,
             file_stamp,
             initial_files,
+            resolve_link,
+            open_url,
+            open_path,
             spell_check,
             session::read_session,
             session::write_session,
@@ -217,4 +306,39 @@ fn main() {
         })
         .run(tauri::generate_context!())
         .expect("error while running MDE");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_web_and_mail_addresses_are_opened() {
+        assert!(is_openable_url("https://example.com/a?b=1#c"));
+        assert!(is_openable_url("HTTP://example.com"));
+        assert!(is_openable_url("mailto:a@b.pl"));
+        for url in [
+            "file:///C:/Windows/notepad.exe",
+            "javascript:alert(1)",
+            "ms-msdt:/id",
+            "\\\\server\\share",
+            "C:\\Windows\\notepad.exe",
+            "https://example.com/\" --flag",
+            "https://example.com/a b",
+            "https://example.com/\n",
+            "https://example.com/ą",
+        ] {
+            assert!(!is_openable_url(url), "{url}");
+        }
+    }
+
+    #[test]
+    fn windows_flags_programs_as_dangerous() {
+        for name in ["a.exe", "a.BAT", "a.lnk", "a.ps1", "a.hta", "noextension"] {
+            assert!(is_dangerous_type(Path::new(name)), "{name}");
+        }
+        for name in ["a.txt", "a.pdf", "a.md"] {
+            assert!(!is_dangerous_type(Path::new(name)), "{name}");
+        }
+    }
 }

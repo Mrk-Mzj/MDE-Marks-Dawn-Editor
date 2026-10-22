@@ -4,9 +4,9 @@ A fast, lightweight Markdown editor for Windows 11. Portable: a single `MDE.exe`
 
 The specification lives in [docs/SPEC.md](docs/SPEC.md) and the visual design in [docs/DESIGN.md](docs/DESIGN.md).
 
-## Status: 0.3
+## Status: 0.4
 
-MVP plus tabs, a single instance, session memory and spell checking.
+MVP plus tabs, a single instance, session memory, spell checking, the HTML whitelist and clickable links.
 
 ### Features
 
@@ -14,6 +14,12 @@ MVP plus tabs, a single instance, session memory and spell checking.
 - **Live preview**: headings, emphasis, strikethrough, lists, block quotes, code, tables, links and autolinks. MDE extensions beyond GFM (see docs/SPEC.md):
   - every Enter in the file is a line break in the preview, as in the editor;
   - N blank lines between two blocks show as the usual paragraph gap plus N−1 empty lines (two blank lines = one extra line, three = two, …). This applies between top-level blocks and between blocks inside block quotes and list items; blank lines at the start of the document, between list items and inside code blocks keep their GFM meaning. The file itself is never changed.
+- **Raw HTML** in a file is cleaned with a whitelist (never executed): `<br>`, `<span>` (only `color` and `background-color`, as plain colors: names, `#hex`, `rgb()`/`hsl()`), `<details>` (with `open`) and `<summary>`, `<sub>`, `<sup>`, `<kbd>` and `<u>` are shown; their other attributes are dropped. `<script>`, `<iframe>`, `<object>`, `<style>`, `<form>` (and a few similar tags) are removed with their content, `on*` attributes never survive, and any other tag is dropped while its text stays. HTML comments disappear. The file itself is never changed.
+- **Links** in the preview are clickable (a left click; text selected by dragging is not a click). Hovering shows the full target.
+  - `http`, `https` and `mailto` open in the default browser or mail program.
+  - A relative link to a Markdown file (`.md`, `.markdown`, `.mdown`, `.mkd`) opens it in a new tab (or switches to its tab). Relative paths are counted from the folder of the file; `%20` and the like are decoded; `?query` and `#fragment` are ignored. A file that was never saved has no folder, so such links ask you to save it first.
+  - A relative link to any other file opens it in its default Windows program. The first time for each file type MDE asks, with the choice *Open and don't ask for .xxx files* (remembered in the session). Programs, scripts and other risky types (`.exe`, `.bat`, `.cmd`, `.ps1`, `.vbs`, `.msi`, `.lnk`, `.chm`, `.hta`, disk images, …, plus every type Windows itself flags as unsafe via `AssocIsDangerous`), folders and files without an extension are asked about every time.
+  - Blocked, shown as plain text: `javascript:`, `data:`, `file:` and any other scheme, drive paths (`C:\…`), rooted and network paths (`/x`, `\\server\x`). Links to `#headings` are inactive.
 - **Top bar**: hamburger menu and the tab strip. The top bar always stays visible; only the panels scroll.
 - **Tabs**: every open file has a tab with its name (without extension); a dot marks unsaved changes. While the pointer is over a tab, a close button (×) takes the dot's place. A tab closes with the middle mouse button, the × button or Ctrl+W.
   - New and opened files get a new tab on the right. Opening a file that is already open switches to its tab. A lone, empty *Untitled* tab is replaced by the opened file.
@@ -51,7 +57,7 @@ MVP plus tabs, a single instance, session memory and spell checking.
   - A trailing newline (or its absence) and trailing spaces are kept.
   - A file opened and saved without edits is byte-identical (UTF-8 with/without BOM, UTF-16, Windows-1250, LF, CRLF, mixed).
   - UTF-16 files with invalid data are refused with a message.
-- **Safety**: raw HTML is shown as text and never executed; `javascript:`, `data:`, `file:` and `vbscript:` links are not turned into links; links in the preview are inactive and show their full target on hover; images are not loaded (a frame with the alt text is shown instead); the webview runs under a strict Content Security Policy and cannot navigate away from the app.
+- **Safety**: raw HTML is reduced to the whitelist above and never executed; only `http`, `https`, `mailto` and relative links are made into links; images are not loaded (a frame with the alt text is shown instead); the webview runs under a strict Content Security Policy and cannot navigate away from the app. How the sanitizer works: every tag written in the file is renamed (`<u>` → `<raw-u>`) before the page is built, and the result is rebuilt element by element, so only whitelisted elements with whitelisted attributes are ever created from the user's HTML. Colors are applied through the style object because the Content Security Policy forbids `style` attributes.
 - **Spell checking** in the editor, using the Windows Spell Checking API (no dictionaries are bundled; they come from the languages installed in Windows):
   - misspelled words get a thin orange underline; only the visible part of the text is checked, so large files stay fast. After an edit the underlines are updated when typing pauses (about half a second), so a word still being typed is not flagged;
   - the status bar at the bottom shows the mode with a page-and-pencil icon (*Spelling: Polish*). Clicking it cycles Polish → English → off. The first mode is the language of Windows (Polish or English); the choice is remembered in the session;
@@ -62,14 +68,14 @@ MVP plus tabs, a single instance, session memory and spell checking.
 ### Known deviations from the spec in this version
 
 - **Changing the encoding** in the *Save as* dialog (UTF-8 / UTF-8 with BOM) is not available yet; a Windows-1250 file is converted to UTF-8 only when it contains characters Windows-1250 cannot store.
-- **Dialogs are native Windows dialogs** (light, not themed). They will be replaced by dark in-app dialogs.
+- **Dialogs are native Windows dialogs** (light, not themed). They will be replaced by dark in-app dialogs. The question about opening a linked file offers *Open and don't ask for .xxx files* as a button, because the native dialog has no checkbox.
 - **Start-up** takes about 0.55–0.65 s from launch to a visible window with the file loaded (target: < 0.5 s).
 - WebView2 keeps its browser cache in `%LOCALAPPDATA%\com.marksdawn.mde\`; the session lives in `%APPDATA%\MDE\`.
 - Changes by other programs are noticed when the MDE window gets the focus back, not instantly while it is in the foreground.
 
 ### Not yet implemented
 
-Resizable panels (and remembering their proportions), zoom, formatting toolbar, minimap, moving paragraphs (Ctrl+↑/↓), Find, the HTML whitelist, clickable links.
+Resizable panels (and remembering their proportions), zoom, formatting toolbar, minimap, moving paragraphs (Ctrl+↑/↓), Find.
 
 ## Building
 
@@ -121,12 +127,16 @@ src/                  frontend (TypeScript)
   spell.ts            spell checking: word finding, answer cache, underlines in the
                       editor (a CodeMirror plugin)
   preview.ts          markdown-it preview (right panel), incl. the blank-lines extension
+                      and link clicks
+  sanitize.ts         whitelist sanitizer for raw HTML
+  links.ts            which links are followed and how (web, relative, blocked)
   menu.ts             hamburger menu
   platform.ts         Tauri backend and dialogs
   i18n.ts             UI strings (Polish, English)
   styles.css          design tokens and styles (docs/DESIGN.md)
 src-tauri/            backend (Rust, Tauri 2)
-  src/main.rs         commands: open, save, file stamps, command-line files;
+  src/main.rs         commands: open, save, file stamps, command-line files,
+                      opening links (relative path lookup, ShellExecute);
                       single instance; window setup
   src/spell.rs        Windows Spell Checking API on a dedicated COM thread
   src/session.rs      session storage in %APPDATA%\MDE (tabs, tab texts, window)
@@ -138,4 +148,4 @@ src-tauri/            backend (Rust, Tauri 2)
 
 ## Tech stack
 
-Tauri 2 (Rust + WebView2) with tauri-plugin-single-instance, the `windows` crate (spell checking), CodeMirror 6, markdown-it, Vite, TypeScript.
+Tauri 2 (Rust + WebView2) with tauri-plugin-single-instance, the `windows` crate (spell checking, opening links), CodeMirror 6, markdown-it, Vite, TypeScript.

@@ -35,6 +35,15 @@ Save the file in UTF-8 instead?`,
   saveUtf8Button: "Save in UTF-8",
   closeNotice: "Close",
   emptyPreview: "The preview of the document will appear here.",
+  linkNeedsSave: "Save the file first: a relative link leads from the folder the file is in.",
+  linkNotFound: (path: string) => `The linked file does not exist:\n${path}`,
+  linkOpenFailed: (target: string) => `Could not open “${target}”.`,
+  openLinkTitle: "Open file",
+  askOpenLinked: (name: string, path: string) => `Open “${name}” with the default Windows program?\n\n${path}`,
+  askOpenProgram: (name: string, path: string) =>
+    `“${name}” is a program or a script. Opening it runs it.\n\n${path}\n\nOpen it anyway?`,
+  openButton: "Open",
+  openAlwaysButton: (extension: string) => `Open and don't ask for .${extension} files`,
   spellStatus: (mode: "pl" | "en" | "off", dictionaryMissing: boolean) => {
     const language = { pl: "Polish", en: "English", off: "off" }[mode];
     return `Spelling: ${language}${dictionaryMissing ? " (no dictionary)" : ""}`;
@@ -81,6 +90,15 @@ Zapisać plik w UTF-8?`,
   saveUtf8Button: "Zapisz w UTF-8",
   closeNotice: "Zamknij",
   emptyPreview: "Tu pojawi się podgląd dokumentu.",
+  linkNeedsSave: "Najpierw zapisz plik: link względny prowadzi od folderu, w którym jest plik.",
+  linkNotFound: (path) => `Plik, do którego prowadzi link, nie istnieje:\n${path}`,
+  linkOpenFailed: (target) => `Nie udało się otworzyć „${target}”.`,
+  openLinkTitle: "Otwieranie pliku",
+  askOpenLinked: (name, path) => `Otworzyć „${name}” w domyślnym programie Windows?\n\n${path}`,
+  askOpenProgram: (name, path) =>
+    `„${name}” to program lub skrypt. Otwarcie go uruchomi.\n\n${path}\n\nOtworzyć mimo to?`,
+  openButton: "Otwórz",
+  openAlwaysButton: (extension) => `Otwórz i nie pytaj więcej o pliki .${extension}`,
   spellStatus: (mode, dictionaryMissing) => {
     const language = { pl: "polski", en: "angielski", off: "wyłączona" }[mode];
     return `Pisownia: ${language}${dictionaryMissing ? " (brak słownika)" : ""}`;

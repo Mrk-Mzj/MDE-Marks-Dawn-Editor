@@ -126,9 +126,11 @@ Linki:
 
 
 * Dozwolone schematy: http, https, mailto. Linki zewnętrzne otwierają się w domyślnej przeglądarce.
-* Względny link do .md otwiera plik w nowej zakładce. 
-* Względny link do pliku innego typu (np. .pdf, .txt): przy pierwszym kliknięciu danego typu program pyta o potwierdzenie (z opcją „nie pytaj więcej dla tego typu”), a potem otwiera plik w domyślnym programie Windows. Pliki wykonywalne (np. .exe, .bat, .cmd, .ps1, .vbs, .msi, .lnk) zawsze wymagają potwierdzenia.
-* Zablokowane: javascript:, data: oraz file: i inne nieznane schematy.
+* Względny link do pliku Markdown (.md, .markdown, .mdown, .mkd) otwiera plik w nowej zakładce. 
+* Względny link do pliku innego typu (np. .pdf, .txt): przy pierwszym kliknięciu danego typu program pyta o potwierdzenie (z opcją „nie pytaj więcej dla tego typu”), a potem otwiera plik w domyślnym programie Windows. Opcja „nie pytaj więcej dla tego typu” jest przyciskiem w oknie potwierdzenia.
+* Pliki wykonywalne i inne typy, które Windows uznaje za niebezpieczne (np. .exe, .bat, .cmd, .ps1, .vbs, .msi, .lnk, .chm, .hta), a także foldery i pliki bez rozszerzenia, zawsze wymagają potwierdzenia.
+* Zablokowane: javascript:, data: oraz file: i inne nieznane schematy, a także ścieżki bezwzględne (C:\…, /…, \\serwer\…).
+* Linki do nagłówków (#…) są nieaktywne.
 * Przy najechaniu pokazujemy pełny adres docelowy, żeby tekst linku nie ukrywał prawdziwego celu.
 
 
@@ -137,7 +139,7 @@ HTML w pliku (bezpieczeństwo):
 
 
 
-* Surowy HTML nie jest wykonywany. Domyślnie jest sanityzowany po białej liście: br, span (tylko color i background-color), details/summary, sub, sup, kbd, u.
+* Surowy HTML nie jest wykonywany. Domyślnie jest sanityzowany po białej liście: br, span (tylko color i background-color), details (z atrybutem open)/summary, sub, sup, kbd, u.
 * Zawsze usuwane: script, iframe, object, embed, style, form, atrybuty on\* i adresy javascript:.
 * Renderer działa z restrykcyjnym CSP bez inline-skryptów i bez dostępu do systemu plików z poziomu treści. Jeśli to Electron lub WebView, wyłączamy nodeIntegration.
 
