@@ -320,7 +320,7 @@ mod tests {
         for url in [
             "file:///C:/Windows/notepad.exe",
             "javascript:alert(1)",
-            "ms-msdt:/id",
+            "ms-settings:display",
             "\\\\server\\share",
             "C:\\Windows\\notepad.exe",
             "https://example.com/\" --flag",
