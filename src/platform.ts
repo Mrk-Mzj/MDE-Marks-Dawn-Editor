@@ -83,6 +83,21 @@ export async function onOpenFilesRequested(handler: (paths: string[]) => void): 
   if (inTauri) await listen<string[]>("open-files", (event) => handler(event.payload));
 }
 
+/**
+ * The words that are misspelled in `lang` ("pl" or "en"), or `null` when
+ * Windows has no dictionary for it (or outside the app). An empty list only
+ * probes whether the dictionary exists.
+ */
+export async function spellCheck(lang: string, words: string[]): Promise<string[] | null> {
+  if (!inTauri) return null;
+  try {
+    return await invoke<string[] | null>("spell_check", { lang, words });
+  } catch (err) {
+    console.error("Spell checking failed", err);
+    return null;
+  }
+}
+
 // ---------- Session memory ----------
 
 export async function readSession(): Promise<string | null> {

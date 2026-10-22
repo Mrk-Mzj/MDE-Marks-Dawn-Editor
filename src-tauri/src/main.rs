@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod session;
+mod spell;
 mod textfile;
 
 use std::collections::HashMap;
@@ -126,6 +127,16 @@ fn close_document(doc_id: String, docs: State<Documents>) {
     docs.0.lock().unwrap().remove(&doc_id);
 }
 
+/// The words that are misspelled in `lang` ("pl" or "en"), or `None` when
+/// Windows has no dictionary for it. An empty list only probes the dictionary.
+#[tauri::command]
+async fn spell_check(lang: String, words: Vec<String>, worker: State<'_, spell::Worker>) -> Result<Option<Vec<String>>, String> {
+    let worker = worker.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || worker.check(&lang, words))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
 /// Absolute paths of the files named on a command line (without the program itself).
 fn file_args(args: impl IntoIterator<Item = std::ffi::OsString>, cwd: &Path) -> Vec<String> {
     args.into_iter()
@@ -169,12 +180,14 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .manage(Documents::default())
         .manage(session::Geometry::default())
+        .manage(spell::Worker::start())
         .invoke_handler(tauri::generate_handler![
             open_file,
             save_file,
             close_document,
             file_stamp,
             initial_files,
+            spell_check,
             session::read_session,
             session::write_session,
             session::read_tab_text,

@@ -4,9 +4,9 @@ A fast, lightweight Markdown editor for Windows 11. Portable: a single `MDE.exe`
 
 The specification lives in [docs/SPEC.md](docs/SPEC.md) and the visual design in [docs/DESIGN.md](docs/DESIGN.md).
 
-## Status: 0.2
+## Status: 0.3
 
-MVP plus tabs, a single instance and session memory.
+MVP plus tabs, a single instance, session memory and spell checking.
 
 ### Features
 
@@ -52,6 +52,11 @@ MVP plus tabs, a single instance and session memory.
   - A file opened and saved without edits is byte-identical (UTF-8 with/without BOM, UTF-16, Windows-1250, LF, CRLF, mixed).
   - UTF-16 files with invalid data are refused with a message.
 - **Safety**: raw HTML is shown as text and never executed; `javascript:`, `data:`, `file:` and `vbscript:` links are not turned into links; links in the preview are inactive and show their full target on hover; images are not loaded (a frame with the alt text is shown instead); the webview runs under a strict Content Security Policy and cannot navigate away from the app.
+- **Spell checking** in the editor, using the Windows Spell Checking API (no dictionaries are bundled; they come from the languages installed in Windows):
+  - misspelled words get a thin orange underline; only the visible part of the text is checked, so large files stay fast. After an edit the underlines are updated when typing pauses (about half a second), so a word still being typed is not flagged;
+  - the status bar at the bottom shows the mode with a page-and-pencil icon (*Spelling: Polish*). Clicking it cycles Polish → English → off. The first mode is the language of Windows (Polish or English); the choice is remembered in the session;
+  - if Windows has no dictionary for the chosen language, the status says so (*no dictionary*) and nothing is underlined. A language is added in Windows *Settings › Time & language › Language & region*;
+  - not checked: inline code, fenced code blocks, links and addresses, HTML tags, words with digits or underscores, ALL-CAPS acronyms and CamelCase words (e.g. HTML, GitHub), single letters.
 - **Interface language**: Polish on Polish Windows, English otherwise.
 
 ### Known deviations from the spec in this version
@@ -64,7 +69,7 @@ MVP plus tabs, a single instance and session memory.
 
 ### Not yet implemented
 
-Resizable panels (and remembering their proportions), zoom, formatting toolbar, minimap, moving paragraphs (Ctrl+↑/↓), Find, the HTML whitelist, clickable links, spell checking.
+Resizable panels (and remembering their proportions), zoom, formatting toolbar, minimap, moving paragraphs (Ctrl+↑/↓), Find, the HTML whitelist, clickable links.
 
 ## Building
 
@@ -113,6 +118,8 @@ src/                  frontend (TypeScript)
   editor.ts           CodeMirror 6 editor (left panel) and its theme; the editor
                       runs in a shadow root so its styles are not blocked by the CSP;
                       it also tracks line breaks that differ from the dominant style
+  spell.ts            spell checking: word finding, answer cache, underlines in the
+                      editor (a CodeMirror plugin)
   preview.ts          markdown-it preview (right panel), incl. the blank-lines extension
   menu.ts             hamburger menu
   platform.ts         Tauri backend and dialogs
@@ -121,6 +128,7 @@ src/                  frontend (TypeScript)
 src-tauri/            backend (Rust, Tauri 2)
   src/main.rs         commands: open, save, file stamps, command-line files;
                       single instance; window setup
+  src/spell.rs        Windows Spell Checking API on a dedicated COM thread
   src/session.rs      session storage in %APPDATA%\MDE (tabs, tab texts, window)
   src/textfile.rs     byte-faithful decoding/encoding (UTF-8, UTF-16, Windows-1250,
                       per-line line endings) + tests
@@ -130,4 +138,4 @@ src-tauri/            backend (Rust, Tauri 2)
 
 ## Tech stack
 
-Tauri 2 (Rust + WebView2) with tauri-plugin-single-instance, CodeMirror 6, markdown-it, Vite, TypeScript.
+Tauri 2 (Rust + WebView2) with tauri-plugin-single-instance, the `windows` crate (spell checking), CodeMirror 6, markdown-it, Vite, TypeScript.

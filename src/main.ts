@@ -3,11 +3,12 @@ import "./styles.css";
 import type { EditorState } from "@codemirror/state";
 import { Editor } from "./editor";
 import type { ScrollPosition, Selection } from "./editor";
-import { t } from "./i18n";
+import { lang, t } from "./i18n";
 import { Menu } from "./menu";
 import * as platform from "./platform";
 import type { FileFormat, LineBreak, OpenedFile } from "./platform";
 import { Preview } from "./preview";
+import { isSpellMode, SpellService } from "./spell";
 import { TabStrip } from "./tabs";
 
 /** An open document: one tab. */
@@ -55,6 +56,8 @@ interface StoredSession {
   version: 1;
   active: number;
   tabs: StoredTab[];
+  /** Spell checking mode (an app setting); the language of the system when missing. */
+  spell?: string;
 }
 
 /** Unique across runs, because tab ids name files in the session folder. */
@@ -71,7 +74,8 @@ const noticeClose = $<HTMLButtonElement>("#notice-close");
 let onNoticeClose = () => {};
 noticeClose.addEventListener("click", () => onNoticeClose());
 const preview = new Preview($("#preview"));
-const editor = new Editor($("#editor"), onEdit);
+const spell = new SpellService(lang);
+const editor = new Editor($("#editor"), onEdit, spell);
 
 let docs: Doc[] = [];
 let active: Doc;
@@ -531,7 +535,7 @@ function saveSession(): Promise<void> {
         doc.textStale = true;
       }
     }
-    const session: StoredSession = { version: 1, active: docs.indexOf(active), tabs: docs.map(storedTab) };
+    const session: StoredSession = { version: 1, active: docs.indexOf(active), tabs: docs.map(storedTab), spell: spell.mode };
     await platform.writeSession(JSON.stringify(session));
   };
   sessionQueue = sessionQueue.then(run).catch((err) => console.error("Could not store the session", err));
@@ -595,6 +599,7 @@ async function restoreTab(tab: StoredTab): Promise<Doc | null> {
 async function restoreSession(): Promise<number> {
   const session = parseSession(await platform.readSession());
   if (!session) return 0;
+  if (isSpellMode(session.spell)) spell.setMode(session.spell);
   const restored = await Promise.all(session.tabs.map((tab) => restoreTab(tab).catch(() => null)));
   const activeTab = session.tabs[session.active];
   docs = restored.filter((doc): doc is Doc => doc !== null);
@@ -664,6 +669,19 @@ window.addEventListener(
   },
   { capture: true },
 );
+
+const spellStatus = $<HTMLButtonElement>("#spell-status");
+function updateSpellStatus(): void {
+  $("#spell-status-text").textContent = t.spellStatus(spell.mode, spell.dictionaryMissing);
+  spellStatus.title = t.spellTitle(spell.dictionaryMissing);
+}
+updateSpellStatus();
+spell.subscribe(updateSpellStatus);
+spellStatus.addEventListener("click", () => {
+  spell.cycle();
+  scheduleSessionSave();
+  editor.focus();
+});
 
 // Scroll positions are part of the session.
 editor.view.scrollDOM.addEventListener("scroll", scheduleSessionSave, { passive: true });

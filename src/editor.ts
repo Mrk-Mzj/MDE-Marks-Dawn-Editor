@@ -4,6 +4,8 @@ import { defaultKeymap, history, historyKeymap, insertTab } from "@codemirror/co
 import { EditorSelection, EditorState, StateField } from "@codemirror/state";
 import { drawSelection, EditorView, keymap } from "@codemirror/view";
 import type { Eol, LineBreak } from "./platform";
+import { spellChecking } from "./spell";
+import type { SpellService } from "./spell";
 
 /** A line break (`\n` at `pos`) that is saved as `eol` instead of the file's dominant style. */
 interface TrackedBreak {
@@ -48,6 +50,13 @@ const theme = EditorView.theme(
     },
     ".cm-content": { padding: "24px 0", caretColor: "var(--foreground)" },
     ".cm-line": { padding: "0 32px" },
+    // Thin orange underline for misspelled words.
+    ".cm-spell-error": {
+      textDecoration: "underline",
+      textDecorationColor: "var(--warning)",
+      textDecorationThickness: "1px",
+      textUnderlineOffset: "3px",
+    },
     ".cm-cursor, .cm-dropCursor": { borderLeft: "1.5px solid var(--foreground)" },
     "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
       { backgroundColor: "color-mix(in oklch, var(--foreground) 22%, transparent)" },
@@ -79,7 +88,11 @@ export interface Selection {
 export class Editor {
   readonly view: EditorView;
 
-  constructor(host: HTMLElement, onChange: () => void) {
+  constructor(
+    host: HTMLElement,
+    onChange: () => void,
+    private readonly spell: SpellService,
+  ) {
     // CodeMirror injects its styles with constructable stylesheets only inside
     // a shadow root; in the document it would add a <style> element, which the
     // strict Content Security Policy blocks.
@@ -113,7 +126,8 @@ export class Editor {
         drawSelection(),
         theme,
         EditorView.lineWrapping,
-        // Spell checking will be added with the Windows Spell Checking API.
+        // The browser's own spell checking is off; see spell.ts.
+        spellChecking(this.spell),
         EditorView.contentAttributes.of({ spellcheck: "false", autocorrect: "off", autocapitalize: "off" }),
         keymap.of([...defaultKeymap, ...historyKeymap, { key: "Tab", run: insertTab }]),
       ],

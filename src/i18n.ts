@@ -35,6 +35,14 @@ Save the file in UTF-8 instead?`,
   saveUtf8Button: "Save in UTF-8",
   closeNotice: "Close",
   emptyPreview: "The preview of the document will appear here.",
+  spellStatus: (mode: "pl" | "en" | "off", dictionaryMissing: boolean) => {
+    const language = { pl: "Polish", en: "English", off: "off" }[mode];
+    return `Spelling: ${language}${dictionaryMissing ? " (no dictionary)" : ""}`;
+  },
+  spellTitle: (dictionaryMissing: boolean): string =>
+    dictionaryMissing
+      ? "Windows has no spell checking dictionary for this language. Add the language in Settings › Time & language › Language & region. Click to change the language."
+      : "Click to change the spell checking language",
 };
 
 type Strings = typeof en;
@@ -73,9 +81,17 @@ Zapisać plik w UTF-8?`,
   saveUtf8Button: "Zapisz w UTF-8",
   closeNotice: "Zamknij",
   emptyPreview: "Tu pojawi się podgląd dokumentu.",
+  spellStatus: (mode, dictionaryMissing) => {
+    const language = { pl: "polski", en: "angielski", off: "wyłączona" }[mode];
+    return `Pisownia: ${language}${dictionaryMissing ? " (brak słownika)" : ""}`;
+  },
+  spellTitle: (dictionaryMissing) =>
+    dictionaryMissing
+      ? "Windows nie ma słownika sprawdzania pisowni dla tego języka. Dodaj język w Ustawieniach › Czas i język › Język i region. Kliknij, aby zmienić język."
+      : "Kliknij, aby zmienić język sprawdzania pisowni",
 };
 
-export const lang = (navigator.language || "en").toLowerCase().startsWith("pl") ? "pl" : "en";
+export const lang: "pl" | "en" = (navigator.language || "en").toLowerCase().startsWith("pl") ? "pl" : "en";
 export const t: Strings = lang === "pl" ? pl : en;
 
 document.documentElement.lang = lang;

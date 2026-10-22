@@ -17,6 +17,7 @@ Tokeny z sekcji 3 (tylko wartości `.dark`) są w `src/styles.css`.
 - **Menu:** powierzchnia `popover`, 1px `border`, `radius-lg`, padding 4px, min. 232px, cień średni, wejście fade + slide 150ms. Pozycje mają 32px wysokości, `radius-sm`, a hover/focus `accent`. Skrót po prawej: 12px `muted-foreground`. Separatory 1px `border`.
 - **Pasek ostrzeżenia** (np. plik otwarty jako Windows-1250): pod górnym paskiem, pełna szerokość, min. 40px, tło `card`, dolna krawędź 1px `border`, tekst 14px `card-foreground`. Po lewej obrysowa ikona trójkąta ostrzegawczego 16px w `muted-foreground`, po prawej przycisk zamknięcia (ikona X, `ghost` 32×32 jak przycisk menu). Wejście fade + slide 150ms. Bez koloru — czerwień tylko dla `destructive`.
   - Pasek z wyborem (plik zmieniony przez inny program): przed przyciskiem X przycisk tekstowy `outline` „Odśwież”: wysokość 32px, padding 0 12px, 14px/500, tło `background`, 1px `border`, `radius-md`, hover `accent`, odstęp 8px. X zamyka pasek i zachowuje zmiany użytkownika (podpowiedź „Zamknij i zachowaj moje zmiany”).
+- **Pasek stanu:** dół okna, 28px, tło `card`, górna krawędź 1px `border`, treść wyrównana do prawej. Przycisk sprawdzania pisowni: `ghost`, rozmiar xs (24px, padding 0 8px, 12px/500, `radius-sm`, kolor `muted-foreground`, hover `accent`), obrysowa ikona kartki z ołówkiem 16px i tekst („Pisownia: polski”); klik zmienia tryb.
 - **Panele:** dwa panele 50/50 na tle `background`, oddzielone linią 1px `border`. Treść 16px Segoe UI, interlinia 1.6, padding poziomy 32px.
 - **Podgląd:**
   - H1/H2 z dolną linią `border`, nagłówki 600 z ujemnym trackingiem.
@@ -27,6 +28,7 @@ Tokeny z sekcji 3 (tylko wartości `.dark`) są w `src/styles.css`.
   - Tabele: 1px `border`, nagłówek na tle `card`.
   - Obrazek: ramka 1px `border` z ikoną obrazka i tekstem alt w `muted-foreground`.
   - Wiele pustych linii: każda dodatkowa pusta linia to pusty odstęp o wysokości jednej linii tekstu (1.6em), dodany do zwykłego odstępu akapitowego.
+- **Błędy pisowni (edytor):** cienkie (1px) podkreślenie w kolorze `warning` (bursztyn, wartość `chart-3` z trybu dark: `oklch(0.769 0.188 70.08)`), odsunięte o 3px od tekstu. Własny token `warning` dodany według zasady z sekcji 2 pkt 4; używany tylko do tego podkreślenia.
 - **Paski przewijania:** 12px, uchwyt `input` (hover `ring`), przezroczysty tor.
 - **Okna dialogowe:** na razie systemowe (jasne). Docelowo własne, ciemne (`popover`) według sekcji 7.
 
