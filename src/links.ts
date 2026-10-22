@@ -22,6 +22,8 @@ export function classifyHref(href: string): LinkTarget | null {
     return allowed ? { kind: "external", url: address } : null;
   }
   if (address.startsWith("#")) return { kind: "anchor" };
+  // "www.example.com" without a scheme is a web address, not a file next to the document.
+  if (/^www\.[^/\\?#:]+\.[^/\\?#:.]/i.test(address)) return { kind: "external", url: `https://${address}` };
   // Rooted and network paths have no folder to be relative to.
   if (/^[/\\]/.test(address)) return null;
 

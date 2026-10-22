@@ -126,6 +126,7 @@ Linki:
 
 
 * Dozwolone schematy: http, https, mailto. Linki zewnętrzne otwierają się w domyślnej przeglądarce.
+* Adres zaczynający się od www. (w linku albo jako zwykły tekst) jest traktowany jak adres strony i otwierany przez https://, bez potrzeby dopisywania schematu. Inne adresy bez schematu traktujemy jak ścieżki do plików.
 * Względny link do pliku Markdown (.md, .markdown, .mdown, .mkd) otwiera plik w nowej zakładce. 
 * Względny link do pliku innego typu (np. .pdf, .txt): przy pierwszym kliknięciu danego typu program pyta o potwierdzenie (z opcją „nie pytaj więcej dla tego typu”), a potem otwiera plik w domyślnym programie Windows. Opcja „nie pytaj więcej dla tego typu” jest przyciskiem w oknie potwierdzenia.
 * Pliki wykonywalne i inne typy, które Windows uznaje za niebezpieczne (np. .exe, .bat, .cmd, .ps1, .vbs, .msi, .lnk, .chm, .hta), a także foldery i pliki bez rozszerzenia, zawsze wymagają potwierdzenia.

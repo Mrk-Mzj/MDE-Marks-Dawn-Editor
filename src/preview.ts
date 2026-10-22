@@ -18,6 +18,22 @@ md.renderer.rules.html_inline = (tokens, idx) => markRawHtml(tokens[idx].content
 // (javascript:, data:, file:, unknown schemes) stays plain text.
 md.validateLink = (url) => classifyHref(url) !== null;
 
+// Plain text "www.example.com" becomes a link too. Other addresses without a
+// scheme stay text: "README.md" would otherwise be a domain (.md is a TLD).
+let wwwTail: RegExp | null = null;
+md.linkify.add("www.", {
+  validate: (text, pos, self) => {
+    wwwTail ??= new RegExp(self.re.get_url_host_port().source + self.re.get_path().source, "iy");
+    wwwTail.lastIndex = pos;
+    const tail = wwwTail.exec(text)?.[0] ?? "";
+    // The host after "www." needs a dot ("www.example.com", not "www.example").
+    return /^[^/?#:]*\./.test(tail) ? tail.length : 0;
+  },
+  normalize: (match) => {
+    match.url = `https://${match.url}`;
+  },
+});
+
 // MDE extension beyond GFM (see docs/SPEC.md): N blank lines between two
 // blocks show as the usual paragraph gap plus N−1 empty lines. Only blocks that
 // follow a sibling in the same container count, so list items, table rows and
@@ -64,7 +80,12 @@ const defaultLinkOpen =
   md.renderer.rules.link_open ?? ((tokens, idx, options, _env, self) => self.renderToken(tokens, idx, options));
 md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
   const token = tokens[idx];
-  token.attrSet("title", String(token.attrGet("href") ?? ""));
+  const href = String(token.attrGet("href") ?? "");
+  const target = classifyHref(href);
+  // Web addresses written without a scheme show (and open) their full form.
+  const shown = target?.kind === "external" ? target.url : href;
+  token.attrSet("href", shown);
+  token.attrSet("title", shown);
   return defaultLinkOpen(tokens, idx, options, env, self);
 };
 
