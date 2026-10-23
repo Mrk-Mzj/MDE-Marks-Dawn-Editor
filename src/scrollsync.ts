@@ -79,9 +79,16 @@ export class ScrollSync {
     this.previewEl.scrollTop = place(this.previewEl, interpolate(map.lines, map.heights, line));
   }
 
-  /** `followEditor` once the editor has applied a pending scroll (it does so in the next frame). */
+  /**
+   * `followEditor` once the editor has applied a pending scroll (it does so in
+   * the next frame). The editor leads from now on: scroll events of the
+   * preview meanwhile (e.g. its restored position when switching tabs) must
+   * not move the editor.
+   */
   followEditorSoon(): void {
-    if (this.on) requestAnimationFrame(() => this.followEditor());
+    if (!this.on) return;
+    this.lead(this.editorEl);
+    requestAnimationFrame(() => this.followEditor());
   }
 
   private followPreview(): void {

@@ -109,7 +109,11 @@ function moveBlockCommand(dir: -1 | 1): Command {
   };
 }
 
-/** Where the editor is scrolled to: the first visible line and how far it sticks out above the top. */
+/**
+ * Where the editor is scrolled to: the first visible line (`pos` is its start)
+ * and where the top of its text is, relative to the top of the panel
+ * (negative when the line sticks out above it).
+ */
 export interface ScrollPosition {
   pos: number;
   margin: number;
@@ -190,8 +194,10 @@ export class Editor {
     this.notify();
   }
 
-  /** Scrolls so the line at `scroll.pos` sticks out `scroll.margin` above the top. */
+  /** Scrolls so the top of the text of the line at `scroll.pos` is `scroll.margin` below the top of the panel. */
   scrollTo(scroll: ScrollPosition): void {
+    // Measured against the rendered line, so it does not depend on the
+    // estimated heights of the lines above it (a new state has only those).
     this.view.dispatch({ effects: EditorView.scrollIntoView(scroll.pos, { y: "start", yMargin: scroll.margin }) });
   }
 
@@ -219,10 +225,14 @@ export class Editor {
   }
 
   scrollPosition(): ScrollPosition {
-    const { scrollTop } = this.view.scrollDOM;
-    const top = scrollTop - this.view.documentPadding.top;
+    const { scrollDOM, documentPadding } = this.view;
+    const top = scrollDOM.scrollTop - documentPadding.top;
     const block = this.view.lineBlockAtHeight(Math.max(0, top));
-    return { pos: block.from, margin: block.top - top };
+    // The same measure `scrollTo` uses: the top of the text (not of the line
+    // box, which is higher by half the leading) relative to the panel.
+    const coords = this.view.coordsAtPos(block.from, 1);
+    const margin = coords ? coords.top - scrollDOM.getBoundingClientRect().top : block.top - top;
+    return { pos: block.from, margin };
   }
 
   /**
