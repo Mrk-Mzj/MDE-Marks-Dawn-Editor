@@ -1,10 +1,12 @@
 // Markdown source editor (left panel).
 
 import { defaultKeymap, history, historyKeymap, insertTab } from "@codemirror/commands";
+import type { Command } from "@codemirror/view";
 import { defineLanguageFacet, Language } from "@codemirror/language";
-import { EditorSelection, EditorState, StateField } from "@codemirror/state";
+import { EditorSelection, EditorState, StateEffect, StateField } from "@codemirror/state";
 import { drawSelection, EditorView, keymap } from "@codemirror/view";
 import { GFM, parser } from "@lezer/markdown";
+import { moveBlock } from "./moveblock";
 import type { Eol, LineBreak } from "./platform";
 import { spellChecking } from "./spell";
 import type { SpellService } from "./spell";
@@ -15,12 +17,16 @@ interface TrackedBreak {
   eol: Eol;
 }
 
+// Sets the tracked breaks outright, for edits that move text around.
+const replaceBreaks = StateEffect.define<readonly TrackedBreak[]>();
+
 // Files with mixed line endings: the breaks that differ from the dominant
 // style follow the text through edits. A break that is deleted is forgotten;
 // new breaks (Enter, paste) get the dominant style when saved.
 const lineBreaks = StateField.define<readonly TrackedBreak[]>({
   create: () => [],
   update(breaks, tr) {
+    for (const effect of tr.effects) if (effect.is(replaceBreaks)) return effect.value;
     if (!tr.docChanged || breaks.length === 0) return breaks;
     const kept: TrackedBreak[] = [];
     for (const { pos, eol } of breaks) {
@@ -78,6 +84,30 @@ const theme = EditorView.theme(
   },
   { dark: true },
 );
+
+/** Moves the paragraph or list item at the selection up or down; see moveblock.ts. */
+function moveBlockCommand(dir: -1 | 1): Command {
+  return (view) => {
+    const { state } = view;
+    const { anchor, head } = state.selection.main;
+    const move = moveBlock(state.doc.toString(), anchor, head, dir);
+    if (move) {
+      const breaks = state.field(lineBreaks).flatMap(({ pos, eol }) => {
+        const moved = move.mapBreak(pos);
+        return moved === null ? [] : [{ pos: moved, eol }];
+      });
+      view.dispatch({
+        changes: { from: move.from, to: move.to, insert: move.insert },
+        selection: EditorSelection.single(move.anchor, move.head),
+        effects: replaceBreaks.of(breaks),
+        scrollIntoView: true,
+        userEvent: "move.line",
+      });
+    }
+    // Handled even when nothing moves, so the key does nothing else.
+    return true;
+  };
+}
 
 /** Where the editor is scrolled to: the first visible line and how far it sticks out above the top. */
 export interface ScrollPosition {
@@ -138,7 +168,13 @@ export class Editor {
         // The browser's own spell checking is off; see spell.ts.
         spellChecking(this.spell),
         EditorView.contentAttributes.of({ spellcheck: "false", autocorrect: "off", autocapitalize: "off" }),
-        keymap.of([...defaultKeymap, ...historyKeymap, { key: "Tab", run: insertTab }]),
+        keymap.of([
+          { key: "Alt-ArrowUp", run: moveBlockCommand(-1) },
+          { key: "Alt-ArrowDown", run: moveBlockCommand(1) },
+          ...defaultKeymap,
+          ...historyKeymap,
+          { key: "Tab", run: insertTab },
+        ]),
       ],
     });
   }

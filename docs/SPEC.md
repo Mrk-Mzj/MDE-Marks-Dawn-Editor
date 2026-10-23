@@ -28,7 +28,7 @@ W górnej części zawiera wycentrowane względem tego panelu ikony pozwalające
 
 Prawa górna część tego panelu ma zawierać miniaturowy podgląd całego dokumentu w formie małego okienka w prawym górnym rogu panelu. Tekst w lewym panelu ma stały prawy margines na całej wysokości panelu, tak szeroki, by okienko miniatury nigdy nie zasłaniało tekstu. Fragment tego podglądu, który pokazuje obszar pliku widoczny na ekranie, ma być oznaczony delikatnie jaśniejszym kolorem. Kliknięcie myszą i przeciągnięcie w górę lub w dół w rejonie miniatury ma przewijać wyświetlaną zawartość lewego panelu. Miniatura wyświetla więc zawartość pliku i pozwala go przewijać w pionie.
 
-Zaznaczanie tekstu i użycie Ctrl + strzałka w górę ma przesuwać cały akapit zawierający zaznaczony tekst o jeden akapit w górę. Ctrl + strzałka w dół ma przesuwać akapit z zaznaczonym tekstem o jeden akapit w dół. Akapit to blok tekstu oddzielony pustymi liniami (np. akapit, cała tabela). Wyjątek stanowią listy: wewnątrz listy przesuwa się pojedynczy punkt razem z jego wcięciami (podpunktami), w obrębie tej listy. Puste linie pozostają na swoich miejscach.
+Zaznaczanie tekstu i użycie Alt + strzałka w górę ma przesuwać cały akapit zawierający zaznaczony tekst o jeden akapit w górę. Alt + strzałka w dół ma przesuwać akapit z zaznaczonym tekstem o jeden akapit w dół. Akapit to blok tekstu oddzielony pustymi liniami (np. akapit, cała tabela). Wyjątek stanowią listy: wewnątrz listy przesuwa się pojedynczy punkt razem z jego wcięciami (podpunktami), w obrębie tej listy. Puste linie pozostają na swoich miejscach.
  
 2. prawy panel służy do wyświetlania wyrenderowanej treści pliku, zgodnie ze składnią Markdown (np. dywiz wyświetla się jako punktor, hasztag jako H1, itd)
 

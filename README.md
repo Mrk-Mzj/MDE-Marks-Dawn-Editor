@@ -33,6 +33,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - **Link** (Ctrl+K): the selection becomes `[text](url)` with `url` selected for typing; a selected web address goes into the parentheses and the link text is selected instead.
   - **Table**: a grid (up to 8 × 8, mouse or arrow keys + Enter) picks the number of columns and rows (the header row included). The table is inserted below the line with the cursor, separated by empty lines, with the first header cell selected.
   - When the panel is too narrow, the buttons that do not fit move to a *More* (…) menu at the end of the toolbar.
+- **Moving paragraphs** (Alt+↑ / Alt+↓): moves the paragraph with the cursor (a block of text between empty lines, e.g. a whole table) one paragraph up or down. Inside a list it moves the single item with its sub-items among the items of the same level; at the edge of the list nothing happens. Empty lines stay where they are, and a selection over several lines of one paragraph or list moves as a whole. The cursor or selection travels with the text, one undo step undoes the move.
 - **Top bar**: hamburger menu and the tab strip. The top bar always stays visible; only the panels scroll.
 - **Tabs**: every open file has a tab with its name (without extension); a dot marks unsaved changes. While the pointer is over a tab, a close button (×) takes the dot's place. A tab closes with the middle mouse button, the × button or Ctrl+W.
   - New and opened files get a new tab on the right. Opening a file that is already open switches to its tab. A lone, empty *Untitled* tab is replaced by the opened file.
@@ -91,7 +92,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 
 ### Not yet implemented
 
-Resizable panels (and remembering their proportions), zoom, minimap, moving paragraphs (Ctrl+↑/↓), Find.
+Resizable panels (and remembering their proportions), zoom, minimap, Find.
 
 ## Building
 
@@ -141,6 +142,7 @@ src/                  frontend (TypeScript)
                       runs in a shadow root so its styles are not blocked by the CSP;
                       it also tracks line breaks that differ from the dominant style
                       and keeps the GFM syntax tree up to date (used by the toolbar)
+  moveblock.ts        finding and swapping the paragraph / list item to move (Alt+↑/↓)
   spell.ts            spell checking: word finding, answer cache, underlines in the
                       editor (a CodeMirror plugin)
   preview.ts          markdown-it preview (right panel), incl. the blank-lines extension
