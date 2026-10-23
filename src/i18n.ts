@@ -68,6 +68,8 @@ Save the file in UTF-8 instead?`,
     dictionaryMissing
       ? "Windows has no spell checking dictionary for this language. Add the language in Settings › Time & language › Language & region. Click to change the language."
       : "Click to change the spell checking language",
+  syncStatus: (on: boolean) => `Scroll together: ${on ? "on" : "off"}`,
+  syncTitle: (on: boolean): string => (on ? "Click to scroll the panels independently" : "Click to scroll both panels together"),
 };
 
 type Strings = typeof en;
@@ -139,6 +141,8 @@ Zapisać plik w UTF-8?`,
     dictionaryMissing
       ? "Windows nie ma słownika sprawdzania pisowni dla tego języka. Dodaj język w Ustawieniach › Czas i język › Język i region. Kliknij, aby zmienić język."
       : "Kliknij, aby zmienić język sprawdzania pisowni",
+  syncStatus: (on) => `Przewijaj razem: ${on ? "wł" : "wył"}`,
+  syncTitle: (on) => (on ? "Kliknij, aby przewijać panele niezależnie" : "Kliknij, aby przewijać oba panele razem"),
 };
 
 export const lang: "pl" | "en" = (navigator.language || "en").toLowerCase().startsWith("pl") ? "pl" : "en";

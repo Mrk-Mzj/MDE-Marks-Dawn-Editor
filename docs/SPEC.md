@@ -39,7 +39,7 @@ Oba panele mają być oddzielone od siebie pionową linią, którą użytkownik 
 
 Wyświetlany tekst przy krawędzi paneli ma zawsze zawijać się do kolejnej linii tak, by uniknąć używania poziomych pasków przewijania.
 
-Zawartość obu paneli pokazuje ten sam otwarty plik, ale można przewijać ich zawartość niezależnie - to znaczy że nie są zsynchronizowane tak, by prawy panel wyświetlał to samo miejsce dokumentu, co lewy panel.
+Zawartość obu paneli pokazuje ten sam otwarty plik. Domyślnie przewijanie jest zsynchronizowane: przewinięcie jednego panelu (rolką, klawiaturą, paskiem przewijania lub podczas pisania) przewija drugi do tego samego miejsca dokumentu. Na dolnym pasku, na prawo od statusu pisowni, jest przełącznik z ikoną dwóch paneli: „Przewijaj razem: wł” / „wył”. Kliknięcie go wyłącza synchronizację i wtedy panele przewijają się niezależnie. Ustawienie jest globalne (wspólne dla wszystkich zakładek) i zapamiętywane w sesji.
 
 
 

@@ -10,6 +10,7 @@ import { Menu } from "./menu";
 import * as platform from "./platform";
 import type { FileFormat, LineBreak, OpenedFile } from "./platform";
 import { Preview } from "./preview";
+import { ScrollSync } from "./scrollsync";
 import { isSpellMode, SpellService } from "./spell";
 import { TabStrip } from "./tabs";
 import { icons, TablePicker, Toolbar } from "./toolbar";
@@ -66,6 +67,8 @@ interface StoredSession {
   openTypes?: string[];
   /** Zoom of the text in both panels, in percent (an app setting); 100 when missing. */
   zoom?: number;
+  /** Both panels scroll together (an app setting); on when missing. */
+  syncScroll?: boolean;
 }
 
 /** Unique across runs, because tab ids name files in the session folder. */
@@ -85,6 +88,7 @@ const previewEl = $("#preview");
 const preview = new Preview(previewEl, followLink);
 const spell = new SpellService(lang);
 const editor = new Editor($("#editor"), onEdit, spell);
+const scrollSync = new ScrollSync(editor, preview);
 
 let docs: Doc[] = [];
 let active: Doc;
@@ -169,7 +173,7 @@ function onEdit(): void {
     active.dirty = nowDirty;
     updateTitle();
   }
-  preview.scheduleRender(() => editor.text());
+  preview.scheduleRender(() => editor.text(), () => scrollSync.followEditor());
   scheduleSessionSave();
 }
 
@@ -253,6 +257,7 @@ function activate(doc: Doc): void {
   editor.setState(doc.state, doc.scroll);
   preview.render(doc.state.doc.toString());
   preview.scrollTop = doc.previewScroll;
+  scrollSync.followEditorSoon();
   updateNotice();
   updateTitle();
   editor.focus();
@@ -439,6 +444,7 @@ function setZoom(percent: number): void {
     doc.previewScroll *= factor;
     if (doc.scroll) doc.scroll = { ...doc.scroll, margin: doc.scroll.margin * factor };
   }
+  scrollSync.followEditorSoon();
   scheduleSessionSave();
 }
 
@@ -524,6 +530,7 @@ async function reloadFromDisk(doc: Doc): Promise<void> {
     editor.setState(state, scroll);
     preview.render(file.text);
     preview.scrollTop = previewScroll;
+    scrollSync.followEditorSoon();
     updateNotice();
     updateTitle();
   } else {
@@ -626,6 +633,7 @@ function saveSession(): Promise<void> {
       spell: spell.mode,
       openTypes: [...trustedTypes],
       zoom,
+      syncScroll: scrollSync.enabled,
     };
     await platform.writeSession(JSON.stringify(session));
   };
@@ -692,6 +700,7 @@ async function restoreSession(): Promise<number> {
   if (!session) return 0;
   if (isSpellMode(session.spell)) spell.setMode(session.spell);
   applyZoom(validZoom(session.zoom));
+  if (typeof session.syncScroll === "boolean") scrollSync.setEnabled(session.syncScroll);
   if (Array.isArray(session.openTypes)) {
     trustedTypes = new Set(session.openTypes.filter((type): type is string => typeof type === "string"));
   }
@@ -895,6 +904,19 @@ spellStatus.addEventListener("click", () => {
   editor.focus();
 });
 
+const syncStatus = $<HTMLButtonElement>("#sync-status");
+function updateSyncStatus(): void {
+  $("#sync-status-text").textContent = t.syncStatus(scrollSync.enabled);
+  syncStatus.title = t.syncTitle(scrollSync.enabled);
+}
+updateSyncStatus();
+syncStatus.addEventListener("click", () => {
+  scrollSync.setEnabled(!scrollSync.enabled);
+  updateSyncStatus();
+  scheduleSessionSave();
+  editor.focus();
+});
+
 // Scroll positions are part of the session.
 editor.view.scrollDOM.addEventListener("scroll", scheduleSessionSave, { passive: true });
 $("#preview").addEventListener("scroll", scheduleSessionSave, { passive: true });
@@ -917,6 +939,7 @@ async function start(): Promise<void> {
     const [activeIndex, files] = await Promise.all([restoreSession(), platform.initialFiles()]);
     if (docs.length === 0) docs.push(newDoc());
     activate(docs[activeIndex]);
+    updateSyncStatus();
     sessionReady = true;
     await openPaths(files);
     void platform.pruneTabTexts(docs.map((doc) => doc.id));

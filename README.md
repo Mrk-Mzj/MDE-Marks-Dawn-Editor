@@ -10,7 +10,11 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 
 ### Features
 
-- **Two panels**: Markdown source editor on the left, rendered GitHub Flavored Markdown preview on the right. The panels have a fixed 50/50 split and scroll independently (mouse wheel, keyboard, scroll bar). Long lines always wrap; there are no horizontal scroll bars.
+- **Two panels**: Markdown source editor on the left, rendered GitHub Flavored Markdown preview on the right. The panels have a fixed 50/50 split. Long lines always wrap; there are no horizontal scroll bars.
+- **Synchronized scrolling** (an MDE extension; on by default): scrolling either panel (mouse wheel, keyboard, scroll bar, the cursor moving while typing) scrolls the other to the same place of the text. The status bar shows *Scroll together: on* (*Przewijaj razem: wł*) with a two-panel icon (a rectangle split by a vertical line); clicking it switches to *off*, and the panels then scroll independently. It is a global setting, the same for every tab, and it is remembered in the session (`syncScroll` in `session.json`).
+  - Places are matched by source line: every block in the preview (heading, paragraph, list item, table row, code block, …) knows the lines it comes from, and positions in between are interpolated, so headings line up even where one panel is much taller (tables, code blocks, extra blank lines).
+  - The matched point moves with the scroll position, from the top edge of the panels at the start to the bottom edge at the end, so both panels reach the start and the end of the document together.
+  - Switching tabs, zooming, resizing the window and re-rendering after an edit bring the preview back in line with the editor.
 - **Live preview**: headings, emphasis, strikethrough, lists, block quotes, code, tables, links and autolinks. MDE extensions beyond GFM (see docs/SPEC.md):
   - every Enter in the file is a line break in the preview, as in the editor;
   - N blank lines between two blocks show as the usual paragraph gap plus N−1 empty lines (two blank lines = one extra line, three = two, …). This applies between top-level blocks and between blocks inside block quotes and list items; blank lines at the start of the document, between list items and inside code blocks keep their GFM meaning. The file itself is never changed.
@@ -40,7 +44,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - New and opened files get a new tab on the right. Opening a file that is already open switches to its tab. A lone, empty *Untitled* tab is replaced by the opened file.
   - Tabs can be reordered by dragging. The mouse wheel over the tab strip switches to the previous/next tab (stopping at the first and the last one).
   - When there are too many tabs, they shrink to a minimum width; beyond that the strip shifts so the active tab is always visible.
-  - Each tab keeps its own undo history, selection and scroll positions (editor and preview).
+  - Each tab keeps its own undo history, selection and scroll positions (editor and preview; with synchronized scrolling on, the preview follows the editor).
   - Closing the last tab leaves a new empty *Untitled* tab.
 - **Commands** (menu and shortcuts):
 
@@ -147,14 +151,15 @@ src/                  frontend (TypeScript)
   moveblock.ts        finding and swapping the paragraph / list item to move (Alt+↑/↓)
   spell.ts            spell checking: word finding, answer cache, underlines in the
                       editor (a CodeMirror plugin)
-  preview.ts          markdown-it preview (right panel), incl. the blank-lines extension
-                      and link clicks
+  preview.ts          markdown-it preview (right panel), incl. the blank-lines extension,
+                      link clicks and the source-line map of its blocks
   sanitize.ts         whitelist sanitizer for raw HTML
   links.ts            which links are followed and how (web, relative, blocked)
   format.ts           formatting commands (bold, headings, lists, quote, link, table);
                       bold/italic/underline work on the GFM syntax tree (@lezer/markdown)
   toolbar.ts          formatting toolbar, its "more" menu and the table size picker
   zoom.ts             zoom levels and stepping (Ctrl+plus/minus/0, Ctrl+wheel)
+  scrollsync.ts       synchronized scrolling of the two panels (matched by source line)
   menu.ts             drop-down menus (hamburger menu, toolbar menus)
   platform.ts         Tauri backend and dialogs
   i18n.ts             UI strings (Polish, English)

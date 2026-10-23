@@ -61,6 +61,18 @@ md.core.ruler.push("blank_lines", (state) => {
   state.tokens = tokens;
 });
 
+// Block elements carry the source lines they come from (`data-line` is the
+// first line, `data-line-end` the line after the last, both from 0), so
+// synchronized scrolling can match the preview to the editor.
+md.core.ruler.push("source_lines", (state) => {
+  for (const token of state.tokens) {
+    if (token.map && token.block && token.nesting !== -1 && token.type !== "inline" && token.type !== "html_block") {
+      token.attrSet("data-line", String(token.map[0]));
+      token.attrSet("data-line-end", String(token.map[1]));
+    }
+  }
+});
+
 md.renderer.rules.blank_lines = (tokens, idx) =>
   '<div class="blank-line" aria-hidden="true"></div>'.repeat((tokens[idx].meta as { extra: number }).extra);
 
@@ -89,14 +101,27 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
   return defaultLinkOpen(tokens, idx, options, env, self);
 };
 
+/**
+ * Where the source lines show in the preview: `heights[i]` (from the top of
+ * the scrolled content) is where line `lines[i]` starts. Both ascend; lines
+ * in between are interpolated.
+ */
+export interface SourceMap {
+  lines: number[];
+  heights: number[];
+}
+
 export class Preview {
   private timer = 0;
   // Rendered HTML is parsed here, where nothing runs or loads, and sanitized before it is shown.
   private readonly staging = document.createElement("template");
+  private renders = 0;
+  private lineCount = 1;
+  private map: { key: string; value: SourceMap } | null = null;
 
   /** `onLink` gets the address of a clicked link; links never navigate the app themselves. */
   constructor(
-    private readonly root: HTMLElement,
+    readonly root: HTMLElement,
     onLink: (href: string) => void,
   ) {
     root.addEventListener("click", (event) => {
@@ -112,6 +137,8 @@ export class Preview {
 
   render(source: string): void {
     window.clearTimeout(this.timer);
+    this.renders++;
+    this.lineCount = source.split("\n").length;
     if (!source.trim()) {
       this.root.innerHTML = `<p class="preview-empty">${md.utils.escapeHtml(t.emptyPreview)}</p>`;
       return;
@@ -122,9 +149,40 @@ export class Preview {
   }
 
   /** Re-renders after a short pause in typing, keeping the editor responsive. */
-  scheduleRender(getSource: () => string): void {
+  scheduleRender(getSource: () => string, then?: () => void): void {
     window.clearTimeout(this.timer);
-    this.timer = window.setTimeout(() => this.render(getSource()), 60);
+    this.timer = window.setTimeout(() => {
+      this.render(getSource());
+      then?.();
+    }, 60);
+  }
+
+  /** The source map of the rendered blocks, measured again only after the layout changed. */
+  sourceMap(): SourceMap {
+    const { root } = this;
+    // Zoom, the panel width and opening <details> all change the content height or width.
+    const key = `${this.renders}:${root.scrollHeight}:${root.clientWidth}`;
+    if (this.map?.key === key) return this.map.value;
+    const origin = root.getBoundingClientRect().top - root.scrollTop;
+    const points: [number, number][] = [];
+    for (const element of root.querySelectorAll<HTMLElement>("[data-line]")) {
+      const rect = element.getBoundingClientRect();
+      // Not shown, e.g. inside a closed <details>.
+      if (rect.width === 0 && rect.height === 0) continue;
+      points.push([Number(element.dataset.line), rect.top - origin], [Number(element.dataset.lineEnd), rect.bottom - origin]);
+    }
+    points.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const value: SourceMap = { lines: [0], heights: [0] };
+    for (const [line, height] of points) {
+      // Margins can place a nested block above its parent's start; such points would break the order.
+      if (height < value.heights[value.heights.length - 1]) continue;
+      value.lines.push(line);
+      value.heights.push(height);
+    }
+    value.lines.push(Math.max(this.lineCount, value.lines[value.lines.length - 1]));
+    value.heights.push(Math.max(root.scrollHeight, value.heights[value.heights.length - 1]));
+    this.map = { key, value };
+    return value;
   }
 
   get scrollTop(): number {

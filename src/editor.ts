@@ -225,6 +225,29 @@ export class Editor {
     return { pos: block.from, margin: block.top - top };
   }
 
+  /**
+   * The line at height `y` of the scrolled content, from 0, plus the part of
+   * the line above `y`; the line count below the last line.
+   */
+  lineAtHeight(y: number): number {
+    const { view } = this;
+    const top = y - view.documentPadding.top;
+    if (top <= 0) return 0;
+    const block = view.lineBlockAtHeight(top);
+    if (top >= block.bottom) return view.state.doc.lines;
+    return view.state.doc.lineAt(block.from).number - 1 + (top - block.top) / Math.max(1, block.height);
+  }
+
+  /** The height in the scrolled content where `lineAtHeight` gives `line`. */
+  heightAtLine(line: number): number {
+    const { view } = this;
+    const { doc } = view.state;
+    if (line >= doc.lines) return view.scrollDOM.scrollHeight;
+    const index = Math.max(0, Math.floor(line));
+    const block = view.lineBlockAt(doc.line(index + 1).from);
+    return view.documentPadding.top + block.top + (line - index) * block.height;
+  }
+
   selection(): Selection {
     const { anchor, head } = this.view.state.selection.main;
     return { anchor, head };
