@@ -290,6 +290,10 @@ fn main() {
                 .inner_size(1200.0, 800.0)
                 .min_inner_size(640.0, 400.0)
                 .theme(Some(tauri::Theme::Dark))
+                // The frontend draws the title bar: tabs and window buttons.
+                // Windows keeps the shadow, rounded corners and resize borders.
+                .decorations(false)
+                .shadow(true)
                 .background_color(tauri::window::Color(10, 10, 10, 255))
                 // Shown by the frontend after the first paint to avoid a flash.
                 .visible(false)

@@ -6,8 +6,9 @@ ogólne uwagi:
 
 Tokeny z sekcji 3 (tylko wartości `.dark`) są w `src/styles.css`.
 
-- **Okno:** systemowy pasek tytułu w trybie ciemnym. Tło okna i webview `background` (`#0a0a0a`) od pierwszej klatki, bez białego błysku.
-- **Górny pasek:** 40px, tło `card`, dolna krawędź 1px `border`. Po lewej przycisk menu (ikona hamburgera, `ghost`, 32×32, ikona 16px, kolor `muted-foreground`, hover `accent`).
+- **Okno:** bez systemowego paska tytułu — jego rolę przejmuje górny pasek. Systemowy cień, zaokrąglone rogi Windows 11 i niewidoczne krawędzie do zmiany rozmiaru zostają. Tło okna i webview `background` (`#0a0a0a`) od pierwszej klatki, bez białego błysku.
+- **Górny pasek:** 40px, tło `card`, dolna krawędź 1px `border`. Po lewej przycisk menu (ikona hamburgera, `ghost`, 32×32, ikona 16px, kolor `muted-foreground`, hover `accent`). Puste miejsca paska (także wolna część paska zakładek) przesuwają okno, a dwuklik w nich maksymalizuje je lub przywraca.
+  - **Przyciski okna** przy prawej krawędzi, bez odstępu od niej: minimalizuj, maksymalizuj / przywróć, zamknij. Każdy 46px szerokości i pełnej wysokości paska, bez zaokrągleń, obrysowe ikony 16px w `muted-foreground`: pozioma linia, kwadrat, dwa nachodzące kwadraty (przywróć), X. Hover: tło `accent`, ikona `accent-foreground` (150ms); zamknij: tło `window-close` (`#c42b1c`, czerwień przycisku zamykania z Windows) i biała ikona. Własne tokeny `window-close` / `window-close-foreground` dodane według zasady z sekcji 2 pkt 4, używane tylko tutaj — to konwencja systemu, nie `destructive`. Podpowiedzi jak w Windows („Minimalizuj”, „Maksymalizuj” / „Przywróć w dół”, „Zamknij”).
 - **Zakładki:** pasek zakładek wypełnia górny pasek na prawo od menu, odstęp 2px między zakładkami. Zakładka: tekst 14px/500, szerokość według nazwy, maks. 240px, min. 100px (nazwa z wielokropkiem), zaokrąglone górne rogi `radius-md`.
   - Aktywna: tło `background`, obramowanie 1px `border` bez dolnej krawędzi, tekst `foreground`; łączy się z panelem pod spodem.
   - Nieaktywna: bez tła i obramowania, tekst `muted-foreground`; hover tło `accent`, tekst `accent-foreground` (150ms).

@@ -8,6 +8,8 @@ Między zakładkami przełączamy się skrótami Ctrl+Tab / Ctrl+Shift+Tab i Ctr
 
 W lewej górnej części ekranu ma znajdować się menu hamburgerowe, czyli przycisk dający dostęp do opcji takich, jak Nowy plik, Otwórz, Zapisz, Zapisz jako, Znajdź, Zamknij zakładkę, Wyjdź.
 
+Okno nie ma systemowego paska tytułu. Przyciski minimalizacji, maksymalizacji i zamknięcia znajdują się w pasku zakładek, wyrównane do prawej. Puste miejsca tego paska służą do przesuwania okna, a dwuklik w nich maksymalizuje je lub przywraca.
+
 
 
 Polecenia mają być obsługiwane powszechnie używanymi skrótami klawiszowymi, np. Nowy plik (Ctrl+N), Zapisz (Ctrl+S), Zamknij zakładkę (Ctrl+W), Wyjdź (Ctrl+Q), itd.

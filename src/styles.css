@@ -30,6 +30,9 @@
   /* Find: background of every match and of the current (selected) one. */
   --search-match: #656565;
   --search-current: #e58b00;
+  /* Close button of the window on hover: the red Windows uses there. */
+  --window-close: #c42b1c;
+  --window-close-foreground: #ffffff;
 
   --font-sans: "Segoe UI", system-ui, sans-serif;
   --font-mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
@@ -106,9 +109,39 @@ button {
   gap: 4px;
   height: var(--topbar-height);
   flex-shrink: 0;
-  padding: 0 4px;
+  padding: 0 0 0 4px;
   background: var(--card);
   border-bottom: 1px solid var(--border);
+}
+
+/* ---------- Window buttons (the window has no system title bar) ---------- */
+
+.window-controls {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.window-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: default;
+  transition: color 150ms, background-color 150ms;
+}
+
+.window-button:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.window-close:hover {
+  background: var(--window-close);
+  color: var(--window-close-foreground);
 }
 
 .menu-anchor {

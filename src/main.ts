@@ -14,6 +14,7 @@ import { Preview } from "./preview";
 import { ScrollSync } from "./scrollsync";
 import { isSpellMode, SpellService } from "./spell";
 import { TabStrip } from "./tabs";
+import { initTitleBar } from "./titlebar";
 import { icons, TablePicker, Toolbar } from "./toolbar";
 import { DEFAULT_ZOOM, stepZoom, validZoom, WHEEL_STEP } from "./zoom";
 
@@ -968,6 +969,8 @@ function openRequested(paths: string[]): void {
 }
 
 void platform.onCloseRequested(() => void commands.exit());
+// The top bar itself and the free part of the tab strip move the window.
+initTitleBar($(".topbar"), (target) => target === $(".topbar") || target === $("#tabs"), () => void commands.exit());
 void platform.onFilesDropped(openRequested);
 void platform.onOpenFilesRequested(openRequested);
 void platform.onWindowFocused(requestDiskCheck);

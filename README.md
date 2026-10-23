@@ -44,7 +44,9 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - Formatting shortcuts (Ctrl+B, Ctrl+1 …) do nothing while the find field has the focus.
 - **Moving paragraphs** (Alt+↑ / Alt+↓): moves the paragraph with the cursor (a block of text between empty lines, e.g. a whole table) one paragraph up or down. Inside a list it moves the single item with its sub-items among the items of the same level; at the edge of the list nothing happens. Empty lines stay where they are, and a selection over several lines of one paragraph or list moves as a whole. The cursor or selection travels with the text, one undo step undoes the move.
 - **Zoom**: Ctrl+plus / Ctrl+minus (also the numeric keypad) or Ctrl + mouse wheel (over any part of the window, also the tab strip) scale the text of both panels and Ctrl+0 returns to 100%. The levels are 50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200, 250 and 300%. One wheel notch is one level; touchpads add up small movements. Zoom is a global setting: it applies to every tab and to files opened later, and it is remembered in the session (`zoom` in `session.json`). Each panel keeps showing the same place of the text while zooming. The toolbar, tabs, menus and status bar keep their size.
-- **Top bar**: hamburger menu and the tab strip. The top bar always stays visible; only the panels scroll.
+- **Top bar**: hamburger menu, the tab strip and the window buttons. The top bar always stays visible; only the panels scroll.
+  - The window has no system title bar; the top bar replaces it. Its empty parts (also the free part of the tab strip) move the window, and a double click there maximizes or restores it. The window keeps the Windows 11 shadow, rounded corners and resizable edges.
+  - Minimize, Maximize / Restore Down and Close sit at the right end, Windows-style (46px wide, red Close on hover). Close works like the window's X used to: no questions, unsaved edits stay in the session.
 - **Tabs**: every open file has a tab with its name (without extension); a dot marks unsaved changes. While the pointer is over a tab, a close button (×) takes the dot's place. A tab closes with the middle mouse button, the × button or Ctrl+W.
   - New and opened files get a new tab on the right. Opening a file that is already open switches to its tab. A lone, empty *Untitled* tab is replaced by the opened file.
   - Tabs can be reordered by dragging. The mouse wheel over the tab strip switches to the previous/next tab (stopping at the first and the last one).
@@ -151,6 +153,8 @@ src/                  frontend (TypeScript)
   main.ts             documents (tabs), commands, shortcuts, zoom, session memory,
                       changes made by other programs
   tabs.ts             tab strip (selecting, closing, dragging, mouse wheel)
+  titlebar.ts         window buttons and moving the window by the top bar
+                      (the window has no system title bar)
   editor.ts           CodeMirror 6 editor (left panel) and its theme; the editor
                       runs in a shadow root so its styles are not blocked by the CSP;
                       it also tracks line breaks that differ from the dominant style
