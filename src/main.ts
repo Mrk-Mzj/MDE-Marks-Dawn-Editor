@@ -970,7 +970,7 @@ function openRequested(paths: string[]): void {
 
 void platform.onCloseRequested(() => void commands.exit());
 // The top bar itself and the free part of the tab strip move the window.
-initTitleBar($(".topbar"), (target) => target === $(".topbar") || target === $("#tabs"), () => void commands.exit());
+initTitleBar($(".topbar"), (target) => target === $(".topbar") || target === $("#tabs"));
 void platform.onFilesDropped(openRequested);
 void platform.onOpenFilesRequested(openRequested);
 void platform.onWindowFocused(requestDiskCheck);

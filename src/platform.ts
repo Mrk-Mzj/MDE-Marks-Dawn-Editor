@@ -236,10 +236,6 @@ export async function destroyWindow(): Promise<void> {
   if (inTauri) await getCurrentWindow().destroy();
 }
 
-export async function minimizeWindow(): Promise<void> {
-  if (inTauri) await getCurrentWindow().minimize();
-}
-
 export async function toggleMaximizeWindow(): Promise<void> {
   if (inTauri) await getCurrentWindow().toggleMaximize();
 }
@@ -247,19 +243,6 @@ export async function toggleMaximizeWindow(): Promise<void> {
 /** Moves the window with the mouse while its left button is held (the press must have just happened). */
 export async function startWindowDrag(): Promise<void> {
   if (inTauri) await getCurrentWindow().startDragging();
-}
-
-/** Calls `handler` now and whenever the window is maximized or restored. */
-export async function onMaximizedChanged(handler: (maximized: boolean) => void): Promise<void> {
-  if (!inTauri) return;
-  const window = getCurrentWindow();
-  let last: boolean | null = null;
-  const check = async () => {
-    const maximized = await window.isMaximized();
-    if (maximized !== last) handler((last = maximized));
-  };
-  await window.onResized(() => void check());
-  await check();
 }
 
 /** Calls `handler` when the user closes the window; the close is always cancelled. */

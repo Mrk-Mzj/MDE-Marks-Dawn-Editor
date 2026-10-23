@@ -15,8 +15,19 @@ serde_json = "1"
 tauri-plugin-single-instance = "2"
 
 [target.'cfg(windows)'.dependencies]
-# Windows Spell Checking API (src/spell.rs) and ShellExecute for opening links (src/main.rs).
-windows = { version = "0.62", features = ["Win32_Globalization", "Win32_System_Com", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
+# Windows Spell Checking API (src/spell.rs), ShellExecute for opening links (src/main.rs)
+# and the native window buttons (src/caption.rs: GDI drawing, tooltips, DPI, mouse tracking).
+windows = { version = "0.62", features = [
+    "Win32_Globalization",
+    "Win32_Graphics_Gdi",
+    "Win32_System_Com",
+    "Win32_System_LibraryLoader",
+    "Win32_UI_Controls",
+    "Win32_UI_HiDpi",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
 
 [profile.release]
 codegen-units = 1

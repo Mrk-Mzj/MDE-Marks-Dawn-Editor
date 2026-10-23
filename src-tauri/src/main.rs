@@ -1,6 +1,7 @@
 // Hide the console window in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod caption;
 mod session;
 mod spell;
 mod textfile;
@@ -290,8 +291,9 @@ fn main() {
                 .inner_size(1200.0, 800.0)
                 .min_inner_size(640.0, 400.0)
                 .theme(Some(tauri::Theme::Dark))
-                // The frontend draws the title bar: tabs and window buttons.
-                // Windows keeps the shadow, rounded corners and resize borders.
+                // The top bar replaces the title bar: the frontend draws the tabs,
+                // src/caption.rs the window buttons. Windows keeps the shadow,
+                // rounded corners and resize borders.
                 .decorations(false)
                 .shadow(true)
                 .background_color(tauri::window::Color(10, 10, 10, 255))
@@ -300,6 +302,7 @@ fn main() {
                 .on_navigation(is_app_url)
                 .build()?;
             session::restore_window(&window);
+            caption::install(window.hwnd()?)?;
             let tracked = window.clone();
             window.on_window_event(move |event| {
                 if matches!(event, WindowEvent::Moved(_) | WindowEvent::Resized(_)) {
