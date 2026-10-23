@@ -43,6 +43,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - Esc (in the field or the editor), Ctrl+F pressed again or × closes the bar and returns to the editor with the match selected. The bar stays open across tab switches, and the count follows edits.
   - Formatting shortcuts (Ctrl+B, Ctrl+1 …) do nothing while the find field has the focus.
 - **Moving paragraphs** (Alt+↑ / Alt+↓): moves the paragraph with the cursor (a block of text between empty lines, e.g. a whole table) one paragraph up or down. Inside a list it moves the single item with its sub-items among the items of the same level; at the edge of the list nothing happens. Empty lines stay where they are, and a selection over several lines of one paragraph or list moves as a whole. The cursor or selection travels with the text, one undo step undoes the move.
+- **Right-click menu**: the webview's own menu cut down to *Select all*, *Copy*, *Cut*, *Paste*, *Emoji* and *Dictation*, in that order with separators after *Select all*, *Paste* and *Emoji* (*Undo*, *Paste as plain text*, *Writing direction*, *More tools* and the rest are removed). The items stay the native ones, so Emoji and Dictation work as usual; the list is set in `src-tauri/src/context_menu.rs`.
 - **Zoom**: Ctrl+plus / Ctrl+minus (also the numeric keypad) or Ctrl + mouse wheel (over any part of the window, also the tab strip) scale the text of both panels and Ctrl+0 returns to 100%. The levels are 50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200, 250 and 300%. One wheel notch is one level; touchpads add up small movements. Zoom is a global setting: it applies to every tab and to files opened later, and it is remembered in the session (`zoom` in `session.json`). Each panel keeps showing the same place of the text while zooming. The toolbar, tabs, menus and status bar keep their size.
 - **Top bar**: hamburger menu, the tab strip and the window buttons. The top bar always stays visible; only the panels scroll.
   - The window has no system title bar; the top bar replaces it. Its empty parts (also the free part of the tab strip) move the window, and a double click there maximizes or restores it. The window keeps the Windows 11 shadow, rounded corners and resizable edges.
@@ -184,6 +185,7 @@ src-tauri/            backend (Rust, Tauri 2)
                       single instance; window setup
   src/spell.rs        Windows Spell Checking API on a dedicated COM thread
   src/caption.rs      native minimize / maximize / close buttons over the top bar
+  src/context_menu.rs the right-click menu (WebView2 menu trimmed and reordered)
   src/session.rs      session storage in %APPDATA%\MDE (tabs, tab texts, window)
   src/textfile.rs     byte-faithful decoding/encoding (UTF-8, UTF-16, Windows-1250,
                       per-line line endings) + tests

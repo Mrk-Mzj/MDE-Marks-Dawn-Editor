@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod caption;
+mod context_menu;
 mod session;
 mod spell;
 mod textfile;
@@ -303,6 +304,7 @@ fn main() {
                 .build()?;
             session::restore_window(&window);
             caption::install(window.hwnd()?)?;
+            context_menu::install(&window)?;
             let tracked = window.clone();
             window.on_window_event(move |event| {
                 if matches!(event, WindowEvent::Moved(_) | WindowEvent::Resized(_)) {
