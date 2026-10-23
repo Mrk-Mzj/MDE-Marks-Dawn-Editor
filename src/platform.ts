@@ -51,7 +51,11 @@ export interface ResolvedLink {
 
 const inTauri = isTauri();
 
-const markdownFilter = { name: t.markdownFiles, extensions: ["md", "markdown", "mdown", "mkd", "txt"] };
+const markdownExtensions = ["md", "markdown", "mdown", "mkd"];
+const openFilter = { name: t.markdownFiles, extensions: [...markdownExtensions, "txt"] };
+// The first extension of the first filter is the default one for Save as.
+const markdownFilter = { name: t.markdownFiles, extensions: markdownExtensions };
+const textFilter = { name: t.textFiles, extensions: ["txt"] };
 const allFilter = { name: t.allFiles, extensions: ["*"] };
 
 export function fileNameOf(path: string): string {
@@ -154,13 +158,13 @@ export async function pruneTabTexts(keep: string[]): Promise<void> {
 
 export async function pickFilesToOpen(): Promise<string[]> {
   if (!inTauri) return [];
-  const picked = await open({ multiple: true, directory: false, filters: [markdownFilter, allFilter] });
+  const picked = await open({ multiple: true, directory: false, filters: [openFilter, allFilter] });
   return picked ?? [];
 }
 
 export async function pickSavePath(suggestedName: string): Promise<string | null> {
   if (!inTauri) return null;
-  return save({ defaultPath: suggestedName, filters: [markdownFilter, allFilter] });
+  return save({ defaultPath: suggestedName, filters: [markdownFilter, textFilter, allFilter] });
 }
 
 export async function askSaveChanges(name: string): Promise<SaveChoice> {

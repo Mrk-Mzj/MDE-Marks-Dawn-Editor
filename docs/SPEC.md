@@ -80,6 +80,8 @@ Zakładka po zamknięciu znika z sesji, to znaczy nie przechowujemy dłużej zap
 
 Otwieranie pliku ma odbywać się w nowej zakładce po prawej strony listy otwartych zakładek. Dostęp do funkcji Otwórz ma miejsce przez menu, przez skrót klawiszowy (te dwa warianty otwierają okno Eksploratora do wskazania pliku), a także przez przeciągnięcie pliku z Eksploratora w okno programu (ten wariant otwiera plik bezpośrednio, bez dodatkowego okna). Upuszczenie kilku plików otwiera każdy w osobnej zakładce.
 
+W oknie „Zapisz jako” domyślnie wybrany jest typ Markdown (.md); z listy rozwijanej można wybrać też plik tekstowy (.txt) lub wszystkie pliki.
+
 Plik można też otworzyć przez „Otwórz za pomocą” w Eksploratorze, czyli przez argument wiersza poleceń (`MDE.exe plik.md`). Program jest portable, więc sam nie rejestruje skojarzeń plików; użytkownik wskazuje exe w oknie „Otwórz za pomocą”.
 
 Program działa w jednej instancji. Ponowne uruchomienie (także z plikiem jako argumentem) przenosi fokus do już otwartego okna i otwiera w nim plik w nowej zakładce, zamiast uruchamiać drugie okno. Jeśli plik jest już otwarty, przełączamy się na jego zakładkę.
