@@ -2,6 +2,7 @@ import "./styles.css";
 
 import type { EditorState } from "@codemirror/state";
 import { Editor } from "./editor";
+import { FindBar, SearchQuery } from "./find";
 import type { ScrollPosition, Selection } from "./editor";
 import { blockState, inlineState, insertLink, insertTable, setHeading, toggleInline, toggleList, toggleQuote } from "./format";
 import { lang, t } from "./i18n";
@@ -87,7 +88,20 @@ noticeClose.addEventListener("click", () => onNoticeClose());
 const previewEl = $("#preview");
 const preview = new Preview(previewEl, followLink);
 const spell = new SpellService(lang);
-const editor = new Editor($("#editor"), onEdit, spell);
+const search = new SearchQuery();
+const editor = new Editor($("#editor"), onEdit, spell, search);
+const findBar = new FindBar($("#find"), search, editor.view, {
+  find: t.findLabel,
+  placeholder: t.findPlaceholder,
+  previous: t.findPrevious,
+  next: t.findNext,
+  close: t.findClose,
+  matchCase: t.findMatchCase,
+  noResults: t.findNoResults,
+  count: t.findCount,
+  total: t.findTotal,
+});
+editor.subscribe(() => findBar.refresh());
 const scrollSync = new ScrollSync(editor, preview);
 
 let docs: Doc[] = [];
@@ -719,6 +733,9 @@ const commands = {
   save: () => exclusive(() => save()),
   saveAs: () => exclusive(() => saveAs()),
   closeTab: () => exclusive(() => closeTab()),
+  find: () => findBar.toggle(),
+  findNext: () => findBar.step(1),
+  findPrevious: () => findBar.step(-1),
   nextTab: () => (busy ? undefined : stepTab(1)),
   previousTab: () => (busy ? undefined : stepTab(-1)),
   exit: () => exclusive(exit),
@@ -730,6 +747,8 @@ new Menu($<HTMLButtonElement>("#menu-button"), [
   "separator",
   { label: t.save, shortcut: "Ctrl+S", run: commands.save },
   { label: t.saveAs, shortcut: "Ctrl+Shift+S", run: commands.saveAs },
+  "separator",
+  { label: t.find, shortcut: "Ctrl+F", run: () => findBar.open() },
   "separator",
   { label: t.closeTab, shortcut: "Ctrl+W", run: commands.closeTab },
   { label: t.exit, shortcut: "Ctrl+Q", run: commands.exit },
@@ -825,6 +844,7 @@ const shortcuts: Record<string, () => void> = {
   "Shift+KeyS": commands.saveAs,
   KeyW: commands.closeTab,
   KeyQ: commands.exit,
+  KeyF: commands.find,
   Tab: commands.nextTab,
   "Shift+Tab": commands.previousTab,
   PageDown: commands.nextTab,
@@ -848,18 +868,37 @@ const shortcuts: Record<string, () => void> = {
   Numpad0: () => setZoom(DEFAULT_ZOOM),
 };
 
+// Formatting shortcuts, which act on the editor only while it has the focus or no field does.
+const editorOnly = new Set(["KeyB", "KeyI", "KeyU", "KeyK", "Digit1", "Digit2", "Digit3", "Digit4", "Digit5"]);
+const editorHost = $("#editor");
+
 // Browser shortcuts that make no sense in the app (reload, print, find, …).
-const blockedCtrl = new Set(["KeyR", "KeyP", "KeyF", "KeyG", "KeyH", "KeyJ", "KeyL", "KeyT"]);
-const blockedPlain = new Set(["F3", "F5", "F7", "BrowserBack", "BrowserForward", "BrowserRefresh"]);
+const blockedCtrl = new Set(["KeyR", "KeyP", "KeyG", "KeyH", "KeyJ", "KeyL", "KeyT"]);
+const blockedPlain = new Set(["F5", "F7", "BrowserBack", "BrowserForward", "BrowserRefresh"]);
 
 window.addEventListener(
   "keydown",
   (event) => {
+    if (event.code === "F3" && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.shiftKey) commands.findPrevious();
+      else commands.findNext();
+      return;
+    }
     if (blockedPlain.has(event.code)) {
       event.preventDefault();
       return;
     }
+    // Escape in the editor also closes the find bar.
+    if (event.key === "Escape" && findBar.isOpen && document.activeElement === editorHost) {
+      event.preventDefault();
+      findBar.close();
+      return;
+    }
     if (!event.ctrlKey || event.altKey || event.metaKey) return;
+    // In the find field, Ctrl+B and the like would format the editor's text unseen.
+    if (event.target instanceof HTMLInputElement && editorOnly.has(event.code)) return;
     const command = shortcuts[(event.shiftKey ? "Shift+" : "") + event.code];
     if (command) {
       event.preventDefault();

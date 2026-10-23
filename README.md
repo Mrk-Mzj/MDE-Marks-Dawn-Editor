@@ -37,6 +37,11 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - **Link** (Ctrl+K): the selection becomes `[text](url)` with `url` selected for typing; a selected web address goes into the parentheses and the link text is selected instead.
   - **Table**: a grid (up to 8 × 8, mouse or arrow keys + Enter) picks the number of columns and rows (the header row included). The table is inserted below the line with the cursor, separated by empty lines, with the first header cell selected.
   - When the panel is too narrow, the buttons that do not fit move to a *More* (…) menu at the end of the toolbar.
+- **Find** (Ctrl+F, or *Find…* in the menu): a bar between the toolbar and the editor searches the left panel only; there is no replace. Selected text (one line) becomes the query. Matching ignores letter case unless *Match case* (*Uwzględnij wielkość liter*, the **Aa** toggle next to the field) is on, and starts at the cursor, so the match follows the query while typing.
+  - All matches in the editor get a gray background and the current one (also selected) an orange one, like *Find all* in browsers. The bar counts them: *Found: 3 of 12* (*Znaleziono: 3 z 12*), *Found: 12 results* when the cursor is not on a match, *No results*.
+  - Enter / Shift+Enter in the field, F3 / Shift+F3 anywhere and the ↑ / ↓ buttons at the right edge of the bar go to the next / previous match, wrapping around the document. F3 with the bar closed opens it with the last query.
+  - Esc (in the field or the editor), Ctrl+F pressed again or × closes the bar and returns to the editor with the match selected. The bar stays open across tab switches, and the count follows edits.
+  - Formatting shortcuts (Ctrl+B, Ctrl+1 …) do nothing while the find field has the focus.
 - **Moving paragraphs** (Alt+↑ / Alt+↓): moves the paragraph with the cursor (a block of text between empty lines, e.g. a whole table) one paragraph up or down. Inside a list it moves the single item with its sub-items among the items of the same level; at the edge of the list nothing happens. Empty lines stay where they are, and a selection over several lines of one paragraph or list moves as a whole. The cursor or selection travels with the text, one undo step undoes the move.
 - **Zoom**: Ctrl+plus / Ctrl+minus (also the numeric keypad) or Ctrl + mouse wheel (over any part of the window, also the tab strip) scale the text of both panels and Ctrl+0 returns to 100%. The levels are 50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200, 250 and 300%. One wheel notch is one level; touchpads add up small movements. Zoom is a global setting: it applies to every tab and to files opened later, and it is remembered in the session (`zoom` in `session.json`). Each panel keeps showing the same place of the text while zooming. The toolbar, tabs, menus and status bar keep their size.
 - **Top bar**: hamburger menu and the tab strip. The top bar always stays visible; only the panels scroll.
@@ -54,6 +59,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   | Open… | Ctrl+O |
   | Save | Ctrl+S |
   | Save as… | Ctrl+Shift+S |
+  | Find / next / previous match | Ctrl+F / F3 / Shift+F3 |
   | Close tab | Ctrl+W |
   | Next / previous tab | Ctrl+Tab / Ctrl+Shift+Tab, Ctrl+PgDn / Ctrl+PgUp |
   | Exit | Ctrl+Q |
@@ -99,7 +105,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 
 ### Not yet implemented
 
-Resizable panels (and remembering their proportions), minimap, Find.
+Resizable panels (and remembering their proportions), minimap.
 
 ## Building
 
@@ -149,6 +155,8 @@ src/                  frontend (TypeScript)
                       runs in a shadow root so its styles are not blocked by the CSP;
                       it also tracks line breaks that differ from the dominant style
                       and keeps the GFM syntax tree up to date (used by the toolbar)
+  find.ts             find bar (Ctrl+F, F3 / Shift+F3) and the match highlighting in
+                      the editor (a CodeMirror plugin)
   moveblock.ts        finding and swapping the paragraph / list item to move (Alt+↑/↓)
   spell.ts            spell checking: word finding, answer cache, underlines in the
                       editor (a CodeMirror plugin)

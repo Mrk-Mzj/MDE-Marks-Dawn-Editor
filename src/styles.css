@@ -27,6 +27,9 @@
   --ring: oklch(0.556 0 0);
   /* Thin underline of misspelled words (amber, the dark "chart-3" value). */
   --warning: oklch(0.769 0.188 70.08);
+  /* Find: background of every match and of the current (selected) one. */
+  --search-match: #656565;
+  --search-current: #e58b00;
 
   --font-sans: "Segoe UI", system-ui, sans-serif;
   --font-mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
@@ -444,6 +447,85 @@ button {
   width: 9px;
   height: 20px;
   background: linear-gradient(var(--border), var(--border)) center / 1px 100% no-repeat;
+}
+
+/* ---------- Find bar ---------- */
+
+/* Below the toolbar, above the editor. The search icon lines up with the
+   left edge of the text below. */
+.find-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+  flex-shrink: 0;
+  padding: 0 4px 0 calc(var(--content-padding-x) - 10px);
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  animation: menu-in 150ms ease-out;
+}
+
+.find-bar > .icon-button,
+.find-bar > .toolbar-separator {
+  flex-shrink: 0;
+}
+
+/* Input (docs/DESIGN.md, section 7) with the icon inside. No focus ring:
+   the bar appearing and the blinking caret show where typing goes. */
+.find-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 1 280px;
+  min-width: 80px;
+  margin-right: 4px;
+}
+
+.find-field > .icon {
+  position: absolute;
+  left: 10px;
+  color: var(--muted-foreground);
+}
+
+.find-input {
+  width: 100%;
+  height: 32px;
+  padding: 4px 10px 4px 32px;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklch, var(--input) 30%, transparent);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  user-select: text;
+}
+
+.find-input::placeholder {
+  color: var(--muted-foreground);
+}
+
+/* The "Aa" icon is drawn 30% larger than the other icons. */
+.find-case > .icon {
+  width: 21px;
+  height: 21px;
+}
+
+/* The field narrows before the count does. */
+.find-count {
+  flex-shrink: 0;
+  margin-left: 4px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Previous, next and close, at the right edge of the bar. */
+.find-actions {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  padding-left: 8px;
 }
 
 /* ---------- Table size picker ---------- */

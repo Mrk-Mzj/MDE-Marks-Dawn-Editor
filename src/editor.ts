@@ -6,6 +6,8 @@ import { defineLanguageFacet, Language } from "@codemirror/language";
 import { EditorSelection, EditorState, StateEffect, StateField } from "@codemirror/state";
 import { drawSelection, EditorView, keymap } from "@codemirror/view";
 import { GFM, parser } from "@lezer/markdown";
+import { searchHighlighting } from "./find";
+import type { SearchQuery } from "./find";
 import { moveBlock } from "./moveblock";
 import type { Eol, LineBreak } from "./platform";
 import { spellChecking } from "./spell";
@@ -69,6 +71,12 @@ const theme = EditorView.theme(
       textDecorationThickness: "1px",
       textUnderlineOffset: "3px",
     },
+    // Find: every match, and the selected one more strongly.
+    ".cm-search-match": {
+      backgroundColor: "var(--search-match)",
+      borderRadius: "2px",
+    },
+    ".cm-search-current": { backgroundColor: "var(--search-current)" },
     ".cm-cursor, .cm-dropCursor": { borderLeft: "1.5px solid var(--foreground)" },
     "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
       { backgroundColor: "color-mix(in oklch, var(--foreground) 22%, transparent)" },
@@ -133,6 +141,7 @@ export class Editor {
     host: HTMLElement,
     onChange: () => void,
     private readonly spell: SpellService,
+    private readonly search: SearchQuery,
   ) {
     // CodeMirror injects its styles with constructable stylesheets only inside
     // a shadow root; in the document it would add a <style> element, which the
@@ -171,6 +180,7 @@ export class Editor {
         EditorView.lineWrapping,
         // The browser's own spell checking is off; see spell.ts.
         spellChecking(this.spell),
+        searchHighlighting(this.search),
         EditorView.contentAttributes.of({ spellcheck: "false", autocorrect: "off", autocapitalize: "off" }),
         keymap.of([
           { key: "Alt-ArrowUp", run: moveBlockCommand(-1) },

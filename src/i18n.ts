@@ -8,6 +8,16 @@ const en = {
   save: "Save",
   saveAs: "Save as…",
   closeTab: "Close tab",
+  find: "Find…",
+  findLabel: "Find",
+  findPlaceholder: "Find in text",
+  findPrevious: "Previous match",
+  findNext: "Next match",
+  findClose: "Close",
+  findMatchCase: "Match case",
+  findNoResults: "No results",
+  findCount: (current: number, total: number) => `Found: ${current} of ${total}`,
+  findTotal: (total: number) => `Found: ${total} ${total === 1 ? "result" : "results"}`,
   exit: "Exit",
   untitled: "Untitled",
   unsavedChanges: "Unsaved changes",
@@ -82,6 +92,21 @@ const pl: Strings = {
   save: "Zapisz",
   saveAs: "Zapisz jako…",
   closeTab: "Zamknij zakładkę",
+  find: "Znajdź…",
+  findLabel: "Znajdź",
+  findPlaceholder: "Szukaj w tekście",
+  findPrevious: "Poprzedni wynik",
+  findNext: "Następny wynik",
+  findClose: "Zamknij",
+  findMatchCase: "Uwzględnij wielkość liter",
+  findNoResults: "Brak wyników",
+  findCount: (current, total) => `Znaleziono: ${current} z ${total}`,
+  findTotal: (total) => {
+    const units = total % 10;
+    const tens = total % 100;
+    const word = total === 1 ? "wynik" : units >= 2 && units <= 4 && (tens < 12 || tens > 14) ? "wyniki" : "wyników";
+    return `Znaleziono: ${total} ${word}`;
+  },
   exit: "Wyjdź",
   untitled: "Bez tytułu",
   unsavedChanges: "Niezapisane zmiany",

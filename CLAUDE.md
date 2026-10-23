@@ -38,6 +38,8 @@ Po wprowadzeniu zmian i nowych funkcjonalności przetestuj czy faktycznie wyglą
 
 Funkcja jest skończona, gdy: działa po uruchomieniu, README.md jest zaktualizowany, a zmiany wizualne zgodne z docs/DESIGN.md.
 
+Po każdej turze programowania funkcji lub poprawek zbuduj plik portable (`npm run portable` → `portable/MDE.exe`), żebym mógł od razu testować.
+
 Commituj i wysyłaj na GitHuba tylko na moją prośbę.
 
 
