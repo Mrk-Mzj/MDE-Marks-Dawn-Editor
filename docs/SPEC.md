@@ -12,7 +12,7 @@ W lewej górnej części ekranu ma znajdować się menu hamburgerowe, czyli przy
 
 Polecenia mają być obsługiwane powszechnie używanymi skrótami klawiszowymi, np. Nowy plik (Ctrl+N), Zapisz (Ctrl+S), Zamknij zakładkę (Ctrl+W), Wyjdź (Ctrl+Q), itd.
 
-Znajdź (Ctrl+F) służy wyłącznie do wyszukiwania w lewym panelu, z przechodzeniem do następnego i poprzedniego wyniku (F3 / Shift+F3). Nie ma funkcji zamiany.
+Znajdź (Ctrl+F) służy wyłącznie do wyszukiwania w lewym panelu, z przechodzeniem do następnego i poprzedniego wyniku (F3 / Shift+F3). Nie ma funkcji zamiany. Wszystkie dopasowania są podświetlone, a bieżące wyróżnione mocniej; pasek pokazuje liczbę wyników. Domyślnie wielkość liter nie ma znaczenia; przełącznik „Uwzględnij wielkość liter” (Aa) to zmienia. Ponowne Ctrl+F lub Esc zamyka wyszukiwanie.
 
 Język interfejsu wybieramy według języka Windows: polski dla polskiej wersji systemu, angielski dla każdej innej.
 
