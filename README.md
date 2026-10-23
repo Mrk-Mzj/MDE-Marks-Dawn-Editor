@@ -34,6 +34,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - **Table**: a grid (up to 8 × 8, mouse or arrow keys + Enter) picks the number of columns and rows (the header row included). The table is inserted below the line with the cursor, separated by empty lines, with the first header cell selected.
   - When the panel is too narrow, the buttons that do not fit move to a *More* (…) menu at the end of the toolbar.
 - **Moving paragraphs** (Alt+↑ / Alt+↓): moves the paragraph with the cursor (a block of text between empty lines, e.g. a whole table) one paragraph up or down. Inside a list it moves the single item with its sub-items among the items of the same level; at the edge of the list nothing happens. Empty lines stay where they are, and a selection over several lines of one paragraph or list moves as a whole. The cursor or selection travels with the text, one undo step undoes the move.
+- **Zoom**: Ctrl+plus / Ctrl+minus (also the numeric keypad) or Ctrl + mouse wheel (over any part of the window, also the tab strip) scale the text of both panels and Ctrl+0 returns to 100%. The levels are 50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200, 250 and 300%. One wheel notch is one level; touchpads add up small movements. Zoom is a global setting: it applies to every tab and to files opened later, and it is remembered in the session (`zoom` in `session.json`). Each panel keeps showing the same place of the text while zooming. The toolbar, tabs, menus and status bar keep their size.
 - **Top bar**: hamburger menu and the tab strip. The top bar always stays visible; only the panels scroll.
 - **Tabs**: every open file has a tab with its name (without extension); a dot marks unsaved changes. While the pointer is over a tab, a close button (×) takes the dot's place. A tab closes with the middle mouse button, the × button or Ctrl+W.
   - New and opened files get a new tab on the right. Opening a file that is already open switches to its tab. A lone, empty *Untitled* tab is replaced by the opened file.
@@ -55,6 +56,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   | Bold / italic / underline | Ctrl+B / Ctrl+I / Ctrl+U |
   | Heading 1–5 | Ctrl+1 … Ctrl+5 |
   | Link | Ctrl+K |
+  | Zoom in / out / 100% | Ctrl+plus / Ctrl+minus / Ctrl+0 (or Ctrl + mouse wheel) |
 
 - **Opening files**: Open dialog (several files can be selected), dragging files from Explorer onto the window (each file gets its own tab), or the command line (`MDE.exe file.md`), which makes Explorer's *Open with* work.
 - **Single instance**: starting `MDE.exe` again (also with a file) brings the running window to the front and opens the file there in a new tab, or switches to its tab if it is already open.
@@ -92,7 +94,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 
 ### Not yet implemented
 
-Resizable panels (and remembering their proportions), zoom, minimap, Find.
+Resizable panels (and remembering their proportions), minimap, Find.
 
 ## Building
 
@@ -135,7 +137,7 @@ cargo test --manifest-path src-tauri/Cargo.toml
 index.html            frontend entry point for Vite (built into the exe, not opened directly)
 portable/             MDE.exe from `npm run portable` (generated, not in git)
 src/                  frontend (TypeScript)
-  main.ts             documents (tabs), commands, shortcuts, session memory,
+  main.ts             documents (tabs), commands, shortcuts, zoom, session memory,
                       changes made by other programs
   tabs.ts             tab strip (selecting, closing, dragging, mouse wheel)
   editor.ts           CodeMirror 6 editor (left panel) and its theme; the editor
@@ -152,6 +154,7 @@ src/                  frontend (TypeScript)
   format.ts           formatting commands (bold, headings, lists, quote, link, table);
                       bold/italic/underline work on the GFM syntax tree (@lezer/markdown)
   toolbar.ts          formatting toolbar, its "more" menu and the table size picker
+  zoom.ts             zoom levels and stepping (Ctrl+plus/minus/0, Ctrl+wheel)
   menu.ts             drop-down menus (hamburger menu, toolbar menus)
   platform.ts         Tauri backend and dialogs
   i18n.ts             UI strings (Polish, English)

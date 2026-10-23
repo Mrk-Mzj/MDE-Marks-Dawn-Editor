@@ -183,11 +183,26 @@ export class Editor {
   setState(state: EditorState, scroll: ScrollPosition | null = null): void {
     this.view.setState(state);
     if (scroll && scroll.pos <= state.doc.length) {
-      this.view.dispatch({ effects: EditorView.scrollIntoView(scroll.pos, { y: "start", yMargin: scroll.margin }) });
+      this.scrollTo(scroll);
     } else {
       this.view.scrollDOM.scrollTop = 0;
     }
     this.notify();
+  }
+
+  /** Scrolls so the line at `scroll.pos` sticks out `scroll.margin` above the top. */
+  scrollTo(scroll: ScrollPosition): void {
+    this.view.dispatch({ effects: EditorView.scrollIntoView(scroll.pos, { y: "start", yMargin: scroll.margin }) });
+  }
+
+  /**
+   * The text size (a CSS variable) changed: forgets the line heights, which
+   * CodeMirror would otherwise keep estimating at the old size, and scrolls
+   * back to `scroll`.
+   */
+  rescale(scroll: ScrollPosition): void {
+    this.view.setState(this.view.state);
+    this.scrollTo(scroll);
   }
 
   /** Calls `listener` whenever the text, the selection or the shown document changes. */

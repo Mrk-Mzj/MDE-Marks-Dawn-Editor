@@ -13,6 +13,7 @@ import { Preview } from "./preview";
 import { isSpellMode, SpellService } from "./spell";
 import { TabStrip } from "./tabs";
 import { icons, TablePicker, Toolbar } from "./toolbar";
+import { DEFAULT_ZOOM, stepZoom, validZoom, WHEEL_STEP } from "./zoom";
 
 /** An open document: one tab. */
 interface Doc {
@@ -63,6 +64,8 @@ interface StoredSession {
   spell?: string;
   /** File types the user chose to open from links without asking again (an app setting). */
   openTypes?: string[];
+  /** Zoom of the text in both panels, in percent (an app setting); 100 when missing. */
+  zoom?: number;
 }
 
 /** Unique across runs, because tab ids name files in the session folder. */
@@ -78,7 +81,8 @@ const noticeClose = $<HTMLButtonElement>("#notice-close");
 // What the close button of the current warning bar does.
 let onNoticeClose = () => {};
 noticeClose.addEventListener("click", () => onNoticeClose());
-const preview = new Preview($("#preview"), followLink);
+const previewEl = $("#preview");
+const preview = new Preview(previewEl, followLink);
 const spell = new SpellService(lang);
 const editor = new Editor($("#editor"), onEdit, spell);
 
@@ -409,6 +413,35 @@ async function exit(): Promise<void> {
   }
 }
 
+// ---------- Zoom ----------
+
+// Scale of the text in both panels, in percent; the same for every tab.
+let zoom = DEFAULT_ZOOM;
+
+/** The base text size is 16px at 100%; the panels take their font size from this variable. */
+function applyZoom(percent: number): void {
+  zoom = percent;
+  document.documentElement.style.setProperty("--content-font-size", `${(16 * percent) / 100}px`);
+}
+
+/** Rescales the text and keeps both panels looking at the same place. */
+function setZoom(percent: number): void {
+  if (percent === zoom) return;
+  const factor = percent / zoom;
+  const scroll = editor.scrollPosition();
+  const previewRatio = previewEl.scrollTop / Math.max(1, previewEl.scrollHeight);
+  applyZoom(percent);
+  editor.rescale(scroll);
+  previewEl.scrollTop = previewRatio * previewEl.scrollHeight;
+  // Stored scroll positions of the other tabs are in pixels of the old size.
+  for (const doc of docs) {
+    if (doc === active) continue;
+    doc.previewScroll *= factor;
+    if (doc.scroll) doc.scroll = { ...doc.scroll, margin: doc.scroll.margin * factor };
+  }
+  scheduleSessionSave();
+}
+
 // ---------- Links ----------
 
 // Extensions whose linked files open without asking.
@@ -592,6 +625,7 @@ function saveSession(): Promise<void> {
     const session: StoredSession = { version: 1, active: docs.indexOf(active), tabs: docs.map(storedTab),
       spell: spell.mode,
       openTypes: [...trustedTypes],
+      zoom,
     };
     await platform.writeSession(JSON.stringify(session));
   };
@@ -657,6 +691,7 @@ async function restoreSession(): Promise<number> {
   const session = parseSession(await platform.readSession());
   if (!session) return 0;
   if (isSpellMode(session.spell)) spell.setMode(session.spell);
+  applyZoom(validZoom(session.zoom));
   if (Array.isArray(session.openTypes)) {
     trustedTypes = new Set(session.openTypes.filter((type): type is string => typeof type === "string"));
   }
@@ -794,6 +829,14 @@ const shortcuts: Record<string, () => void> = {
   Digit3: formatting.heading(3),
   Digit4: formatting.heading(4),
   Digit5: formatting.heading(5),
+  // Ctrl+plus is Ctrl+Shift+= on many keyboards, so both spellings count.
+  Equal: () => setZoom(stepZoom(zoom, 1)),
+  "Shift+Equal": () => setZoom(stepZoom(zoom, 1)),
+  NumpadAdd: () => setZoom(stepZoom(zoom, 1)),
+  Minus: () => setZoom(stepZoom(zoom, -1)),
+  NumpadSubtract: () => setZoom(stepZoom(zoom, -1)),
+  Digit0: () => setZoom(DEFAULT_ZOOM),
+  Numpad0: () => setZoom(DEFAULT_ZOOM),
 };
 
 // Browser shortcuts that make no sense in the app (reload, print, find, …).
@@ -818,6 +861,25 @@ window.addEventListener(
     }
   },
   { capture: true },
+);
+
+// Ctrl + mouse wheel zooms wherever the pointer is (also over the tab strip).
+let zoomWheel = 0;
+window.addEventListener(
+  "wheel",
+  (event) => {
+    if (!event.ctrlKey) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (Math.sign(event.deltaY) !== Math.sign(zoomWheel)) zoomWheel = 0;
+    zoomWheel += event.deltaY;
+    // One level per notch; touchpads add up small movements.
+    if (Math.abs(zoomWheel) >= WHEEL_STEP) {
+      setZoom(stepZoom(zoom, zoomWheel < 0 ? 1 : -1));
+      zoomWheel = 0;
+    }
+  },
+  { capture: true, passive: false },
 );
 
 const spellStatus = $<HTMLButtonElement>("#spell-status");
