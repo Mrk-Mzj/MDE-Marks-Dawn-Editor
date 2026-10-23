@@ -21,7 +21,8 @@ export const icons = {
 
 function icon(path: string): SVGSVGElement {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("class", "icon");
+  // The bold icon is drawn heavier than the others, so it reads as bold.
+  svg.setAttribute("class", path === icons.bold ? "icon icon-bold" : "icon");
   svg.setAttribute("viewBox", "0 0 24 24");
   svg.setAttribute("aria-hidden", "true");
   const p = document.createElementNS("http://www.w3.org/2000/svg", "path");

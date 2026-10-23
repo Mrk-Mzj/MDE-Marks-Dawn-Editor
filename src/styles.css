@@ -89,6 +89,11 @@ button {
   pointer-events: none;
 }
 
+/* Bold toolbar icon: a semibold stroke instead of the regular 1.75. */
+.icon-bold {
+  stroke-width: 2.5;
+}
+
 :focus-visible {
   outline: none;
 }
