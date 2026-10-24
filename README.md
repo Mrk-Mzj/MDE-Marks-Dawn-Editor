@@ -49,7 +49,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - Enter / Shift+Enter in the field, F3 / Shift+F3 anywhere and the ↑ / ↓ buttons at the right edge of the bar go to the next / previous match, wrapping around the document. F3 with the bar closed opens it with the last query.
   - Esc (in the field or the editor), Ctrl+F pressed again or × closes the bar and returns to the editor with the match selected. The bar stays open across tab switches, and the count follows edits.
   - Formatting shortcuts (Ctrl+B, Ctrl+1 …) do nothing while the find field has the focus.
-- **Moving paragraphs** (Alt+↑ / Alt+↓): moves the paragraph with the cursor (a block of text between empty lines, e.g. a whole table) one paragraph up or down. Inside a list it moves the single item with its sub-items among the items of the same level; at the edge of the list nothing happens. Empty lines stay where they are, and a selection over several lines of one paragraph or list moves as a whole. The cursor or selection travels with the text, one undo step undoes the move.
+- **Moving lines** (Alt+↑ / Alt+↓): moves the line with the cursor (or the selected lines) one line up or down. An empty line is passed in one step, and a line it touches is swapped with it, so a line travels through empty lines one at a time and then past the text. A list item moves together with its sub-items, only among the items of the same level (at the edge of the list nothing happens). The cursor or selection travels with the text and one undo step undoes the move.
 - **Right-click menu**: the webview's own menu cut down to *Select all*, *Copy*, *Cut*, *Paste*, *Emoji* and *Dictation*, in that order with separators after *Select all*, *Paste* and *Emoji* (*Undo*, *Paste as plain text*, *Writing direction*, *More tools* and the rest are removed). The items stay the native ones, so Emoji and Dictation work as usual; the list is set in `src-tauri/src/context_menu.rs`.
 - **Zoom**: Ctrl+plus / Ctrl+minus (also the numeric keypad) or Ctrl + mouse wheel (over any part of the window, also the tab strip) scale the text of both panels and Ctrl+0 returns to 100%. The levels are 50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200, 250 and 300%. One wheel notch is one level; touchpads add up small movements. Zoom is a global setting: it applies to every tab and to files opened later, and it is remembered in the session (`zoom` in `session.json`). Each panel keeps showing the same place of the text while zooming. The toolbar, tabs, menus and status bar keep their size.
 - **Top bar**: hamburger menu, the tab strip and the window buttons. The top bar always stays visible; only the panels scroll.
@@ -171,7 +171,7 @@ src/                  frontend (TypeScript)
                       and keeps the GFM syntax tree up to date (used by the toolbar)
   find.ts             find bar (Ctrl+F, F3 / Shift+F3) and the match highlighting in
                       the editor (a CodeMirror plugin)
-  moveblock.ts        finding and swapping the paragraph / list item to move (Alt+↑/↓)
+  moveblock.ts        finding and swapping the line / list item to move (Alt+↑/↓)
   spell.ts            spell checking: word finding, answer cache, underlines in the
                       editor (a CodeMirror plugin)
   preview.ts          markdown-it preview (right panel), incl. the blank-lines extension,

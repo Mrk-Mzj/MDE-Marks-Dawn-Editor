@@ -1,4 +1,4 @@
-// Moving paragraphs and list items up and down (Alt+↑/↓). Works on plain text
+// Moving lines and list items up and down (Alt+↑/↓). Works on plain text
 // with `\n` line breaks, independent of the editor.
 
 export interface BlockMove {
@@ -10,10 +10,8 @@ export interface BlockMove {
   anchor: number;
   head: number;
   /**
-   * Where a line break (the offset of its `
-`) ends up. Each block keeps the
-   * break that ends it and the blank lines stay in place. Null for a break
-   * that disappears.
+   * Where a line break (the offset of its newline character) ends up. Each
+   * line keeps the break that ends it. Null for a break that disappears.
    */
   mapBreak: (pos: number) => number | null;
 }
@@ -106,10 +104,11 @@ function itemEnd(lines: Line[], start: number): number {
 }
 
 /**
- * Moves the paragraph containing the selection one paragraph up (`dir` -1) or
- * down (1). Inside a list it moves the single item with its sub-items, among
- * the items of the same level. Blank lines stay where they are. Returns null
- * when there is nothing to move or nowhere to move it.
+ * Moves the line with the cursor (or the selected lines) one line up (`dir` -1)
+ * or down (1). It passes empty lines one at a time and swaps places with the
+ * line it touches. A list item moves together with its sub-items and only
+ * among the items of the same level. Returns null when there is nothing to
+ * move or nowhere to move it.
  */
 export function moveBlock(text: string, anchor: number, head: number, dir: -1 | 1): BlockMove | null {
   const lines = splitLines(text);
@@ -119,12 +118,12 @@ export function moveBlock(text: string, anchor: number, head: number, dir: -1 | 
   let last = lineIndexAt(lines, selTo);
   // A selection that ends at the very start of a line does not include that line.
   if (selTo > selFrom && selTo === lines[last].from && last > first) last--;
-  if (isBlank(lines[first]) || isBlank(lines[last])) return null;
+  if (lines.slice(first, last + 1).every(isBlank)) return null;
 
-  let a: number;
-  let b: number;
+  let a = first;
+  let b = last;
   let level: number | null = null;
-  const sameBlock = blockAround(lines, first)[1] >= last;
+  const sameBlock = !isBlank(lines[first]) && blockAround(lines, first)[1] >= last;
   const s1 = sameBlock ? itemStart(lines, first) : -1;
   const s2 = sameBlock ? itemStart(lines, last) : -1;
   if (s1 >= 0 && s2 >= 0) {
@@ -132,34 +131,35 @@ export function moveBlock(text: string, anchor: number, head: number, dir: -1 | 
     a = itemStart(lines, first, shared);
     b = Math.max(itemEnd(lines, itemStart(lines, last, shared)), last);
     level = indentOf(lines[a]);
-  } else {
-    a = blockAround(lines, first)[0];
-    b = blockAround(lines, last)[1];
   }
 
-  // The neighbour to swap with, as first and last line.
+  // The neighbour to swap with, as first and last line: an empty line, a
+  // sibling list item, or the line (or list item) the selection touches.
   let other: [number, number];
   if (dir < 0) {
-    let p = a - 1;
-    while (p >= 0 && isBlank(lines[p])) p--;
+    const p = a - 1;
     if (p < 0) return null;
-    if (level === null) {
-      other = [blockAround(lines, p)[0], p];
-    } else {
+    if (isBlank(lines[p])) {
+      other = [p, p];
+    } else if (level !== null) {
       let j = p;
-      while (j >= 0 && (isBlank(lines[j]) || indentOf(lines[j]) > level)) j--;
+      while (j >= 0 && !isBlank(lines[j]) && indentOf(lines[j]) > level) j--;
       if (j < 0 || indentOf(lines[j]) !== level || !isItem(lines[j]) || itemEnd(lines, j) !== p) return null;
       other = [j, p];
+    } else {
+      const item = itemStart(lines, p, 0);
+      other = item >= 0 && itemEnd(lines, item) === p ? [item, p] : [p, p];
     }
   } else {
-    let n = b + 1;
-    while (n < lines.length && isBlank(lines[n])) n++;
+    const n = b + 1;
     if (n >= lines.length) return null;
-    if (level === null) {
-      other = [n, blockAround(lines, n)[1]];
-    } else {
+    if (isBlank(lines[n])) {
+      other = [n, n];
+    } else if (level !== null) {
       if (indentOf(lines[n]) !== level || !isItem(lines[n])) return null;
       other = [n, itemEnd(lines, n)];
+    } else {
+      other = [n, isItem(lines[n]) ? itemEnd(lines, n) : n];
     }
   }
 
