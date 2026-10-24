@@ -4,7 +4,7 @@ import type { EditorState } from "@codemirror/state";
 import { countChars, Editor } from "./editor";
 import { FindBar, SearchQuery } from "./find";
 import type { ScrollPosition, Selection } from "./editor";
-import { blockState, inlineState, insertLink, insertTable, setHeading, toggleInline, toggleList, toggleQuote } from "./format";
+import { applyLink, blockState, inlineState, insertLink, insertTable, linkAt, setHeading, toggleInline, toggleList, toggleQuote } from "./format";
 import { lang, t } from "./i18n";
 import { classifyHref, extensionOf, isMarkdownFile, needsConfirmation } from "./links";
 import { Menu } from "./menu";
@@ -17,7 +17,8 @@ import { isSpellMode, SpellService } from "./spell";
 import { Splitter, validSplit } from "./split";
 import { TabStrip } from "./tabs";
 import { initTitleBar } from "./titlebar";
-import { icons, TablePicker, Toolbar } from "./toolbar";
+import { icons, LinkPicker, TablePicker, Toolbar } from "./toolbar";
+import type { ToolbarPicker } from "./toolbar";
 import { DEFAULT_ZOOM, stepZoom, validZoom, WHEEL_STEP } from "./zoom";
 
 /** An open document: one tab. */
@@ -77,6 +78,8 @@ interface StoredSession {
   minimap?: boolean;
   /** The editor panel's share of the width, 0–1 (an app setting); 0.5 when missing. */
   split?: number;
+  /** One pane with the text rendered, or the editor and the preview (an app setting); one when missing. */
+  panes?: number;
 }
 
 /** Unique across runs, because tab ids name files in the session folder. */
@@ -96,7 +99,7 @@ const previewEl = $("#preview");
 const preview = new Preview(previewEl, followLink);
 const spell = new SpellService(lang);
 const search = new SearchQuery();
-const editor = new Editor($("#editor"), onEdit, spell, search);
+const editor = new Editor($("#editor"), onEdit, spell, search, { followLink, linkHint: t.linkCtrlClick });
 const findBar = new FindBar($("#find"), search, editor.view, {
   find: t.findLabel,
   placeholder: t.findPlaceholder,
@@ -121,6 +124,12 @@ minimap.onReflow(() => {
 
 const splitter = new Splitter($(".workspace"), $(".pane-editor"), $(".pane-preview"), $(".pane-divider"), t.splitterTitle);
 splitter.onChange(scheduleSessionSave);
+
+// One pane: the editor shows the text rendered (see live.ts). Two panes: the
+// Markdown source and the preview. The same for every tab.
+let panes: 1 | 2 = 1;
+// The preview is not rendered while it is hidden.
+let previewStale = true;
 
 let docs: Doc[] = [];
 let active: Doc;
@@ -205,8 +214,20 @@ function onEdit(): void {
     active.dirty = nowDirty;
     updateTitle();
   }
-  preview.scheduleRender(() => editor.text(), () => scrollSync.followEditor());
+  if (panes === 2) preview.scheduleRender(() => editor.text(), () => scrollSync.followEditor());
+  else previewStale = true;
   scheduleSessionSave();
+}
+
+/** Renders the active tab in the preview when it is shown. */
+function renderPreview(text: string, scrollTop: number): void {
+  if (panes === 1) {
+    previewStale = true;
+    return;
+  }
+  preview.render(text);
+  preview.scrollTop = scrollTop;
+  previewStale = false;
 }
 
 function updateTabs(): void {
@@ -276,7 +297,7 @@ function stash(): void {
   if (!active) return;
   active.state = editor.state;
   active.scroll = editor.scrollPosition();
-  active.previewScroll = preview.scrollTop;
+  if (panes === 2) active.previewScroll = preview.scrollTop;
 }
 
 function activate(doc: Doc): void {
@@ -287,8 +308,7 @@ function activate(doc: Doc): void {
   if (active && docs.includes(active)) stash();
   active = doc;
   editor.setState(doc.state, doc.scroll);
-  preview.render(doc.state.doc.toString());
-  preview.scrollTop = doc.previewScroll;
+  renderPreview(doc.state.doc.toString(), doc.previewScroll);
   scrollSync.followEditorSoon();
   updateNotice();
   updateTitle();
@@ -560,8 +580,7 @@ async function reloadFromDisk(doc: Doc): Promise<void> {
     const scroll = editor.scrollPosition();
     const previewScroll = preview.scrollTop;
     editor.setState(state, scroll);
-    preview.render(file.text);
-    preview.scrollTop = previewScroll;
+    renderPreview(file.text, previewScroll);
     scrollSync.followEditorSoon();
     updateNotice();
     updateTitle();
@@ -642,7 +661,7 @@ function storedTab(doc: Doc): StoredTab {
     stamp: doc.stamp,
     dirty: doc.dirty,
     scroll: isActive ? editor.scrollPosition() : doc.scroll,
-    previewScroll: isActive ? preview.scrollTop : doc.previewScroll,
+    previewScroll: isActive && panes === 2 ? preview.scrollTop : doc.previewScroll,
     selection: { anchor: state.selection.main.anchor, head: state.selection.main.head },
   };
 }
@@ -668,6 +687,7 @@ function saveSession(): Promise<void> {
       syncScroll: scrollSync.enabled,
       minimap: minimap.enabled,
       split: splitter.value,
+      panes,
     };
     await platform.writeSession(JSON.stringify(session));
   };
@@ -737,6 +757,7 @@ async function restoreSession(): Promise<number> {
   splitter.set(validSplit(session.split));
   if (typeof session.syncScroll === "boolean") scrollSync.setEnabled(session.syncScroll);
   if (typeof session.minimap === "boolean") minimap.setEnabled(session.minimap);
+  panes = session.panes === 2 ? 2 : 1;
   if (Array.isArray(session.openTypes)) {
     trustedTypes = new Set(session.openTypes.filter((type): type is string => typeof type === "string"));
   }
@@ -795,6 +816,24 @@ const formatting = {
   link: format((view) => insertLink(view, t.linkText)),
 };
 
+// One pane: the address of a link is typed in a field below the link button,
+// because the Markdown of the link is hidden.
+const linkPicker = new LinkPicker({ title: t.linkAddress, placeholder: t.linkPlaceholder }, () => editor.focus());
+
+function editLink(anchor: HTMLElement, align: "start" | "end"): void {
+  if (panes === 2) {
+    formatting.link();
+    return;
+  }
+  const { state } = editor;
+  const range = state.selection.main;
+  const link = linkAt(state, range.from, range.to);
+  const url = link ? state.sliceDoc(link.urlFrom, link.urlTo).replace(/^<(.*)>$/, "$1") : "";
+  linkPicker.show(anchor, align, url, (address) => format((view) => applyLink(view, address))());
+}
+
+const linkItem: ToolbarPicker = { kind: "picker", label: t.link, shortcut: "Ctrl+K", icon: icons.link, open: editLink };
+
 const tablePicker = new TablePicker(
   { columns: 8, rows: 8 },
   { title: t.table, size: t.tableSize },
@@ -839,7 +878,7 @@ const toolbar = new Toolbar(
       { kind: "button", label: t.quote, icon: icons.quote, run: formatting.quote, pressed: () => blockState(editor.state).quote },
     ],
     [
-      { kind: "button", label: t.link, shortcut: "Ctrl+K", icon: icons.link, run: formatting.link },
+      linkItem,
       { kind: "picker", label: t.table, icon: icons.table, open: (anchor, align) => tablePicker.show(anchor, align) },
     ],
     [{ kind: "button", label: t.dictation, shortcut: "Win+H", icon: icons.mic, run: () => void platform.startDictation() }],
@@ -897,7 +936,10 @@ const shortcuts: Record<string, () => void> = {
   KeyB: formatting.bold,
   KeyI: formatting.italic,
   KeyU: formatting.underline,
-  KeyK: formatting.link,
+  KeyK: () => {
+    const { anchor, align } = toolbar.anchorOf(linkItem);
+    editLink(anchor, align);
+  },
   Digit1: formatting.heading(1),
   Digit2: formatting.heading(2),
   Digit3: formatting.heading(3),
@@ -1010,13 +1052,48 @@ minimapStatus.addEventListener("click", () => {
   editor.focus();
 });
 
+const panesStatus = $<HTMLButtonElement>("#panes-status");
+function updatePanesStatus(): void {
+  $("#panes-status-text").textContent = t.panesStatus(panes);
+  panesStatus.title = t.panesTitle(panes);
+}
+
+/**
+ * One pane (the text rendered in the editor) or two (the source and the
+ * preview). The editor keeps showing the same place.
+ */
+function setPanes(count: 1 | 2): void {
+  const scroll = editor.scrollPosition();
+  panes = count;
+  document.documentElement.classList.toggle("single-pane", count === 1);
+  editor.setLive(count === 1);
+  editor.rescale(scroll);
+  if (count === 2 && previewStale && active) renderPreview(editor.text(), active.previewScroll);
+  scrollSync.setPaused(count === 1);
+  findBar.refresh();
+  updatePanesStatus();
+  updateSyncStatus();
+}
+
+panesStatus.addEventListener("click", () => {
+  setPanes(panes === 1 ? 2 : 1);
+  scheduleSessionSave();
+  editor.focus();
+});
+
+// Scrolling together needs both panes: with one it is shown dimmed and does nothing.
 const syncStatus = $<HTMLButtonElement>("#sync-status");
 function updateSyncStatus(): void {
   $("#sync-status-text").textContent = t.syncStatus(scrollSync.enabled);
-  syncStatus.title = t.syncTitle(scrollSync.enabled);
+  syncStatus.title = panes === 1 ? t.syncUnavailable : t.syncTitle(scrollSync.enabled);
+  syncStatus.setAttribute("aria-disabled", String(panes === 1));
 }
 updateSyncStatus();
 syncStatus.addEventListener("click", () => {
+  if (panes === 1) {
+    editor.focus();
+    return;
+  }
   scrollSync.setEnabled(!scrollSync.enabled);
   updateSyncStatus();
   scheduleSessionSave();
@@ -1046,7 +1123,9 @@ async function start(): Promise<void> {
   try {
     const [activeIndex, files] = await Promise.all([restoreSession(), platform.initialFiles()]);
     if (docs.length === 0) docs.push(newDoc());
+    setPanes(panes);
     activate(docs[activeIndex]);
+    updatePanesStatus();
     updateSyncStatus();
     updateMinimapStatus();
     sessionReady = true;

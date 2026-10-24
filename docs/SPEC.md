@@ -51,6 +51,32 @@ Zawartość obu paneli pokazuje ten sam otwarty plik. Domyślnie przewijanie jes
 
 
 
+#### Tryb pracy: jedno lub dwa okna
+
+Na dolnym pasku, między przełącznikiem minimapy a „Przewijaj razem”, jest przełącznik z ikoną okna aplikacji: „Okna: 1” / „Okna: 2”. Kliknięcie go przełącza tryb. Przy pierwszym uruchomieniu włączony jest tryb jednego okna. Ustawienie jest globalne (wspólne dla wszystkich zakładek) i zapamiętywane w sesji. Po przełączeniu trybu miejsce w dokumencie, kursor i zaznaczenie zostają takie same.
+
+Tryb dwóch okien to opisany wyżej widok z panelem edycji i panelem podglądu.
+
+W trybie jednego okna jeden panel zajmuje miejsce obu paneli i nie ma linii podziału. Działa jak Notatnik Windows przy plikach Markdown: treść jest od razu wyrenderowana i nadal można ją edytować. Znaki składni (#, **, _, -, >, [ ](adres), `<u>` itd.) są zawsze ukryte, także w linii z kursorem. Źródłem prawdy pozostaje plik, więc zapis daje ten sam Markdown co w trybie dwóch okien.
+
+* Formatowanie: przyciski na pasku narzędzi, skróty klawiszowe i autoformatowanie. Składnia wpisana ręcznie od razu staje się formatowaniem:
+  * „# ” … „##### ” na początku linii daje nagłówek,
+  * „- ”, „* ” i „1. ” dają listę, a „> ” cytat,
+  * \*\*tekst\*\* daje pogrubienie, a \*tekst\* i \_tekst\_ kursywę.
+
+  Ctrl+Z cofa zamianę i zostawia wpisane znaki.
+* Enter: w punkcie listy tworzy nowy punkt (na liście numerowanej z kolejnym numerem), a w pustym punkcie kończy listę. Tak samo działa w cytacie.
+* Backspace: na początku nagłówka, punktu listy lub cytatu usuwa formatowanie tej linii i zamienia ją w zwykły akapit. Kolejny Backspace łączy ją z poprzednią linią.
+* Ukryte znaczniki: kursor je omija, a strzałki przeskakują je tak, jakby ich nie było. Pojedynczy Backspace ani Delete ich nie usuwa. Usunięcie całego sformatowanego fragmentu usuwa także jego znaczniki.
+* Linki: tekst linku wygląda jak w podglądzie. Zwykłe kliknięcie stawia kursor, a Ctrl+klik otwiera link według zasad z sekcji „Linki”. Podpowiedź pokazuje pełny adres i „Ctrl+klik, aby otworzyć”. Przycisk linku na pasku narzędzi otwiera okienko z polem adresu, w którym adres się wpisuje i zmienia.
+* Tabele, bloki kodu, HTML z białej listy, linia pozioma i obrazki: są wyrenderowane, a obrazki pokazane jako ramka z tekstem alt. Kliknięcie elementu lub wejście w niego kursorem pokazuje jego surowe źródło do edycji. Gdy kursor wyjdzie z elementu, znów jest wyrenderowany.
+* Pojedynczy Enter i wiele pustych linii wyglądają tak samo jak w podglądzie.
+* Znajdź (Ctrl+F) przeszukuje tylko widoczny tekst i pomija ukryte znaczniki oraz adresy linków.
+* Bez zmian względem trybu dwóch okien: minimapa, sprawdzanie pisowni, Alt+strzałki i powiększanie. Licznik znaków nadal liczy cały plik razem ze składnią.
+* „Przewijaj razem” jest w tym trybie wyszarzony i nie reaguje na kliknięcie. Po powrocie do dwóch okien działa ze swoim zapamiętanym stanem.
+
+
+
 Powiększanie: rozmiar zawartości okna (tekstu plików md) ma się skalować z użyciem skrótów Ctrl+ i Ctrl-, a także przy przytrzymaniu wciśniętego klawisza Ctrl i użyciu rolki w myszce. Powiększanie jest ustawieniem globalnym, to znaczy, że dotyczy treści obu paneli na raz, dla każdej z otwartych zakładek, i dla plików otwieranych w przyszłości. Ma być zapamiętywane jako ustawienie aplikacji. Ctrl+0 przywraca skalę 100%.
 
 
@@ -115,10 +141,10 @@ Rozszerzenia poza GFM:
   * W podglądzie każde złamanie linii w pliku (pojedynczy Enter, bez pustej linii) jest wyświetlane jako nowa linia, tak jak w edytorze. W czystym GFM byłoby to „miękkie złamanie” wyświetlane jako spacja.
   * Plik pozostaje czystym Markdownem. Inne programy (np. GitHub) mogą wyświetlić takie linie połączone w jeden akapit.
 
-* Wiele pustych linii:
+* Puste linie:
 
   * Plik jest źródłem prawdy. Każda pusta linia jest zapisywana dokładnie tak, jak wpisał ją użytkownik, bez zamiany na <br> ani \&nbsp;.
-  * W widoku N pustych linii między akapitami daje odstęp o wysokości N−1 dodatkowych linii. Jedna pusta linia to zwykły odstęp akapitowy.
+  * W podglądzie odstęp między blokami (akapitami, nagłówkami, listami i ich punktami, cytatami, tabelami, blokami kodu) wynika wyłącznie z pustych linii w pliku: każda pusta linia to odstęp o wysokości jednej linii tekstu, a bloki bez pustej linii między nimi stykają się (np. nagłówek i lista tuż pod nim). Podgląd wygląda więc tak samo jak tryb jednego okna.
   * Otwarcie i zapisanie pliku bez edycji daje identyczne bajty.
   * Inne programy (GitHub, Notatnik) te linie zwiną. To świadomy kompromis, bo plik pozostaje czystym Markdownem.
 
@@ -197,7 +223,7 @@ Kryteria odbioru (do testów):
 
 1. Plik UTF-8 z BOM i CRLF, otwarty i zapisany bez edycji, jest bajt w bajt taki sam.
 2. To samo dla UTF-8 bez BOM z LF, dla pliku w Windows-1250 i dla pliku z mieszanymi końcami.
-3. Trzy puste linie między akapitami po zapisie i ponownym otwarciu pozostają trzema i wyświetlają się jako odstęp dwóch dodatkowych linii.
+3. Trzy puste linie między akapitami po zapisie i ponownym otwarciu pozostają trzema i wyświetlają się jako odstęp trzech linii, tak samo w podglądzie i w trybie jednego okna.
 4. Plik z <script>, onerror= i linkiem javascript: nie wykonuje niczego i nie otwiera niczego.
 
 

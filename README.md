@@ -4,12 +4,22 @@ A fast, lightweight Markdown editor for Windows 11. Portable: a single `MDE.exe`
 
 The specification lives in [docs/SPEC.md](docs/SPEC.md) and the visual design in [docs/DESIGN.md](docs/DESIGN.md).
 
-## Status: 0.5
+## Status: 0.6
 
-MVP plus tabs, a single instance, session memory, spell checking, the HTML whitelist, clickable links, the formatting toolbar and the minimap.
+MVP plus tabs, a single instance, session memory, spell checking, the HTML whitelist, clickable links, the formatting toolbar, the minimap and the one-pane mode (the text formatted while editing).
 
 ### Features
 
+- **One pane or two** (*Okna: 1 / 2* in the status bar, between *Map* and *Scroll together*, with an application-window icon): a click switches the mode. One pane is the default at the first start; the choice is a global setting, the same for every tab, remembered in the session (`panes` in `session.json`). Switching keeps the place in the document, the cursor and the selection.
+  - **Two panes**: the Markdown source editor on the left and the rendered GitHub Flavored Markdown preview on the right (described below).
+  - **One pane** (`src/live.ts`): the editor takes the whole width and shows the text formatted, like Notepad does with Markdown, while it stays editable. The Markdown markers (`#`, `**`, `_`, `` ` ``, `~~`, `>`, `[`…`](address)`, `<u>` and the other whitelisted tags, escaping backslashes) are always hidden, also on the line with the cursor; bullets show as •, ◦, ▪ by nesting level, numbered items show their rendered number, task items an outline check box, entities (`&amp;`) the character. The file is still the source of truth: the markers are only hidden, so saving gives the same bytes as in the two-pane mode, and undo, spell checking, Alt+↑/↓ and zoom work as before. The character count still counts the whole file with its Markdown.
+  - Formatting: the toolbar, the shortcuts, or Markdown typed by hand, which turns into formatting at once (`# ` … `##### ` at the start of a line, `- `, `* `, `1. `, `> `, `**text**`, `*text*`, `_text_`). Ctrl+Z right after that keeps the typed characters as plain text (the markers get escaping backslashes, which are hidden too); the next Ctrl+Z undoes the typing.
+  - Enter in a list item starts the next item (a numbered list counts on, a task item gets a new empty check box); Enter in an empty item ends the list. The same in a quote. Backspace at the start of a heading, list item or quote removes that line's format (the innermost one first); the next Backspace joins the line with the one above. Delete at the end of a line joins the next line without its block markers.
+  - The cursor skips the hidden markers: one press of ← / → is one visible character. Backspace and Delete never remove a marker alone; deleting all of a formatted stretch removes its markers too, and deleting or typing over part of it keeps it formatted (`**bo|ld** te|xt` → `**bo**xt`). A cursor never lands in front of a line's hidden `# `, `> ` or `- `, so typing cannot break them.
+  - Links are underlined like in the preview. A click only places the cursor; Ctrl+click opens the link (the same rules as in the preview), and the pointer becomes a hand while Ctrl is held. Hovering shows the full address and *Ctrl+click to open*. The link button (Ctrl+K) opens a field below it with the address of the link at the cursor: Enter sets it, an empty address removes the link and keeps its text, Esc cancels. Without a link at the cursor the selected text becomes a link, or the typed address is inserted as a link.
+  - Tables, code blocks, raw HTML blocks (`<details>`, …), horizontal rules and images (a frame with the alt text) are rendered like in the preview. Clicking one, or moving the cursor into it, shows its Markdown source (in the code font, on the `card` background) for editing; when the cursor leaves it, it is rendered again. Ctrl+click on a link in a rendered table opens it.
+  - Find (Ctrl+F) searches the visible text only: hidden markers and link addresses are skipped, and a match may run across hidden markers (`z link` finds *z linkiem* in `z [linkiem](…)`).
+  - *Scroll together* is dimmed and does nothing (its tooltip says it works with two panes); it keeps its setting for the two-pane mode. The preview is not rendered while it is hidden.
 - **Two panels**: Markdown source editor on the left, rendered GitHub Flavored Markdown preview on the right. Long lines always wrap; there are no horizontal scroll bars.
 - **Resizable panels**: drag the line between the panels to the left or right to give one panel more width at the expense of the other (the pointer turns into a left-right arrow over the line; the line itself keeps its color, so it does not distract). Neither panel gets narrower than 200px. Double-click the line to go back to the even 50/50 split. The split is a global setting, the same for every tab, kept when the window is resized and remembered in the session (`split` in `session.json`, the editor panel's share of the width).
 - **Synchronized scrolling** (an MDE extension; on by default): scrolling either panel (mouse wheel, keyboard, scroll bar, the cursor moving while typing) scrolls the other to the same place of the text. The status bar shows *Scroll together: on* (*Przewijaj razem: wł*) with a two-panel icon (a rectangle split by a vertical line); clicking it switches to *off*, and the panels then scroll independently. It is a global setting, the same for every tab, and it is remembered in the session (`syncScroll` in `session.json`).
@@ -25,7 +35,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - While the minimap is shown, the editor text has a fixed right margin over the whole height of the panel, wide enough that the box never covers text; turning the minimap off gives the text the full width again. The text rewraps and both panels keep showing the same place.
 - **Live preview**: headings, emphasis, strikethrough, lists, block quotes, code, tables, links and autolinks. MDE extensions beyond GFM (see docs/SPEC.md):
   - every Enter in the file is a line break in the preview, as in the editor;
-  - N blank lines between two blocks show as the usual paragraph gap plus N−1 empty lines (two blank lines = one extra line, three = two, …). This applies between top-level blocks and between blocks inside block quotes and list items; blank lines at the start of the document, between list items and inside code blocks keep their GFM meaning. The file itself is never changed.
+  - the space between blocks comes only from the blank lines in the file, exactly as in the editor and the one-pane mode: every blank line is an empty line of text, and blocks with no blank line between them touch (a heading with a list right below it, a paragraph followed by a quote). This holds for every kind of block — headings, paragraphs, lists and their items, quotes, tables, code blocks, horizontal rules, HTML blocks — at the top level and inside quotes and list items, also for blank lines at the start of the document; blank lines inside code blocks stay part of the code. Blocks have no margins of their own (headings, tables and code blocks keep the same small space they have in the one-pane mode, and margins never collapse), so a block sits at the same height in the preview as in the one-pane mode. The file itself is never changed.
 - **Raw HTML** in a file is cleaned with a whitelist (never executed): `<br>`, `<span>` (only `color` and `background-color`, as plain colors: names, `#hex`, `rgb()`/`hsl()`), `<details>` (with `open`) and `<summary>`, `<sub>`, `<sup>`, `<kbd>` and `<u>` are shown; their other attributes are dropped. `<script>`, `<iframe>`, `<object>`, `<style>`, `<form>` (and a few similar tags) are removed with their content, `on*` attributes never survive, and any other tag is dropped while its text stays. HTML comments disappear. The file itself is never changed.
 - **Links** in the preview are clickable (a left click; text selected by dragging is not a click). Hovering shows the full target.
   - `http`, `https` and `mailto` open in the default browser or mail program.
@@ -42,7 +52,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
     - a selection over several lines is formatted line by line; spaces at its edges and block markers (`- `, `## `, `> `) stay outside the markers. Formatting spanning several lines of one paragraph is recognized.
   - **Paragraph style** menu: *Heading 1–5* (Ctrl+1 … Ctrl+5) and *Paragraph text*. The current style is checked. Choosing the current heading level again turns the line back into paragraph text; a list item made a heading loses its list marker.
   - **Bulleted list** (`- `), **Numbered list** (`1. `, `2. `, …; numbering continues a numbered list right above) and **Quote** (`> `) toggle on all selected lines; the buttons show as pressed when the line with the cursor already has that format. Empty lines are left alone (inside a quote they get `>` so the quote stays one block).
-  - **Link** (Ctrl+K): the selection becomes `[text](url)` with `url` selected for typing; a selected web address goes into the parentheses and the link text is selected instead.
+  - **Link** (Ctrl+K): the selection becomes `[text](url)` with `url` selected for typing; a selected web address goes into the parentheses and the link text is selected instead. In the one-pane mode it opens the address field described above.
   - **Table**: a grid (up to 8 × 8, mouse or arrow keys + Enter) picks the number of columns and rows (the header row included). The table is inserted below the line with the cursor, separated by empty lines, with the first header cell selected.
   - When the panel is too narrow, the buttons that do not fit move to a *More* (…) menu at the end of the toolbar.
   - **Dictation** (microphone icon, after the table button and a separator; tooltip *Dictation (Win+H)*): starts Windows voice typing for the editor, like the *Dictation* item of the right-click menu. MDE presses Win+H for you (`start_dictation` in `src-tauri/src/main.rs`), so the spoken text lands where the cursor is, and the focus stays in the editor. Like the other buttons it moves to the *More* menu when the panel is narrow.
@@ -79,6 +89,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   | Bold / italic / underline | Ctrl+B / Ctrl+I / Ctrl+U |
   | Heading 1–5 | Ctrl+1 … Ctrl+5 |
   | Link | Ctrl+K |
+  | Open a link (one pane) | Ctrl+click |
   | Zoom in / out / 100% | Ctrl+plus / Ctrl+minus / Ctrl+0 (or Ctrl + mouse wheel) |
 
 - **Save as** offers the file types *Markdown files* (selected by default, `.md`), *Text files* (`.txt`) and *All files*. Picking *Text files* changes the extension of the suggested name to `.txt`; the content is written the same way in both cases.
@@ -115,10 +126,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 - **Start-up** takes about 0.55–0.65 s from launch to a visible window with the file loaded (target: < 0.5 s).
 - WebView2 keeps its browser cache in `%LOCALAPPDATA%\com.marksdawn.mde\`; the session lives in `%APPDATA%\MDE\`.
 - Changes by other programs are noticed when the MDE window gets the focus back, not instantly while it is in the foreground.
-
-### Not yet implemented
-
-Resizable panels (and remembering their proportions).
+- **The minimap in the one-pane mode** draws the Markdown source lines (markers included, all at the text size), not the formatted text; the slider still follows the editor.
 
 ## Building
 
@@ -172,7 +180,9 @@ src/                  frontend (TypeScript)
                       it also tracks line breaks that differ from the dominant style
                       and keeps the GFM syntax tree up to date (used by the toolbar)
   find.ts             find bar (Ctrl+F, F3 / Shift+F3) and the match highlighting in
-                      the editor (a CodeMirror plugin)
+                      the editor (a CodeMirror plugin); in one pane it searches the visible text
+  live.ts             the one-pane mode: hidden Markdown markers, rendered blocks and
+                      widgets, cursor movement, Backspace/Delete/Enter, typed formatting
   moveblock.ts        finding and swapping the line / list item to move (Alt+↑/↓)
   spell.ts            spell checking: word finding, answer cache, underlines in the
                       editor (a CodeMirror plugin)
@@ -182,7 +192,8 @@ src/                  frontend (TypeScript)
   links.ts            which links are followed and how (web, relative, blocked)
   format.ts           formatting commands (bold, headings, lists, quote, link, table);
                       bold/italic/underline work on the GFM syntax tree (@lezer/markdown)
-  toolbar.ts          formatting toolbar, its "more" menu and the table size picker
+  toolbar.ts          formatting toolbar, its "more" menu, the table size picker and the
+                      link address field (one pane)
   zoom.ts             zoom levels and stepping (Ctrl+plus/minus/0, Ctrl+wheel)
   scrollsync.ts       synchronized scrolling of the two panels (matched by source line)
   minimap.ts          minimap of the editor panel (own word wrapping, canvas drawing,

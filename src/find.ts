@@ -6,6 +6,7 @@ import { EditorSelection, RangeSetBuilder, StateEffect } from "@codemirror/state
 import type { EditorState, Extension, Text } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin } from "@codemirror/view";
 import type { DecorationSet, ViewUpdate } from "@codemirror/view";
+import { hiddenRanges, isLive } from "./live";
 
 interface Match {
   from: number;
@@ -43,21 +44,52 @@ export class SearchQuery {
 
   // The matches of the last document searched, so the highlighting and the
   // counter share one pass over the text.
-  private cache: { doc: Text; regexp: RegExp; matches: Match[] } | null = null;
+  private cache: { doc: Text; live: boolean; regexp: RegExp; matches: Match[] } | null = null;
 
-  /** Every match in `doc`, in order. */
-  matches(doc: Text): Match[] {
+  /** Every match in the document, in order. In the one-pane mode only the visible text is searched. */
+  matches(state: EditorState): Match[] {
     const { regexp } = this;
     if (!regexp) return [];
-    if (this.cache?.doc !== doc || this.cache.regexp !== regexp) {
-      const matches: Match[] = [];
-      for (const match of doc.toString().matchAll(regexp)) {
-        matches.push({ from: match.index, to: match.index + match[0].length });
-      }
-      this.cache = { doc, regexp, matches };
+    const { doc } = state;
+    const live = isLive(state);
+    if (this.cache?.doc !== doc || this.cache.live !== live || this.cache.regexp !== regexp) {
+      this.cache = { doc, live, regexp, matches: live ? visibleMatches(state, regexp) : allMatches(doc.toString(), regexp) };
     }
     return this.cache.matches;
   }
+}
+
+function allMatches(text: string, regexp: RegExp): Match[] {
+  const matches: Match[] = [];
+  for (const match of text.matchAll(regexp)) matches.push({ from: match.index, to: match.index + match[0].length });
+  return matches;
+}
+
+/** Matches in the text with the hidden Markdown markers left out, mapped back to the document. */
+function visibleMatches(state: EditorState, regexp: RegExp): Match[] {
+  const { doc } = state;
+  // The visible pieces of the document: `start` is where each begins in the joined text.
+  const pieces: { from: number; to: number; start: number }[] = [];
+  let text = "";
+  let pos = 0;
+  for (const h of [...(hiddenRanges(state) ?? []), { from: doc.length, to: doc.length }]) {
+    if (h.from > pos) {
+      pieces.push({ from: pos, to: h.from, start: text.length });
+      text += doc.sliceString(pos, h.from);
+    }
+    pos = Math.max(pos, h.to);
+  }
+  const docPos = (index: number) => {
+    let low = 0;
+    let high = pieces.length - 1;
+    while (low < high) {
+      const mid = (low + high + 1) >> 1;
+      if (pieces[mid].start <= index) low = mid;
+      else high = mid - 1;
+    }
+    return pieces[low].from + index - pieces[low].start;
+  };
+  return allMatches(text, regexp).map((match) => ({ from: docPos(match.from), to: docPos(match.to - 1) + 1 }));
 }
 
 /** Index of the first match that ends after `pos`. */
@@ -108,7 +140,7 @@ export function searchHighlighting(query: SearchQuery): Extension {
 
       private build(): void {
         const { state } = this.view;
-        const matches = query.matches(state.doc);
+        const matches = query.matches(state);
         const { main } = state.selection;
         const builder = new RangeSetBuilder<Decoration>();
         let next = 0;
@@ -292,7 +324,7 @@ export class FindBar {
    */
   private select(direction: -1 | 0 | 1): void {
     const { state } = this.view;
-    const matches = this.query.matches(state.doc);
+    const matches = this.query.matches(state);
     this.updateCounter();
     if (matches.length === 0) return;
     const { main } = state.selection;
@@ -321,7 +353,7 @@ export class FindBar {
       this.counter.textContent = "";
       return;
     }
-    const matches = this.query.matches(state.doc);
+    const matches = this.query.matches(state);
     const current = currentIndex(state, matches);
     this.counter.textContent =
       matches.length === 0

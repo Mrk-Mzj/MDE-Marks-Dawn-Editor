@@ -3,12 +3,14 @@
 import { defaultKeymap, history, historyKeymap, insertTab } from "@codemirror/commands";
 import type { Command } from "@codemirror/view";
 import { defineLanguageFacet, Language } from "@codemirror/language";
-import { EditorSelection, EditorState, StateEffect, StateField } from "@codemirror/state";
-import type { Text } from "@codemirror/state";
+import { Compartment, EditorSelection, EditorState, StateEffect, StateField } from "@codemirror/state";
+import type { Extension, Text } from "@codemirror/state";
 import { drawSelection, EditorView, keymap } from "@codemirror/view";
 import { GFM, parser } from "@lezer/markdown";
 import { searchHighlighting } from "./find";
 import type { SearchQuery } from "./find";
+import { liveMode } from "./live";
+import type { LiveConfig } from "./live";
 import { moveBlock } from "./moveblock";
 import type { Eol, LineBreak } from "./platform";
 import { spellChecking } from "./spell";
@@ -120,6 +122,9 @@ function moveBlockCommand(dir: -1 | 1): Command {
   };
 }
 
+// The one-pane mode switched off; one value, so states can be compared with it.
+const noExtension: Extension = [];
+
 /**
  * Where the editor is scrolled to: the first visible line (`pos` is its start)
  * and where the top of its text is, relative to the top of the panel
@@ -160,13 +165,19 @@ export class Editor {
   readonly view: EditorView;
   private readonly listeners: (() => void)[] = [];
   private readonly layoutListeners: (() => void)[] = [];
+  // The one-pane mode (see live.ts) is part of each tab's state.
+  private readonly liveCompartment = new Compartment();
+  private readonly liveExtension: Extension;
+  private liveOn = false;
 
   constructor(
     host: HTMLElement,
     onChange: () => void,
     private readonly spell: SpellService,
     private readonly search: SearchQuery,
+    live: LiveConfig,
   ) {
+    this.liveExtension = liveMode(live);
     // CodeMirror injects its styles with constructable stylesheets only inside
     // a shadow root; in the document it would add a <style> element, which the
     // strict Content Security Policy blocks.
@@ -205,6 +216,7 @@ export class Editor {
         // The browser's own spell checking is off; see spell.ts.
         spellChecking(this.spell),
         searchHighlighting(this.search),
+        this.liveCompartment.of(this.liveContent()),
         EditorView.updateListener.of((update) => {
           if (update.docChanged || update.geometryChanged || update.heightChanged || update.viewportChanged) {
             for (const listener of this.layoutListeners) listener();
@@ -222,8 +234,28 @@ export class Editor {
     });
   }
 
+  private liveContent(): Extension {
+    return this.liveOn ? this.liveExtension : noExtension;
+  }
+
+  /** Whether the editor shows the document rendered (the one-pane mode). */
+  get live(): boolean {
+    return this.liveOn;
+  }
+
+  /** Switches the one-pane mode on or off; tabs shown later follow it too. */
+  setLive(on: boolean): void {
+    if (on === this.liveOn) return;
+    this.liveOn = on;
+    this.view.dispatch({ effects: this.liveCompartment.reconfigure(this.liveContent()) });
+  }
+
   /** Shows `state` (another tab's document), scrolled to `scroll`. */
   setState(state: EditorState, scroll: ScrollPosition | null = null): void {
+    // A tab stored while the other mode was on.
+    if (this.liveCompartment.get(state) !== this.liveContent()) {
+      state = state.update({ effects: this.liveCompartment.reconfigure(this.liveContent()) }).state;
+    }
     this.view.setState(state);
     if (scroll && scroll.pos <= state.doc.length) {
       this.scrollTo(scroll);

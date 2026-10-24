@@ -46,18 +46,24 @@ export function markRawHtml(html: string): string {
   );
 }
 
-/** Applies `color` and `background-color` from a style attribute; all else is ignored. */
-function copyColors(style: string, target: HTMLElement): void {
+/** The `color` and `background-color` declarations of a style attribute that are allowed; all else is ignored. */
+export function allowedColors(style: string): [property: string, value: string][] {
+  const colors: [string, string][] = [];
   for (const declaration of style.split(";")) {
     const colon = declaration.indexOf(":");
     if (colon < 0) continue;
     const property = declaration.slice(0, colon).trim().toLowerCase();
     const value = declaration.slice(colon + 1).trim();
-    // Set through the style object: the Content Security Policy forbids style attributes.
     if ((property === "color" || property === "background-color") && COLOR.test(value) && CSS.supports(property, value)) {
-      target.style.setProperty(property, value);
+      colors.push([property, value]);
     }
   }
+  return colors;
+}
+
+function copyColors(style: string, target: HTMLElement): void {
+  // Set through the style object: the Content Security Policy forbids style attributes.
+  for (const [property, value] of allowedColors(style)) target.style.setProperty(property, value);
 }
 
 function rebuild(source: Element, tag: string): Element {

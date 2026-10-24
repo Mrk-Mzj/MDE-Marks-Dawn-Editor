@@ -34,30 +34,34 @@ md.linkify.add("www.", {
   },
 });
 
-// MDE extension beyond GFM (see docs/SPEC.md): N blank lines between two
-// blocks show as the usual paragraph gap plus N−1 empty lines. Only blocks that
-// follow a sibling in the same container count, so list items, table rows and
-// the start of the document are left alone.
+// MDE extension beyond GFM (see docs/SPEC.md): the space between blocks comes
+// only from the blank lines in the file, as in the editor. Each blank line is
+// an empty line of text; blocks with no blank line between them touch (a
+// heading right above a list). Blocks have no margins of their own (see
+// styles.css), so the preview looks like the one-pane mode.
 md.core.ruler.push("blank_lines", (state) => {
   const lines = state.src.split("\n");
   const tokens: typeof state.tokens = [];
-  state.tokens.forEach((token, i) => {
-    const prev = state.tokens[i - 1];
-    if (token.map && token.nesting !== -1 && token.type !== "list_item_open" && prev?.level === token.level && prev.nesting !== 1) {
+  // Several tokens start on one line (a list, its first item, the item's
+  // paragraph); the blank lines above it count once, for the outermost.
+  const counted = new Set<number>();
+  for (const token of state.tokens) {
+    if (token.map && token.block && token.nesting !== -1 && token.type !== "inline" && !counted.has(token.map[0])) {
+      counted.add(token.map[0]);
       // Inside a block quote, a line holding only `>` markers is blank too.
       const blank = token.level === 0 ? /^[ \t]*$/ : /^[ \t>]*$/;
       let count = 0;
       for (let line = token.map[0] - 1; line >= 0 && blank.test(lines[line]); line--) count++;
-      if (count > 1) {
+      if (count > 0) {
         const spacer = new state.Token("blank_lines", "", 0);
         spacer.block = true;
         spacer.level = token.level;
-        spacer.meta = { extra: count - 1 };
+        spacer.meta = { count };
         tokens.push(spacer);
       }
     }
     tokens.push(token);
-  });
+  }
   state.tokens = tokens;
 });
 
@@ -74,7 +78,7 @@ md.core.ruler.push("source_lines", (state) => {
 });
 
 md.renderer.rules.blank_lines = (tokens, idx) =>
-  '<div class="blank-line" aria-hidden="true"></div>'.repeat((tokens[idx].meta as { extra: number }).extra);
+  '<div class="blank-line" aria-hidden="true"></div>'.repeat((tokens[idx].meta as { count: number }).count);
 
 const imageIcon =
   '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>';
@@ -100,6 +104,14 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
   token.attrSet("title", shown);
   return defaultLinkOpen(tokens, idx, options, env, self);
 };
+
+/** Renders a piece of Markdown as sanitized DOM, as the preview shows it. */
+export function renderFragment(source: string): DocumentFragment {
+  const staging = document.createElement("template");
+  staging.innerHTML = md.render(source);
+  sanitize(staging.content);
+  return staging.content;
+}
 
 /**
  * Where the source lines show in the preview: `heights[i]` (from the top of

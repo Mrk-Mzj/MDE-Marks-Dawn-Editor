@@ -49,10 +49,11 @@ export interface ToolbarMenu {
   entries: () => MenuEntry[];
 }
 
-/** A button that opens the table size picker. */
+/** A button that opens a popover below it (the table size picker, the link address). */
 export interface ToolbarPicker {
   kind: "picker";
   label: string;
+  shortcut?: string;
   icon: string;
   open: (anchor: HTMLElement, align: "start" | "end") => void;
 }
@@ -128,7 +129,7 @@ export class Toolbar {
   }
 
   private createUnit(item: ToolbarItem): Unit {
-    const button = this.createButton(item.label, item.icon, item.kind === "button" ? item.shortcut : undefined);
+    const button = this.createButton(item.label, item.icon, item.kind === "menu" ? undefined : item.shortcut);
     if (item.kind === "button") {
       button.addEventListener("click", () => {
         item.run();
@@ -176,13 +177,19 @@ export class Toolbar {
         if (entries.length > 0) entries.push("separator");
         entries.push(...item.entries(), "separator");
       } else if (item.kind === "picker") {
-        entries.push({ label: `${item.label}…`, run: () => item.open(this.moreAnchor, "end") });
+        entries.push({ label: `${item.label}…`, shortcut: item.shortcut, run: () => item.open(this.moreAnchor, "end") });
       } else {
         entries.push({ label: item.label, shortcut: item.shortcut, run: () => (item.run(), this.focusEditor()) });
       }
     }
     if (entries[entries.length - 1] === "separator") entries.pop();
     return entries;
+  }
+
+  /** Where a popover of `item` opens: below its button, or below "more" when the button is hidden there. */
+  anchorOf(item: ToolbarItem): { anchor: HTMLElement; align: "start" | "end" } {
+    const unit = this.units.find((u) => u.item === item);
+    return unit && !unit.el.hidden ? { anchor: unit.el, align: "start" } : { anchor: this.moreAnchor, align: "end" };
   }
 
   /** Updates the pressed state of the buttons for the line with the cursor. */
@@ -311,5 +318,80 @@ export class TablePicker {
         return;
     }
     event.preventDefault();
+  }
+}
+
+/** The address of a link, typed in a field below the link button (the one-pane mode). */
+export class LinkPicker {
+  private readonly panel: HTMLElement;
+  private readonly input: HTMLInputElement;
+  private anchorEl: HTMLElement | null = null;
+  private onApply: ((url: string) => void) | null = null;
+
+  constructor(
+    labels: { title: string; placeholder: string },
+    private readonly focusEditor: () => void,
+  ) {
+    this.panel = document.createElement("div");
+    this.panel.className = "link-picker";
+    this.panel.dataset.slot = "popover";
+    this.panel.setAttribute("role", "dialog");
+    this.panel.setAttribute("aria-label", labels.title);
+    this.panel.hidden = true;
+    this.input = document.createElement("input");
+    this.input.type = "text";
+    this.input.className = "link-input";
+    this.input.dataset.slot = "input";
+    this.input.placeholder = labels.placeholder;
+    this.input.spellcheck = false;
+    this.input.setAttribute("aria-label", labels.title);
+    this.panel.append(this.input);
+    document.body.append(this.panel);
+
+    this.input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        const apply = this.onApply;
+        const url = this.input.value.trim();
+        this.hide();
+        apply?.(url);
+      } else if (event.key === "Escape" || event.key === "Tab") {
+        event.preventDefault();
+        this.hide();
+      }
+    });
+    document.addEventListener("pointerdown", (event) => {
+      if (this.isOpen && !this.panel.contains(event.target as Node) && !this.anchorEl?.contains(event.target as Node)) {
+        this.hide(false);
+      }
+    });
+    window.addEventListener("blur", () => this.hide(false));
+    window.addEventListener("resize", () => this.hide(false));
+  }
+
+  get isOpen(): boolean {
+    return !this.panel.hidden;
+  }
+
+  /** Opens the field below `anchor` with `url` in it; Enter passes the typed address to `apply`. */
+  show(anchor: HTMLElement, align: "start" | "end", url: string, apply: (url: string) => void): void {
+    if (this.isOpen && this.anchorEl === anchor) {
+      this.hide();
+      return;
+    }
+    this.anchorEl = anchor;
+    this.onApply = apply;
+    this.input.value = url;
+    this.panel.hidden = false;
+    placeBelow(this.panel, anchor, align);
+    this.input.focus();
+    this.input.select();
+  }
+
+  hide(restoreFocus = true): void {
+    if (!this.isOpen) return;
+    this.panel.hidden = true;
+    this.onApply = null;
+    if (restoreFocus) this.focusEditor();
   }
 }

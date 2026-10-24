@@ -442,6 +442,16 @@ body.resizing-panes .pane {
   pointer-events: none;
 }
 
+/* One pane: the editor (showing the text formatted) takes the whole width. */
+.single-pane .pane-divider,
+.single-pane .pane-preview {
+  display: none;
+}
+
+.single-pane .pane-editor {
+  flex-grow: 1 !important;
+}
+
 /* ---------- Formatting toolbar ---------- */
 
 /* The first icon lines up with the text below: the button's 8px inner
@@ -604,6 +614,41 @@ body.resizing-panes .pane {
   text-align: center;
 }
 
+/* ---------- Link address (one pane) ---------- */
+
+.link-picker {
+  position: fixed;
+  z-index: 10;
+  width: 320px;
+  max-width: calc(100vw - 8px);
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: var(--shadow-md);
+  animation: menu-in 150ms ease-out;
+}
+
+/* Input (docs/DESIGN.md, section 7), like the find field without its icon. */
+.link-input {
+  width: 100%;
+  height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklch, var(--input) 30%, transparent);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  user-select: text;
+}
+
+.link-input::placeholder {
+  color: var(--muted-foreground);
+}
+
 /* ---------- Editor ---------- */
 
 /* The editor and the minimap above it. */
@@ -703,12 +748,23 @@ body.resizing-panes .pane {
   color: var(--muted-foreground);
 }
 
-.markdown-body > :first-child {
-  margin-top: 0;
+/* A column whose blocks' margins never collapse, like the blocks of the
+   one-pane mode, which each keep their own space (src/live.ts). */
+.markdown-body {
+  display: flex;
+  flex-direction: column;
 }
 
+.markdown-body > * {
+  flex-shrink: 0;
+}
+
+/* Blocks have no margins: the space between them comes from the blank lines
+   in the file (see .blank-line), so the preview looks like the one-pane mode.
+   Headings get the same small space as there (src/live.ts, liveTheme). */
 .markdown-body :is(h1, h2, h3, h4, h5, h6) {
-  margin: 1.5em 0 0.5em;
+  margin: 0;
+  padding: 0.35em 0 0.15em;
   font-weight: 600;
   line-height: 1.25;
 }
@@ -716,14 +772,16 @@ body.resizing-panes .pane {
 .markdown-body h1 {
   font-size: 1.875em;
   letter-spacing: -0.025em;
-  padding-bottom: 0.3em;
+  /* The line takes 1px of the padding: the one-pane mode draws it inside the line. */
+  padding-bottom: calc(0.3em - 1px);
   border-bottom: 1px solid var(--border);
 }
 
 .markdown-body h2 {
   font-size: 1.5em;
   letter-spacing: -0.02em;
-  padding-bottom: 0.3em;
+  /* The line takes 1px of the padding: the one-pane mode draws it inside the line. */
+  padding-bottom: calc(0.3em - 1px);
   border-bottom: 1px solid var(--border);
 }
 
@@ -745,26 +803,22 @@ body.resizing-panes .pane {
   color: var(--muted-foreground);
 }
 
-.markdown-body :is(p, ul, ol, blockquote, pre, table) {
-  margin: 0 0 1em;
+.markdown-body :is(p, ul, ol, blockquote) {
+  margin: 0;
+}
+
+/* Rendered like the blocks of the one-pane mode, which have this space around them. */
+.markdown-body :is(pre, table, details) {
+  margin: 0.25em 0;
 }
 
 .markdown-body :is(ul, ol) {
   padding-left: 1.75em;
 }
 
-/* One extra empty line of text (see the multiple-blank-lines extension). */
+/* One blank line of the file: an empty line of text (see the blank-lines extension). */
 .markdown-body .blank-line {
   height: 1.6em;
-}
-
-.markdown-body li + li,
-.markdown-body li > :is(ul, ol) {
-  margin-top: 0.25em;
-}
-
-.markdown-body li > :is(ul, ol) {
-  margin-bottom: 0;
 }
 
 .markdown-body blockquote {
@@ -775,7 +829,7 @@ body.resizing-panes .pane {
 
 .markdown-body hr {
   height: 1px;
-  margin: 1.5em 0;
+  margin: 1.05em 0;
   border: 0;
   background: var(--border);
 }
@@ -808,10 +862,6 @@ body.resizing-panes .pane {
   background: var(--card);
   font-family: var(--font-mono);
   font-size: 0.875em;
-}
-
-.markdown-body details {
-  margin: 0 0 1em;
 }
 
 .markdown-body summary {
@@ -929,9 +979,10 @@ body.resizing-panes .pane {
   text-overflow: ellipsis;
 }
 
-/* Button, variant ghost, size xs. */
+/* Button, variant ghost, size xs. In a narrow window the labels are cut short. */
 .status-button {
   display: inline-flex;
+  min-width: 0;
   align-items: center;
   gap: 6px;
   height: 24px;
@@ -946,9 +997,25 @@ body.resizing-panes .pane {
   transition: color 150ms, background-color 150ms, box-shadow 150ms;
 }
 
+.status-button > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .status-button:hover {
   background: var(--accent);
   color: var(--accent-foreground);
+}
+
+/* Not available in the current mode (scrolling together with one pane). */
+.status-button[aria-disabled="true"] {
+  opacity: 0.5;
+}
+
+.status-button[aria-disabled="true"]:hover {
+  background: transparent;
+  color: var(--muted-foreground);
 }
 
 .status-button:focus-visible {

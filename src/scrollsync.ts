@@ -43,6 +43,8 @@ function place(element: HTMLElement, height: number): number {
 
 export class ScrollSync {
   private on = true;
+  // With one pane there is no preview to follow; the setting stays as it is.
+  private paused = false;
   private leader: HTMLElement | null = null;
   private leadUntil = 0;
   private readonly editorEl: HTMLElement;
@@ -64,6 +66,12 @@ export class ScrollSync {
     return this.on;
   }
 
+  /** Stops following while the preview is hidden; resuming brings it to the editor's place. */
+  setPaused(paused: boolean): void {
+    this.paused = paused;
+    if (!paused) this.followEditorSoon();
+  }
+
   /** Turning it on brings the preview to the editor's place. */
   setEnabled(on: boolean): void {
     this.on = on;
@@ -72,7 +80,7 @@ export class ScrollSync {
 
   /** Scrolls the preview to match the editor. */
   followEditor(): void {
-    if (!this.on) return;
+    if (!this.on || this.paused) return;
     this.lead(this.editorEl);
     const map = this.preview.sourceMap();
     const line = this.editor.lineAtHeight(probe(this.editorEl));
@@ -86,7 +94,7 @@ export class ScrollSync {
    * not move the editor.
    */
   followEditorSoon(): void {
-    if (!this.on) return;
+    if (!this.on || this.paused) return;
     this.lead(this.editorEl);
     requestAnimationFrame(() => this.followEditor());
   }
@@ -104,7 +112,7 @@ export class ScrollSync {
   }
 
   private scrolled(element: HTMLElement): void {
-    if (!this.on) return;
+    if (!this.on || this.paused) return;
     if (element !== this.leader && performance.now() < this.leadUntil) return;
     if (element === this.editorEl) this.followEditor();
     else this.followPreview();

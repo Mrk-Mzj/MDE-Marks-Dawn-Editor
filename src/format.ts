@@ -503,6 +503,57 @@ export function insertLink(view: EditorView, placeholder: string): void {
   );
 }
 
+/** A link `[text](url)`: the whole of it, its text and its address. */
+export interface LinkInfo {
+  from: number;
+  to: number;
+  textFrom: number;
+  textTo: number;
+  urlFrom: number;
+  urlTo: number;
+}
+
+/** The link with an address (not a reference) that `from`–`to` lies in, if any. */
+export function linkAt(state: EditorState, from: number, to = from): LinkInfo | null {
+  for (let node: SyntaxNode | null = syntaxTree(state).resolveInner(from, 1); node; node = node.parent) {
+    if (node.name !== "Link") continue;
+    const marks = node.getChildren("LinkMark");
+    const url = node.getChild("URL");
+    if (marks.length < 2 || !url || from < node.from || to > node.to) return null;
+    return { from: node.from, to: node.to, textFrom: marks[0].to, textTo: marks[1].from, urlFrom: url.from, urlTo: url.to };
+  }
+  return null;
+}
+
+/** The address as written in a link: in angle brackets when it has spaces or brackets. */
+const linkAddress = (url: string) => (/[\s()<>]/.test(url) ? `<${url.replace(/[<>]/g, encodeURIComponent)}>` : url);
+
+/**
+ * Sets the address of the link at the selection, or removes the link (keeping
+ * its text) for an empty address. Without a link there, makes the selected
+ * text a link, or inserts the address as a link at the cursor.
+ */
+export function applyLink(view: EditorView, url: string): void {
+  const { state } = view;
+  const range = state.selection.main;
+  const link = linkAt(state, range.from, range.to);
+  if (link) {
+    if (url) {
+      apply(view, [{ from: link.urlFrom, to: link.urlTo, insert: linkAddress(url) }]);
+    } else {
+      apply(view, [
+        { from: link.from, to: link.textFrom },
+        { from: link.textTo, to: link.to },
+      ]);
+    }
+    return;
+  }
+  if (!url) return;
+  const text = range.empty ? url.replace(/[[\]]/g, "\\$&") : state.sliceDoc(range.from, range.to);
+  const insert = `[${text}](${linkAddress(url)})`;
+  apply(view, [{ from: range.from, to: range.to, insert }], () => EditorSelection.single(range.from + insert.length));
+}
+
 /**
  * Inserts an empty table with `columns` columns and `rows` rows (the header row
  * included) below the line with the cursor, separated from other text by empty
