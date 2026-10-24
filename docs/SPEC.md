@@ -16,7 +16,7 @@ Polecenia mają być obsługiwane powszechnie używanymi skrótami klawiszowymi,
 
 Znajdź (Ctrl+F) służy wyłącznie do wyszukiwania w lewym panelu, z przechodzeniem do następnego i poprzedniego wyniku (F3 / Shift+F3). Nie ma funkcji zamiany. Wszystkie dopasowania są podświetlone, a bieżące wyróżnione mocniej; pasek pokazuje liczbę wyników. Domyślnie wielkość liter nie ma znaczenia; przełącznik „Uwzględnij wielkość liter” (Aa) to zmienia. Ponowne Ctrl+F lub Esc zamyka wyszukiwanie.
 
-Język interfejsu wybieramy według języka Windows: polski dla polskiej wersji systemu, angielski dla każdej innej.
+Język interfejsu wybieramy według języka Windows: polski dla polskiej wersji systemu, angielski dla każdej innej. Język wszystkich napisów, także natywnych, wybiera program na podstawie języka wyświetlania Windows.
 
 
 
@@ -206,7 +206,9 @@ Przyjmujemy kodowanie UTF-8.
 
 Stosujemy sprawdzanie pisowni w języku polskim i angielskim. Błędy podkreślamy cienką pomarańczową linią. Status na dolnym pasku programu, opatrzony ikoną kartki i ołówka. Kliknięcie napisu zmienia tryb działania sprawdzania pisowni wg schematu: polski -> angielski -> sprawdzanie pisowni wyłączone.
 
-Sprawdzanie pisowni korzysta z wbudowanego w Windows Spell Checking API (bez dołączania własnych słowników). Jeśli w systemie brakuje słownika dla wybranego języka, pokazujemy to w statusie na dolnym pasku.
+Sprawdzanie pisowni korzysta z wbudowanego w Windows Spell Checking API (bez dołączania własnych słowników). Jeśli w systemie brakuje słownika dla wybranego języka, pokazujemy to w statusie na dolnym pasku. Kliknięcie statusu przy braku słownika pokazuje okno z wyjaśnieniem i przyciskami: otwórz ustawienia języka Windows, zmień język pisowni, anuluj.
+
+Przy starcie program sprawdza obecność środowiska WebView2. Jeśli go brakuje, pokazuje okno z przyciskami „Zainstaluj” (otwiera pobieranie instalatora ze strony Microsoft) i „Anuluj”, po czym kończy działanie.
 
 
 
