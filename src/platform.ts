@@ -220,6 +220,25 @@ export async function askSaveAsUtf8(name: string, chars: string): Promise<boolea
   return result === t.saveUtf8Button || result === "Ok";
 }
 
+export type DictionaryChoice = "settings" | "change" | "cancel";
+
+/** Tells that Windows lacks the dictionary of `language` and offers to open the language settings. */
+export async function askMissingDictionary(language: string): Promise<DictionaryChoice> {
+  if (!inTauri) return "change";
+  const result = await message(t.missingDictionary(language), {
+    title: t.missingDictionaryTitle,
+    kind: "info",
+    buttons: { yes: t.openSettingsButton, no: t.nextLanguageButton, cancel: t.cancelButton },
+  });
+  if (result === t.openSettingsButton || result === "Yes") return "settings";
+  if (result === t.nextLanguageButton || result === "No") return "change";
+  return "cancel";
+}
+
+export async function openLanguageSettings(): Promise<void> {
+  if (inTauri) await invoke("open_language_settings");
+}
+
 export async function showError(text: string): Promise<void> {
   if (!inTauri) {
     window.alert(text);

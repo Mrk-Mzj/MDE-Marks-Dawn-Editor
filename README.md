@@ -102,9 +102,9 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 - **Spell checking** in the editor, using the Windows Spell Checking API (no dictionaries are bundled; they come from the languages installed in Windows):
   - misspelled words get a thin orange underline; only the visible part of the text is checked, so large files stay fast. After an edit the underlines are updated when typing pauses (about half a second), so a word still being typed is not flagged;
   - the status bar at the bottom shows the mode with a page-and-pencil icon (*Spelling: Polish*). Clicking it cycles Polish → English → off. The first mode is the language of Windows (Polish or English); the choice is remembered in the session;
-  - if Windows has no dictionary for the chosen language, the status says so (*no dictionary*) and nothing is underlined. A language is added in Windows *Settings › Time & language › Language & region*;
+  - if Windows has no dictionary for the chosen language, the status says so (*no dictionary*) and nothing is underlined. Clicking the status then opens a dialog explaining it, with *Open language settings* (opens Windows *Settings › Time & language › Language & region*), *Change spelling language* (the usual cycle) and *Cancel*;
   - not checked: inline code, fenced code blocks, links and addresses, HTML tags, words with digits or underscores, ALL-CAPS acronyms and CamelCase words (e.g. HTML, GitHub), single letters.
-- **Interface language**: Polish on Polish Windows, English otherwise.
+- **Interface language**: Polish on Polish Windows, English otherwise. The backend reads the Windows display language once and passes it to the page (`window.__MDE_LANG__`), so the page, the native window-button tooltips and the start-up dialog always agree. Every string lives in `src/i18n.ts` (typed, so a missing translation fails the build) or, for native parts, in `src-tauri/src/caption.rs` and `runtime_check.rs`. The webview's own right-click menu is translated by WebView2.
 
 ### Known deviations from the spec in this version
 
@@ -125,7 +125,8 @@ Resizable panels (and remembering their proportions).
 - [Rust](https://rustup.rs/) (stable, `x86_64-pc-windows-msvc`)
 - Visual Studio Build Tools with the *Desktop development with C++* workload
 - [Node.js](https://nodejs.org/) LTS
-- WebView2 runtime (preinstalled on Windows 11)
+- WebView2 runtime (preinstalled on Windows 11). If it is missing, MDE shows a dialog (Polish or English, by the Windows UI language) with "Install" (opens Microsoft's installer download) and "Cancel", then exits (`src-tauri/src/runtime_check.rs`).
+- Fonts: Segoe UI and Cascadia Mono from Windows; fallbacks are Arial and Consolas / Courier New. The window buttons use Segoe Fluent Icons, else Segoe MDL2 Assets.
 
 ### Commands
 

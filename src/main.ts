@@ -952,7 +952,16 @@ function updateSpellStatus(): void {
 }
 updateSpellStatus();
 spell.subscribe(updateSpellStatus);
-spellStatus.addEventListener("click", () => {
+spellStatus.addEventListener("click", async () => {
+  // Without the dictionary, offer to add the language instead of silently switching on.
+  if (spell.dictionaryMissing && spell.mode !== "off") {
+    const choice = await platform.askMissingDictionary(t.languageName(spell.mode));
+    if (choice === "settings") void platform.openLanguageSettings();
+    if (choice !== "change") {
+      editor.focus();
+      return;
+    }
+  }
   spell.cycle();
   scheduleSessionSave();
   editor.focus();

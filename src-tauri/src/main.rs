@@ -3,6 +3,7 @@
 
 mod caption;
 mod context_menu;
+mod runtime_check;
 mod session;
 mod spell;
 mod textfile;
@@ -193,6 +194,13 @@ fn shell_open(target: &str) -> Result<(), String> {
     }
 }
 
+/// Opens the Windows page where languages (and with them spell checking
+/// dictionaries) are added.
+#[tauri::command]
+fn open_language_settings() -> Result<(), String> {
+    shell_open("ms-settings:regionlanguage")
+}
+
 /// Only web and mail addresses may be handed to Windows.
 fn is_openable_url(url: &str) -> bool {
     let lower = url.to_ascii_lowercase();
@@ -280,6 +288,9 @@ fn is_app_url(url: &tauri::Url) -> bool {
 }
 
 fn main() {
+    if !runtime_check::ensure_webview2() {
+        return;
+    }
     tauri::Builder::default()
         // Must be the first plugin: a second MDE.exe hands its files over to
         // the running one and exits before anything else starts.
@@ -306,6 +317,7 @@ fn main() {
             open_url,
             open_path,
             start_dictation,
+            open_language_settings,
             spell_check,
             session::read_session,
             session::write_session,
@@ -317,6 +329,13 @@ fn main() {
         .setup(|app| {
             let window = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
                 .title("MDE")
+                // The UI language follows the Windows display language, the same
+                // source as the native strings (the webview's own language can differ).
+                .initialization_script(if runtime_check::ui_is_polish() {
+                    "window.__MDE_LANG__ = 'pl';"
+                } else {
+                    "window.__MDE_LANG__ = 'en';"
+                })
                 .inner_size(1200.0, 800.0)
                 .min_inner_size(640.0, 400.0)
                 .theme(Some(tauri::Theme::Dark))

@@ -31,8 +31,8 @@
   --search-match: #656565;
   --search-current: #e58b00;
 
-  --font-sans: "Segoe UI", system-ui, sans-serif;
-  --font-mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
+  --font-sans: "Segoe UI", Arial, system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", Consolas, "Courier New", ui-monospace, monospace;
 
   --topbar-height: 40px;
   --statusbar-height: 28px;

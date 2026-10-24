@@ -80,6 +80,12 @@ Save the file in UTF-8 instead?`,
     dictionaryMissing
       ? "Windows has no spell checking dictionary for this language. Add the language in Settings › Time & language › Language & region. Click to change the language."
       : "Click to change the spell checking language",
+  languageName: (mode: "pl" | "en"): string => (mode === "pl" ? "Polish" : "English"),
+  missingDictionaryTitle: "Spell checking",
+  missingDictionary: (language: string) =>
+    `Windows has no ${language} spell checking dictionary. Add the language in Settings › Time & language › Language & region, then switch the language here again.`,
+  openSettingsButton: "Open language settings",
+  nextLanguageButton: "Change spelling language",
   minimapStatus: (on: boolean) => `Map: ${on ? "on" : "off"}`,
   minimapTitle: (on: boolean): string => (on ? "Click to hide the document map" : "Click to show the document map"),
   syncStatus: (on: boolean) => `Scroll together: ${on ? "on" : "off"}`,
@@ -172,13 +178,21 @@ Zapisać plik w UTF-8?`,
     dictionaryMissing
       ? "Windows nie ma słownika sprawdzania pisowni dla tego języka. Dodaj język w Ustawieniach › Czas i język › Język i region. Kliknij, aby zmienić język."
       : "Kliknij, aby zmienić język sprawdzania pisowni",
+  languageName: (mode) => (mode === "pl" ? "polski" : "angielski"),
+  missingDictionaryTitle: "Sprawdzanie pisowni",
+  missingDictionary: (language) =>
+    `Windows nie ma słownika sprawdzania pisowni dla języka: ${language}. Dodaj język w Ustawieniach › Czas i język › Język i region, a potem ponownie wybierz język tutaj.`,
+  openSettingsButton: "Otwórz ustawienia języka",
+  nextLanguageButton: "Zmień język pisowni",
   minimapStatus: (on) => `Mapa: ${on ? "wł" : "wył"}`,
   minimapTitle: (on) => (on ? "Kliknij, aby ukryć mapę dokumentu" : "Kliknij, aby pokazać mapę dokumentu"),
   syncStatus: (on) => `Przewijaj razem: ${on ? "wł" : "wył"}`,
   syncTitle: (on) => (on ? "Kliknij, aby przewijać panele niezależnie" : "Kliknij, aby przewijać oba panele razem"),
 };
 
-export const lang: "pl" | "en" = (navigator.language || "en").toLowerCase().startsWith("pl") ? "pl" : "en";
+// The backend reports the Windows display language; the browser's own language is only the fallback (plain browser, tests).
+const reported = (window as { __MDE_LANG__?: string }).__MDE_LANG__;
+export const lang: "pl" | "en" = (reported ?? navigator.language ?? "en").toLowerCase().startsWith("pl") ? "pl" : "en";
 export const t: Strings = lang === "pl" ? pl : en;
 
 document.documentElement.lang = lang;

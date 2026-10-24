@@ -45,7 +45,7 @@ Tokeny z sekcji 3 (tylko wartości `.dark`) są w `src/styles.css`.
   - Wiele pustych linii: każda dodatkowa pusta linia to pusty odstęp o wysokości jednej linii tekstu (1.6em), dodany do zwykłego odstępu akapitowego.
 - **Błędy pisowni (edytor):** cienkie (1px) podkreślenie w kolorze `warning` (bursztyn, wartość `chart-3` z trybu dark: `oklch(0.769 0.188 70.08)`), odsunięte o 3px od tekstu. Własny token `warning` dodany według zasady z sekcji 2 pkt 4; używany tylko do tego podkreślenia.
 - **Paski przewijania:** 12px, uchwyt `input` (hover `ring`), przezroczysty tor.
-- **Okna dialogowe:** na razie systemowe (jasne). Docelowo własne, ciemne (`popover`) według sekcji 7.
+- **Okna dialogowe:** na razie systemowe (jasne), w tym komunikat o braku WebView2 (przyciski „Zainstaluj” / „Anuluj”). Docelowo własne, ciemne (`popover`) według sekcji 7.
 
 
 # DESIGN.md — system wzorowany na shadcn/ui

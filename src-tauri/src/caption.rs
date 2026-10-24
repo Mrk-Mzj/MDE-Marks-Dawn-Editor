@@ -10,7 +10,6 @@ use std::sync::OnceLock;
 
 use windows::core::{w, PCWSTR, PWSTR};
 use windows::Win32::Foundation::{COLORREF, HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
-use windows::Win32::Globalization::GetUserDefaultUILanguage;
 use windows::Win32::Graphics::Gdi::{
     BeginPaint, BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, CreateFontW, CreateSolidBrush, DeleteDC, DeleteObject,
     DrawTextW, EndPaint, FillRect, GetTextFaceW, InvalidateRect, SelectObject, SetBkMode, SetTextColor, ANTIALIASED_QUALITY,
@@ -72,10 +71,7 @@ struct Labels {
 
 /// Tooltips in the language of the rest of the UI (Polish for Polish Windows).
 fn labels() -> &'static Labels {
-    const LANG_POLISH: u16 = 0x15;
-    // SAFETY: a plain Win32 call.
-    let polish = unsafe { GetUserDefaultUILanguage() } & 0x3ff == LANG_POLISH;
-    if polish {
+    if crate::runtime_check::ui_is_polish() {
         &Labels { minimize: "Minimalizuj", maximize: "Maksymalizuj", restore: "Przywróć w dół", close: "Zamknij" }
     } else {
         &Labels { minimize: "Minimize", maximize: "Maximize", restore: "Restore Down", close: "Close" }
