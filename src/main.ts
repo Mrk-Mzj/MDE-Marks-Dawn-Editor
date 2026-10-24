@@ -835,10 +835,10 @@ const toolbar = new Toolbar(
       { kind: "button", label: t.link, shortcut: "Ctrl+K", icon: icons.link, run: formatting.link },
       { kind: "picker", label: t.table, icon: icons.table, open: (anchor, align) => tablePicker.show(anchor, align) },
     ],
+    [{ kind: "button", label: t.dictation, shortcut: "Win+H", icon: icons.mic, run: () => void platform.startDictation() }],
   ],
   { toolbar: t.formatting, more: t.more },
   () => editor.focus(),
-  { kind: "button", label: t.dictation, shortcut: "Win+H", icon: icons.mic, run: () => void platform.startDictation() },
 );
 
 // The pressed state follows the cursor, at most once per frame.

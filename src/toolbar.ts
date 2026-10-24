@@ -74,15 +74,12 @@ export class Toolbar {
   private readonly moreAnchor: HTMLElement;
   private readonly moreButton: HTMLButtonElement;
   private hidden: ToolbarItem[] = [];
-  private readonly trailing: HTMLElement | null = null;
 
   constructor(
     private readonly root: HTMLElement,
     groups: ToolbarItem[][],
     labels: { toolbar: string; more: string },
     private readonly focusEditor: () => void,
-    /** A button pinned to the right end of the toolbar; it never moves to the "more" menu. */
-    trailing?: ToolbarButton,
   ) {
     root.setAttribute("role", "toolbar");
     root.setAttribute("aria-label", labels.toolbar);
@@ -107,11 +104,6 @@ export class Toolbar {
     new Menu(this.moreButton, () => this.overflowEntries(), { align: "end", restoreFocus: focusEditor });
 
     root.append(...this.units.map((u) => u.el), this.moreAnchor);
-    if (trailing) {
-      this.trailing = this.createUnit(trailing).el;
-      this.trailing.classList.add("toolbar-trailing");
-      root.append(this.trailing);
-    }
     for (const unit of this.units) unit.width = unit.el.offsetWidth;
     new ResizeObserver(() => this.fit()).observe(root);
   }
@@ -159,8 +151,7 @@ export class Toolbar {
   /** Hides the buttons that do not fit, from the end, behind the "more" button. */
   private fit(): void {
     const style = getComputedStyle(this.root);
-    const reserved = this.trailing ? this.trailing.offsetWidth + GAP : 0;
-    const available = this.root.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - reserved;
+    const available = this.root.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
     const total = this.units.reduce((sum, u) => sum + u.width, 0) + GAP * (this.units.length - 1);
     let visible = this.units.length;
     if (total > available) {
