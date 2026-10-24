@@ -37,6 +37,10 @@ Użycie Alt + strzałka w górę przesuwa linię z kursorem (lub zaznaczone lini
 2. prawy panel służy do wyświetlania wyrenderowanej treści pliku, zgodnie ze składnią Markdown (np. dywiz wyświetla się jako punktor, hasztag jako H1, itd)
 
 
+Na dolnym pasku, wyrównany do lewej, jest licznik znaków bieżącej zakładki: „XXX znaków”, a gdy zaznaczono tekst, „Y z XXX znaków”. Liczymy spacje i tabulatory, nie liczymy końców linii; rzeczownik odmienia się zgodnie z liczbą.
+
+
+
 Oba panele mają być oddzielone od siebie pionową linią, którą użytkownik może chwycić i przeciągnąć w lewo lub w prawo, zmieniając proporcje tych części. Zawartość obu paneli ma reagować na zmiany rozmiarów tych paneli.
 
 

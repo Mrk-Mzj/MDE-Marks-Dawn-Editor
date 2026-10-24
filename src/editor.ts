@@ -4,6 +4,7 @@ import { defaultKeymap, history, historyKeymap, insertTab } from "@codemirror/co
 import type { Command } from "@codemirror/view";
 import { defineLanguageFacet, Language } from "@codemirror/language";
 import { EditorSelection, EditorState, StateEffect, StateField } from "@codemirror/state";
+import type { Text } from "@codemirror/state";
 import { drawSelection, EditorView, keymap } from "@codemirror/view";
 import { GFM, parser } from "@lezer/markdown";
 import { searchHighlighting } from "./find";
@@ -127,6 +128,26 @@ function moveBlockCommand(dir: -1 | 1): Command {
 export interface ScrollPosition {
   pos: number;
   margin: number;
+}
+
+/**
+ * The number of characters between `from` and `to`, as a reader counts them:
+ * spaces and tabs count, line breaks do not, and a character outside the
+ * Basic Multilingual Plane (e.g. an emoji) counts once, not as two UTF-16 units.
+ */
+export function countChars(doc: Text, from: number, to: number): number {
+  let count = 0;
+  for (const iter = doc.iterRange(from, to); !iter.next().done; ) {
+    if (iter.lineBreak) continue;
+    const chunk = iter.value;
+    count += chunk.length;
+    for (let i = 1; i < chunk.length; i++) {
+      const code = chunk.charCodeAt(i);
+      const previous = chunk.charCodeAt(i - 1);
+      if (code >= 0xdc00 && code <= 0xdfff && previous >= 0xd800 && previous <= 0xdbff) count--;
+    }
+  }
+  return count;
 }
 
 /** What is selected, as document offsets. */

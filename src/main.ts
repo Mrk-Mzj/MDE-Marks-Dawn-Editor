@@ -1,7 +1,7 @@
 import "./styles.css";
 
 import type { EditorState } from "@codemirror/state";
-import { Editor } from "./editor";
+import { countChars, Editor } from "./editor";
 import { FindBar, SearchQuery } from "./find";
 import type { ScrollPosition, Selection } from "./editor";
 import { blockState, inlineState, insertLink, insertTable, setHeading, toggleInline, toggleList, toggleQuote } from "./format";
@@ -849,6 +849,28 @@ editor.subscribe(() => {
     toolbar.refresh();
   });
 });
+
+// The character count follows the text and the selection, at most once per frame.
+const charCount = $("#char-count");
+const numberFormat = new Intl.NumberFormat(lang);
+let charCountFrame = 0;
+function updateCharCount(): void {
+  const { doc, selection } = editor.view.state;
+  const total = countChars(doc, 0, doc.length);
+  const selected = selection.ranges.reduce((sum, range) => sum + countChars(doc, range.from, range.to), 0);
+  charCount.textContent =
+    selected > 0
+      ? t.charCountSelected(numberFormat.format(selected), numberFormat.format(total))
+      : t.charCount(numberFormat.format(total), total);
+}
+editor.subscribe(() => {
+  if (charCountFrame) return;
+  charCountFrame = requestAnimationFrame(() => {
+    charCountFrame = 0;
+    updateCharCount();
+  });
+});
+updateCharCount();
 
 // Shortcuts use physical key codes so they work on any keyboard layout.
 // Alt is excluded because Ctrl+Alt is AltGr on Polish keyboards.

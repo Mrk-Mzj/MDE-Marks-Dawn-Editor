@@ -896,6 +896,19 @@ button {
   border-top: 1px solid var(--border);
 }
 
+/* Plain status text on the left (the character count), in line with the button labels. */
+.status-text {
+  margin-right: auto;
+  padding: 0 8px;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 /* Button, variant ghost, size xs. */
 .status-button {
   display: inline-flex;

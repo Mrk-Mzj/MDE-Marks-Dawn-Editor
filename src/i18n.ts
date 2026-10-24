@@ -90,9 +90,19 @@ Save the file in UTF-8 instead?`,
   minimapTitle: (on: boolean): string => (on ? "Click to hide the document map" : "Click to show the document map"),
   syncStatus: (on: boolean) => `Scroll together: ${on ? "on" : "off"}`,
   syncTitle: (on: boolean): string => (on ? "Click to scroll the panels independently" : "Click to scroll both panels together"),
+  charCount: (total: string, n: number) => `${total} ${n === 1 ? "character" : "characters"}`,
+  charCountSelected: (selected: string, total: string) => `${selected} of ${total} characters`,
 };
 
 type Strings = typeof en;
+
+/** Polish noun form for `n`: 1 znak, 2–4 znaki (but 12–14 znaków), 5+ znaków. */
+function polishPlural(n: number, one: string, few: string, many: string): string {
+  if (n === 1) return one;
+  const units = n % 10;
+  const tens = n % 100;
+  return units >= 2 && units <= 4 && (tens < 12 || tens > 14) ? few : many;
+}
 
 const pl: Strings = {
   menu: "Menu",
@@ -188,6 +198,9 @@ Zapisać plik w UTF-8?`,
   minimapTitle: (on) => (on ? "Kliknij, aby ukryć mapę dokumentu" : "Kliknij, aby pokazać mapę dokumentu"),
   syncStatus: (on) => `Przewijaj razem: ${on ? "wł" : "wył"}`,
   syncTitle: (on) => (on ? "Kliknij, aby przewijać panele niezależnie" : "Kliknij, aby przewijać oba panele razem"),
+  charCount: (total, n) => `${total} ${polishPlural(n, "znak", "znaki", "znaków")}`,
+  // After "z" the noun is always genitive: "z 1 znaku", "z 2 znaków".
+  charCountSelected: (selected, total) => `${selected} z ${total} ${total === "1" ? "znaku" : "znaków"}`,
 };
 
 // The backend reports the Windows display language; the browser's own language is only the fallback (plain browser, tests).
