@@ -14,6 +14,7 @@ import type { FileFormat, LineBreak, OpenedFile } from "./platform";
 import { Preview } from "./preview";
 import { ScrollSync } from "./scrollsync";
 import { isSpellMode, SpellService } from "./spell";
+import { Splitter, validSplit } from "./split";
 import { TabStrip } from "./tabs";
 import { initTitleBar } from "./titlebar";
 import { icons, TablePicker, Toolbar } from "./toolbar";
@@ -74,6 +75,8 @@ interface StoredSession {
   syncScroll?: boolean;
   /** The minimap in the editor panel is shown (an app setting); off when missing. */
   minimap?: boolean;
+  /** The editor panel's share of the width, 0–1 (an app setting); 0.5 when missing. */
+  split?: number;
 }
 
 /** Unique across runs, because tab ids name files in the session folder. */
@@ -115,6 +118,9 @@ minimap.onReflow(() => {
   editor.rescale(scroll);
   scrollSync.followEditorSoon();
 });
+
+const splitter = new Splitter($(".workspace"), $(".pane-editor"), $(".pane-preview"), $(".pane-divider"), t.splitterTitle);
+splitter.onChange(scheduleSessionSave);
 
 let docs: Doc[] = [];
 let active: Doc;
@@ -661,6 +667,7 @@ function saveSession(): Promise<void> {
       zoom,
       syncScroll: scrollSync.enabled,
       minimap: minimap.enabled,
+      split: splitter.value,
     };
     await platform.writeSession(JSON.stringify(session));
   };
@@ -727,6 +734,7 @@ async function restoreSession(): Promise<number> {
   if (!session) return 0;
   if (isSpellMode(session.spell)) spell.setMode(session.spell);
   applyZoom(validZoom(session.zoom));
+  splitter.set(validSplit(session.split));
   if (typeof session.syncScroll === "boolean") scrollSync.setEnabled(session.syncScroll);
   if (typeof session.minimap === "boolean") minimap.setEnabled(session.minimap);
   if (Array.isArray(session.openTypes)) {

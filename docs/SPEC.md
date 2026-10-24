@@ -41,7 +41,7 @@ Na dolnym pasku, wyrównany do lewej, jest licznik znaków bieżącej zakładki:
 
 
 
-Oba panele mają być oddzielone od siebie pionową linią, którą użytkownik może chwycić i przeciągnąć w lewo lub w prawo, zmieniając proporcje tych części. Zawartość obu paneli ma reagować na zmiany rozmiarów tych paneli.
+Oba panele mają być oddzielone od siebie pionową linią, którą użytkownik może chwycić i przeciągnąć w lewo lub w prawo, zmieniając proporcje tych części. Nad linią kursor zmienia się na strzałkę lewo–prawo; sama linia nie zmienia koloru. Dwukrotne kliknięcie linii przywraca domyślny podział 50/50. Zawartość obu paneli ma reagować na zmiany rozmiarów tych paneli.
 
 
 

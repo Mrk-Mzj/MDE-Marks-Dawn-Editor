@@ -32,7 +32,7 @@ Tokeny z sekcji 3 (tylko wartości `.dark`) są w `src/styles.css`.
   - Obraz: każde słowo to pasek 1px wysokości o długości słowa, w kolorze `muted-foreground` 55%; wiersz tekstu (także zawinięty) ma 2px; padding wewnętrzny 5px po bokach i 3px u góry i dołu. Szerokość tekstu edytora jest przeskalowana do szerokości okienka, więc zawijanie wygląda jak w edytorze.
   - Widoczny fragment: suwak na całą szerokość, tło `foreground` 7% (hover 10%, przeciąganie 14%, przejście 150ms), bez obramowania.
   - Tekst w edytorze ma wtedy po prawej stały margines `--content-padding-x` + `--minimap-width` (109px) na całej wysokości panelu, więc okienko nigdy go nie zasłania (odstęp 32px, jak zwykły margines tekstu). Kursor nad okienkiem: strzałka.
-- **Panele:** dwa panele 50/50 na tle `background`, oddzielone linią 1px `border`. Treść 16px Segoe UI, interlinia 1.6, padding poziomy 32px.
+- **Panele:** dwa panele (domyślnie 50/50) na tle `background`, oddzielone linią 1px `border`. Linię można chwycić w pasie 9px (4px z każdej strony) — kursor `col-resize`; linia nie zmienia koloru przy najechaniu ani przeciąganiu (to funkcja drugorzędna, nie ma rozpraszać). Podczas przeciągania kursor zostaje `col-resize` w całym oknie, a tekst się nie zaznacza. Panel ma min. 200px szerokości. Dwuklik na linii przywraca 50/50. Podpowiedź: „Przeciągnij, aby zmienić szerokość paneli; kliknij dwukrotnie, aby wyrównać”. Treść 16px Segoe UI, interlinia 1.6, padding poziomy 32px.
 - **Podgląd:**
   - H1/H2 z dolną linią `border`, nagłówki 600 z ujemnym trackingiem.
   - Kod w linii: tło `muted`, `radius-sm`, Cascadia Mono.

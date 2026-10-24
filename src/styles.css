@@ -417,9 +417,29 @@ button {
 }
 
 .pane-divider {
+  position: relative;
+  z-index: 20;
   width: 1px;
   flex-shrink: 0;
   background: var(--border);
+  cursor: col-resize;
+}
+
+/* The line is 1px wide; the area that can be grabbed reaches 4px to each side. */
+.pane-divider::before {
+  content: "";
+  position: absolute;
+  inset: 0 -4px;
+}
+
+/* While dragging, the pointer keeps its shape over the panels and nothing gets selected. */
+body.resizing-panes {
+  cursor: col-resize;
+  user-select: none;
+}
+
+body.resizing-panes .pane {
+  pointer-events: none;
 }
 
 /* ---------- Formatting toolbar ---------- */
