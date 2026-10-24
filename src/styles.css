@@ -39,6 +39,9 @@
   --content-font-size: 16px;
   /* Left and right padding of the text in both panels. */
   --content-padding-x: 32px;
+  /* Width of the minimap box; the editor text keeps this much more margin on
+     the right while the minimap is shown. */
+  --minimap-width: 112px;
   --shadow-md: 0 4px 12px rgb(0 0 0 / 40%), 0 1px 3px rgb(0 0 0 / 30%);
 }
 
@@ -583,6 +586,19 @@ button {
 
 /* ---------- Editor ---------- */
 
+/* The editor and the minimap above it. */
+.editor-area {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.has-minimap {
+  --minimap-space: var(--minimap-width);
+}
+
 .editor-host {
   flex: 1;
   min-height: 0;
@@ -591,6 +607,52 @@ button {
 }
 
 /* The editor itself lives in a shadow root; its styles are in src/editor.ts. */
+
+/* ---------- Minimap ---------- */
+
+/* Top right corner of the editor, left of its scroll bar (`right` and the
+   height are set in src/minimap.ts). The bars take the box's text color. */
+.minimap {
+  position: absolute;
+  top: 12px;
+  width: var(--minimap-width);
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
+  cursor: default;
+  user-select: none;
+  touch-action: none;
+}
+
+.minimap[hidden] {
+  display: none;
+}
+
+.minimap > canvas {
+  display: block;
+}
+
+/* The part of the text on screen: a slightly lighter band. */
+.minimap-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: color-mix(in oklch, var(--foreground) 7%, transparent);
+  transition: background-color 150ms;
+  pointer-events: none;
+}
+
+.minimap:hover > .minimap-slider {
+  background: color-mix(in oklch, var(--foreground) 10%, transparent);
+}
+
+.minimap-dragging > .minimap-slider,
+.minimap-dragging:hover > .minimap-slider {
+  background: color-mix(in oklch, var(--foreground) 14%, transparent);
+}
 
 /* ---------- Preview ---------- */
 

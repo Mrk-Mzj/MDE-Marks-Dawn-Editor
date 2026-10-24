@@ -6,7 +6,7 @@ The specification lives in [docs/SPEC.md](docs/SPEC.md) and the visual design in
 
 ## Status: 0.5
 
-MVP plus tabs, a single instance, session memory, spell checking, the HTML whitelist, clickable links and the formatting toolbar.
+MVP plus tabs, a single instance, session memory, spell checking, the HTML whitelist, clickable links, the formatting toolbar and the minimap.
 
 ### Features
 
@@ -15,6 +15,11 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - Places are matched by source line: every block in the preview (heading, paragraph, list item, table row, code block, …) knows the lines it comes from, and positions in between are interpolated, so headings line up even where one panel is much taller (tables, code blocks, extra blank lines).
   - The matched point moves with the scroll position, from the top edge of the panels at the start to the bottom edge at the end, so both panels reach the start and the end of the document together.
   - Switching tabs, zooming, resizing the window and re-rendering after an edit bring the preview back in line with the editor.
+- **Document map** (minimap; off by default): a small picture of the whole document in the top right corner of the editor panel. The status bar button, between *Spelling* and *Scroll together*, with an icon of a page with evenly spaced lines of text, cycles *Map: small* → *growing* → *off* (*Mapa: mała / rosnąca / wył*). It is a global setting, the same for every tab, remembered in the session (`minimap` in `session.json`).
+  - *small*: a box of a fixed height (220px); a longer file scrolls inside it. *growing*: at least 220px too, so it is never smaller than *small*; for longer files the box grows with the file, at most to the bottom of the panel. When the picture is taller than the box, it scrolls along with the editor so both reach the start and the end together. In a panel lower than that, the box ends 12px above its bottom.
+  - Every word is a thin bar where the editor shows it: the text width is scaled to the width of the box and each row of text (also every wrapped row of a long line) is 3px high. The minimap wraps the lines itself, measuring words in the editor's font at the editor's text width, so the picture is right also for parts of the file the editor has not displayed yet. Only the rows inside the box are drawn, and the row count of each line is cached by its text, so long files stay fast.
+  - The part of the text on screen is a slightly lighter slider. Dragging it scrolls the editor (the slider stays under the pointer); clicking elsewhere in the box centres the slider there and can be followed by a drag. The mouse wheel over the box scrolls the editor. The minimap never takes the focus from the editor.
+  - While the minimap is shown, the editor text has a fixed right margin over the whole height of the panel, wide enough that the box never covers text; turning the minimap off gives the text the full width again. The text rewraps and both panels keep showing the same place.
 - **Live preview**: headings, emphasis, strikethrough, lists, block quotes, code, tables, links and autolinks. MDE extensions beyond GFM (see docs/SPEC.md):
   - every Enter in the file is a line break in the preview, as in the editor;
   - N blank lines between two blocks show as the usual paragraph gap plus N−1 empty lines (two blank lines = one extra line, three = two, …). This applies between top-level blocks and between blocks inside block quotes and list items; blank lines at the start of the document, between list items and inside code blocks keep their GFM meaning. The file itself is never changed.
@@ -109,7 +114,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 
 ### Not yet implemented
 
-Resizable panels (and remembering their proportions), minimap.
+Resizable panels (and remembering their proportions).
 
 ## Building
 
@@ -175,6 +180,8 @@ src/                  frontend (TypeScript)
   toolbar.ts          formatting toolbar, its "more" menu and the table size picker
   zoom.ts             zoom levels and stepping (Ctrl+plus/minus/0, Ctrl+wheel)
   scrollsync.ts       synchronized scrolling of the two panels (matched by source line)
+  minimap.ts          minimap of the editor panel (own word wrapping, canvas drawing,
+                      dragging the slider)
   menu.ts             drop-down menus (hamburger menu, toolbar menus)
   platform.ts         Tauri backend and dialogs
   i18n.ts             UI strings (Polish, English)

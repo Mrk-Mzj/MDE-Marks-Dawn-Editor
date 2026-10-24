@@ -8,6 +8,8 @@ import { blockState, inlineState, insertLink, insertTable, setHeading, toggleInl
 import { lang, t } from "./i18n";
 import { classifyHref, extensionOf, isMarkdownFile, needsConfirmation } from "./links";
 import { Menu } from "./menu";
+import { isMinimapMode, Minimap } from "./minimap";
+import type { MinimapMode } from "./minimap";
 import * as platform from "./platform";
 import type { FileFormat, LineBreak, OpenedFile } from "./platform";
 import { Preview } from "./preview";
@@ -71,6 +73,8 @@ interface StoredSession {
   zoom?: number;
   /** Both panels scroll together (an app setting); on when missing. */
   syncScroll?: boolean;
+  /** Minimap in the editor panel (an app setting); off when missing. */
+  minimap?: MinimapMode;
 }
 
 /** Unique across runs, because tab ids name files in the session folder. */
@@ -104,6 +108,14 @@ const findBar = new FindBar($("#find"), search, editor.view, {
 });
 editor.subscribe(() => findBar.refresh());
 const scrollSync = new ScrollSync(editor, preview);
+const minimap = new Minimap($("#editor-area"), editor);
+// Showing or hiding the minimap changes the width of the text: the editor
+// keeps showing the same place, and the preview follows it.
+minimap.onReflow(() => {
+  const scroll = editor.scrollPosition();
+  editor.rescale(scroll);
+  scrollSync.followEditorSoon();
+});
 
 let docs: Doc[] = [];
 let active: Doc;
@@ -649,6 +661,7 @@ function saveSession(): Promise<void> {
       openTypes: [...trustedTypes],
       zoom,
       syncScroll: scrollSync.enabled,
+      minimap: minimap.current,
     };
     await platform.writeSession(JSON.stringify(session));
   };
@@ -716,6 +729,7 @@ async function restoreSession(): Promise<number> {
   if (isSpellMode(session.spell)) spell.setMode(session.spell);
   applyZoom(validZoom(session.zoom));
   if (typeof session.syncScroll === "boolean") scrollSync.setEnabled(session.syncScroll);
+  if (isMinimapMode(session.minimap)) minimap.setMode(session.minimap);
   if (Array.isArray(session.openTypes)) {
     trustedTypes = new Set(session.openTypes.filter((type): type is string => typeof type === "string"));
   }
@@ -944,6 +958,19 @@ spellStatus.addEventListener("click", () => {
   editor.focus();
 });
 
+const minimapStatus = $<HTMLButtonElement>("#minimap-status");
+minimapStatus.title = t.minimapTitle;
+function updateMinimapStatus(): void {
+  $("#minimap-status-text").textContent = t.minimapStatus(minimap.current);
+}
+updateMinimapStatus();
+minimapStatus.addEventListener("click", () => {
+  minimap.setMode(minimap.next);
+  updateMinimapStatus();
+  scheduleSessionSave();
+  editor.focus();
+});
+
 const syncStatus = $<HTMLButtonElement>("#sync-status");
 function updateSyncStatus(): void {
   $("#sync-status-text").textContent = t.syncStatus(scrollSync.enabled);
@@ -982,6 +1009,7 @@ async function start(): Promise<void> {
     if (docs.length === 0) docs.push(newDoc());
     activate(docs[activeIndex]);
     updateSyncStatus();
+    updateMinimapStatus();
     sessionReady = true;
     await openPaths(files);
     void platform.pruneTabTexts(docs.map((doc) => doc.id));

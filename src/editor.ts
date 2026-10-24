@@ -63,7 +63,8 @@ const theme = EditorView.theme(
       overflowY: "auto",
     },
     ".cm-content": { padding: "24px 0", caretColor: "var(--foreground)" },
-    ".cm-line": { padding: "0 var(--content-padding-x)" },
+    // On the right, the fixed margin for the minimap when it is shown.
+    ".cm-line": { padding: "0 calc(var(--content-padding-x) + var(--minimap-space, 0px)) 0 var(--content-padding-x)" },
     // Thin orange underline for misspelled words.
     ".cm-spell-error": {
       textDecoration: "underline",
@@ -136,6 +137,7 @@ export interface Selection {
 export class Editor {
   readonly view: EditorView;
   private readonly listeners: (() => void)[] = [];
+  private readonly layoutListeners: (() => void)[] = [];
 
   constructor(
     host: HTMLElement,
@@ -181,6 +183,11 @@ export class Editor {
         // The browser's own spell checking is off; see spell.ts.
         spellChecking(this.spell),
         searchHighlighting(this.search),
+        EditorView.updateListener.of((update) => {
+          if (update.docChanged || update.geometryChanged || update.heightChanged || update.viewportChanged) {
+            for (const listener of this.layoutListeners) listener();
+          }
+        }),
         EditorView.contentAttributes.of({ spellcheck: "false", autocorrect: "off", autocapitalize: "off" }),
         keymap.of([
           { key: "Alt-ArrowUp", run: moveBlockCommand(-1) },
@@ -224,6 +231,11 @@ export class Editor {
   /** Calls `listener` whenever the text, the selection or the shown document changes. */
   subscribe(listener: () => void): void {
     this.listeners.push(listener);
+  }
+
+  /** Calls `listener` whenever the text, the line heights or the size of the editor change. */
+  onLayout(listener: () => void): void {
+    this.layoutListeners.push(listener);
   }
 
   private notify(): void {

@@ -34,7 +34,9 @@
       <section class="pane pane-editor" data-slot="editor-pane">
         <div id="toolbar" class="toolbar" data-slot="toolbar"></div>
         <div id="find" class="find-bar" data-slot="find-bar"></div>
-        <div id="editor" class="editor-host"></div>
+        <div id="editor-area" class="editor-area">
+          <div id="editor" class="editor-host"></div>
+        </div>
       </section>
       <div class="pane-divider" role="separator" aria-orientation="vertical"></div>
       <section class="pane pane-preview" data-slot="preview-pane">
@@ -49,6 +51,13 @@
           <path d="M10.4 12.6a1 1 0 0 1 3 3L8.4 20.6a2 2 0 0 1-.9.5l-2.9.8a.5.5 0 0 1-.6-.6l.8-2.9a2 2 0 0 1 .5-.9z" />
         </svg>
         <span id="spell-status-text"></span>
+      </button>
+      <button id="minimap-status" class="status-button" data-slot="button" type="button">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <path d="M7 7.5h10M7 10.5h6M7 13.5h10M7 16.5h7" />
+        </svg>
+        <span id="minimap-status-text"></span>
       </button>
       <button id="sync-status" class="status-button" data-slot="button" type="button">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">

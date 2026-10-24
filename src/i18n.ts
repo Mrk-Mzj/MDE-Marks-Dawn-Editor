@@ -79,6 +79,8 @@ Save the file in UTF-8 instead?`,
     dictionaryMissing
       ? "Windows has no spell checking dictionary for this language. Add the language in Settings › Time & language › Language & region. Click to change the language."
       : "Click to change the spell checking language",
+  minimapStatus: (mode: "off" | "small" | "growing") => `Map: ${{ small: "small", growing: "growing", off: "off" }[mode]}`,
+  minimapTitle: "Click to change the size of the document map",
   syncStatus: (on: boolean) => `Scroll together: ${on ? "on" : "off"}`,
   syncTitle: (on: boolean): string => (on ? "Click to scroll the panels independently" : "Click to scroll both panels together"),
 };
@@ -168,6 +170,8 @@ Zapisać plik w UTF-8?`,
     dictionaryMissing
       ? "Windows nie ma słownika sprawdzania pisowni dla tego języka. Dodaj język w Ustawieniach › Czas i język › Język i region. Kliknij, aby zmienić język."
       : "Kliknij, aby zmienić język sprawdzania pisowni",
+  minimapStatus: (mode) => `Mapa: ${{ small: "mała", growing: "rosnąca", off: "wył" }[mode]}`,
+  minimapTitle: "Kliknij, aby zmienić rozmiar mapy dokumentu",
   syncStatus: (on) => `Przewijaj razem: ${on ? "wł" : "wył"}`,
   syncTitle: (on) => (on ? "Kliknij, aby przewijać panele niezależnie" : "Kliknij, aby przewijać oba panele razem"),
 };
