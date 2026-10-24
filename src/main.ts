@@ -838,6 +838,7 @@ const toolbar = new Toolbar(
   ],
   { toolbar: t.formatting, more: t.more },
   () => editor.focus(),
+  { kind: "button", label: t.dictation, shortcut: "Win+H", icon: icons.mic, run: () => void platform.startDictation() },
 );
 
 // The pressed state follows the cursor, at most once per frame.

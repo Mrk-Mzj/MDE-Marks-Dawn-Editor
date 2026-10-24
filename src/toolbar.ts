@@ -16,6 +16,7 @@ export const icons = {
   quote: "M17 6H3M21 12H8M21 18H8M3 12v6",
   link: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
   table: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM3 9h18M3 15h18M12 3v18",
+  mic: "M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v3",
   more: "M11 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0M18 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0",
 };
 
@@ -73,12 +74,15 @@ export class Toolbar {
   private readonly moreAnchor: HTMLElement;
   private readonly moreButton: HTMLButtonElement;
   private hidden: ToolbarItem[] = [];
+  private readonly trailing: HTMLElement | null = null;
 
   constructor(
     private readonly root: HTMLElement,
     groups: ToolbarItem[][],
     labels: { toolbar: string; more: string },
     private readonly focusEditor: () => void,
+    /** A button pinned to the right end of the toolbar; it never moves to the "more" menu. */
+    trailing?: ToolbarButton,
   ) {
     root.setAttribute("role", "toolbar");
     root.setAttribute("aria-label", labels.toolbar);
@@ -103,6 +107,11 @@ export class Toolbar {
     new Menu(this.moreButton, () => this.overflowEntries(), { align: "end", restoreFocus: focusEditor });
 
     root.append(...this.units.map((u) => u.el), this.moreAnchor);
+    if (trailing) {
+      this.trailing = this.createUnit(trailing).el;
+      this.trailing.classList.add("toolbar-trailing");
+      root.append(this.trailing);
+    }
     for (const unit of this.units) unit.width = unit.el.offsetWidth;
     new ResizeObserver(() => this.fit()).observe(root);
   }
@@ -150,7 +159,8 @@ export class Toolbar {
   /** Hides the buttons that do not fit, from the end, behind the "more" button. */
   private fit(): void {
     const style = getComputedStyle(this.root);
-    const available = this.root.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const reserved = this.trailing ? this.trailing.offsetWidth + GAP : 0;
+    const available = this.root.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - reserved;
     const total = this.units.reduce((sum, u) => sum + u.width, 0) + GAP * (this.units.length - 1);
     let visible = this.units.length;
     if (total > available) {

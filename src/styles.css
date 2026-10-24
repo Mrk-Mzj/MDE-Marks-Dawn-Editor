@@ -432,12 +432,18 @@ button {
   gap: 2px;
   height: 40px;
   flex-shrink: 0;
-  padding: 0 4px 0 calc(var(--content-padding-x) - 12px);
+  padding: 0 calc(var(--content-padding-x) - 12px);
   background: var(--background);
   border-bottom: 1px solid var(--border);
 }
 
 .toolbar > .icon-button {
+  align-self: center;
+}
+
+/* Dictation: pinned to the right end, mirroring the left padding. */
+.toolbar-trailing {
+  margin-left: auto;
   align-self: center;
 }
 

@@ -102,6 +102,11 @@ export async function openWithDefaultProgram(path: string): Promise<void> {
   if (inTauri) await invoke("open_path", { path });
 }
 
+/** Starts Windows voice typing (Dictation) for the focused text field; does nothing outside the app. */
+export async function startDictation(): Promise<void> {
+  if (inTauri) await invoke("start_dictation");
+}
+
 /** Files named on the command line. */
 export async function initialFiles(): Promise<string[]> {
   return inTauri ? invoke<string[]>("initial_files") : [];

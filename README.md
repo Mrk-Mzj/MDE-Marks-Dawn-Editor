@@ -42,6 +42,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - **Link** (Ctrl+K): the selection becomes `[text](url)` with `url` selected for typing; a selected web address goes into the parentheses and the link text is selected instead.
   - **Table**: a grid (up to 8 × 8, mouse or arrow keys + Enter) picks the number of columns and rows (the header row included). The table is inserted below the line with the cursor, separated by empty lines, with the first header cell selected.
   - When the panel is too narrow, the buttons that do not fit move to a *More* (…) menu at the end of the toolbar.
+  - **Dictation** (microphone icon, pinned to the right end of the toolbar, in line with the right text margin; tooltip *Dictation (Win+H)*): starts Windows voice typing for the editor, like the *Dictation* item of the right-click menu. MDE presses Win+H for you (`start_dictation` in `src-tauri/src/main.rs`), so the spoken text lands where the cursor is, and the focus stays in the editor. This button never moves to the *More* menu.
 - **Find** (Ctrl+F, or *Find…* in the menu): a bar between the toolbar and the editor searches the left panel only; there is no replace. Selected text (one line) becomes the query. Matching ignores letter case unless *Match case* (*Uwzględnij wielkość liter*, the **Aa** toggle next to the field) is on, and starts at the cursor, so the match follows the query while typing.
   - All matches in the editor get a gray background and the current one (also selected) an orange one, like *Find all* in browsers. The bar counts them: *Found: 3 of 12* (*Znaleziono: 3 z 12*), *Found: 12 results* when the cursor is not on a match, *No results*.
   - Enter / Shift+Enter in the field, F3 / Shift+F3 anywhere and the ↑ / ↓ buttons at the right edge of the bar go to the next / previous match, wrapping around the document. F3 with the bar closed opens it with the last query.
@@ -188,7 +189,8 @@ src/                  frontend (TypeScript)
   styles.css          design tokens and styles (docs/DESIGN.md)
 src-tauri/            backend (Rust, Tauri 2)
   src/main.rs         commands: open, save, file stamps, command-line files,
-                      opening links (relative path lookup, ShellExecute);
+                      opening links (relative path lookup, ShellExecute), starting Windows
+                      voice typing (Win+H);
                       single instance; window setup
   src/spell.rs        Windows Spell Checking API on a dedicated COM thread
   src/caption.rs      native minimize / maximize / close buttons over the top bar

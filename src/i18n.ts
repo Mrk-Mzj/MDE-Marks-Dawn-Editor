@@ -71,6 +71,7 @@ Save the file in UTF-8 instead?`,
   tableSize: (columns: number, rows: number) => `${columns} × ${rows} (columns × rows)`,
   tableColumn: (n: number) => `Column ${n}`,
   more: "More",
+  dictation: "Dictation",
   spellStatus: (mode: "pl" | "en" | "off", dictionaryMissing: boolean) => {
     const language = { pl: "Polish", en: "English", off: "off" }[mode];
     return `Spelling: ${language}${dictionaryMissing ? " (no dictionary)" : ""}`;
@@ -162,6 +163,7 @@ Zapisać plik w UTF-8?`,
   tableSize: (columns, rows) => `${columns} × ${rows} (kolumny × wiersze)`,
   tableColumn: (n) => `Kolumna ${n}`,
   more: "Więcej",
+  dictation: "Dyktowanie",
   spellStatus: (mode, dictionaryMissing) => {
     const language = { pl: "polski", en: "angielski", off: "wyłączona" }[mode];
     return `Pisownia: ${language}${dictionaryMissing ? " (brak słownika)" : ""}`;

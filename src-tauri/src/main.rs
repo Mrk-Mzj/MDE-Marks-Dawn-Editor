@@ -225,6 +225,33 @@ async fn open_path(path: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || shell_open(&path)).await.map_err(|e| e.to_string())?
 }
 
+/// Starts Windows voice typing (Dictation) for the focused text field by
+/// pressing Win+H, the same shortcut as the Dictation item of the right-click menu.
+#[tauri::command]
+fn start_dictation() -> Result<(), String> {
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYBD_EVENT_FLAGS, KEYEVENTF_KEYUP,
+        VIRTUAL_KEY, VK_H, VK_LWIN,
+    };
+    let key = |vk: VIRTUAL_KEY, flags: KEYBD_EVENT_FLAGS| INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 { ki: KEYBDINPUT { wVk: vk, wScan: 0, dwFlags: flags, time: 0, dwExtraInfo: 0 } },
+    };
+    let inputs = [
+        key(VK_LWIN, KEYBD_EVENT_FLAGS(0)),
+        key(VK_H, KEYBD_EVENT_FLAGS(0)),
+        key(VK_H, KEYEVENTF_KEYUP),
+        key(VK_LWIN, KEYEVENTF_KEYUP),
+    ];
+    // SAFETY: `inputs` is a valid array of INPUT structures for the whole call.
+    let sent = unsafe { SendInput(&inputs, std::mem::size_of::<INPUT>() as i32) };
+    if sent as usize == inputs.len() {
+        Ok(())
+    } else {
+        Err("send_input".to_owned())
+    }
+}
+
 /// Absolute paths of the files named on a command line (without the program itself).
 fn file_args(args: impl IntoIterator<Item = std::ffi::OsString>, cwd: &Path) -> Vec<String> {
     args.into_iter()
@@ -278,6 +305,7 @@ fn main() {
             resolve_link,
             open_url,
             open_path,
+            start_dictation,
             spell_check,
             session::read_session,
             session::write_session,
