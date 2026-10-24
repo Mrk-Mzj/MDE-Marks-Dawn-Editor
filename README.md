@@ -108,7 +108,6 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 
 ### Known deviations from the spec in this version
 
-- **Minimap**: only *on* / *off* (growing with the file, against the panel edges, without the editor's scroll bar); docs/SPEC.md still describes the *small* / *growing* modes.
 - **Changing the encoding** in the *Save as* dialog (UTF-8 / UTF-8 with BOM) is not available yet; a Windows-1250 file is converted to UTF-8 only when it contains characters Windows-1250 cannot store.
 - **Dialogs are native Windows dialogs** (light, not themed). They will be replaced by dark in-app dialogs. The question about opening a linked file offers *Open and don't ask for .xxx files* as a button, because the native dialog has no checkbox.
 - **Start-up** takes about 0.55–0.65 s from launch to a visible window with the file loaded (target: < 0.5 s).
