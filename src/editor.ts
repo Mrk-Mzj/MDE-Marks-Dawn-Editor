@@ -82,7 +82,8 @@ const theme = EditorView.theme(
     "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
       { backgroundColor: "color-mix(in oklch, var(--foreground) 22%, transparent)" },
     // Dark scroll bars matching the preview panel.
-    ".cm-scroller::-webkit-scrollbar": { width: "12px" },
+    // None while the minimap is shown: it takes the scroll bar's place.
+    ".cm-scroller::-webkit-scrollbar": { width: "var(--editor-scrollbar-width, 12px)" },
     ".cm-scroller::-webkit-scrollbar-thumb": {
       border: "3px solid transparent",
       borderRadius: "6px",

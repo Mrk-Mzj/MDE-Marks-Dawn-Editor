@@ -41,7 +41,7 @@
   --content-padding-x: 32px;
   /* Width of the minimap box; the editor text keeps this much more margin on
      the right while the minimap is shown. */
-  --minimap-width: 112px;
+  --minimap-width: 77px;
   --shadow-md: 0 4px 12px rgb(0 0 0 / 40%), 0 1px 3px rgb(0 0 0 / 30%);
 }
 
@@ -597,6 +597,7 @@ button {
 
 .has-minimap {
   --minimap-space: var(--minimap-width);
+  --editor-scrollbar-width: 0px;
 }
 
 .editor-host {
@@ -610,20 +611,29 @@ button {
 
 /* ---------- Minimap ---------- */
 
-/* Top right corner of the editor, left of its scroll bar (`right` and the
-   height are set in src/minimap.ts). The bars take the box's text color. */
+/* In the top right corner of the editor, against the toolbar (or the find
+   bar) and the preview panel, where the editor's scroll bar would be; the
+   height is set in src/minimap.ts. The bars take the box's text color. */
 .minimap {
   position: absolute;
-  top: 12px;
+  top: 0;
+  right: 0;
   width: var(--minimap-width);
   overflow: hidden;
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  border-bottom-left-radius: var(--radius-md);
   color: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
   cursor: default;
   user-select: none;
   touch-action: none;
+}
+
+/* Down to the status bar, which has its own border. */
+.minimap-full {
+  border-bottom: 0;
+  border-bottom-left-radius: 0;
 }
 
 .minimap[hidden] {

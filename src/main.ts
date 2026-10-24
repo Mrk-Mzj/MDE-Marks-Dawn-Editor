@@ -8,8 +8,7 @@ import { blockState, inlineState, insertLink, insertTable, setHeading, toggleInl
 import { lang, t } from "./i18n";
 import { classifyHref, extensionOf, isMarkdownFile, needsConfirmation } from "./links";
 import { Menu } from "./menu";
-import { isMinimapMode, Minimap } from "./minimap";
-import type { MinimapMode } from "./minimap";
+import { Minimap } from "./minimap";
 import * as platform from "./platform";
 import type { FileFormat, LineBreak, OpenedFile } from "./platform";
 import { Preview } from "./preview";
@@ -73,8 +72,8 @@ interface StoredSession {
   zoom?: number;
   /** Both panels scroll together (an app setting); on when missing. */
   syncScroll?: boolean;
-  /** Minimap in the editor panel (an app setting); off when missing. */
-  minimap?: MinimapMode;
+  /** The minimap in the editor panel is shown (an app setting); off when missing. */
+  minimap?: boolean;
 }
 
 /** Unique across runs, because tab ids name files in the session folder. */
@@ -661,7 +660,7 @@ function saveSession(): Promise<void> {
       openTypes: [...trustedTypes],
       zoom,
       syncScroll: scrollSync.enabled,
-      minimap: minimap.current,
+      minimap: minimap.enabled,
     };
     await platform.writeSession(JSON.stringify(session));
   };
@@ -729,7 +728,7 @@ async function restoreSession(): Promise<number> {
   if (isSpellMode(session.spell)) spell.setMode(session.spell);
   applyZoom(validZoom(session.zoom));
   if (typeof session.syncScroll === "boolean") scrollSync.setEnabled(session.syncScroll);
-  if (isMinimapMode(session.minimap)) minimap.setMode(session.minimap);
+  if (typeof session.minimap === "boolean") minimap.setEnabled(session.minimap);
   if (Array.isArray(session.openTypes)) {
     trustedTypes = new Set(session.openTypes.filter((type): type is string => typeof type === "string"));
   }
@@ -960,13 +959,13 @@ spellStatus.addEventListener("click", () => {
 });
 
 const minimapStatus = $<HTMLButtonElement>("#minimap-status");
-minimapStatus.title = t.minimapTitle;
 function updateMinimapStatus(): void {
-  $("#minimap-status-text").textContent = t.minimapStatus(minimap.current);
+  $("#minimap-status-text").textContent = t.minimapStatus(minimap.enabled);
+  minimapStatus.title = t.minimapTitle(minimap.enabled);
 }
 updateMinimapStatus();
 minimapStatus.addEventListener("click", () => {
-  minimap.setMode(minimap.next);
+  minimap.setEnabled(!minimap.enabled);
   updateMinimapStatus();
   scheduleSessionSave();
   editor.focus();

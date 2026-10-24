@@ -1,5 +1,6 @@
 // Minimap: a small picture of the whole document in the top right corner of
-// the editor panel (docs/SPEC.md). Every word is drawn as a thin bar where the
+// the editor panel (docs/SPEC.md), growing with the document down to the
+// bottom of the panel. It takes the place of the editor's scroll bar. Every word is drawn as a thin bar where the
 // editor shows it: the width of the text is scaled to the width of the box,
 // and every row of text (also each wrapped row of a long line) is a few
 // pixels high. The part of the text on screen is a lighter slider that can be
@@ -15,27 +16,14 @@
 import type { Text } from "@codemirror/state";
 import type { Editor } from "./editor";
 
-export type MinimapMode = "off" | "small" | "growing";
-
-export const isMinimapMode = (value: unknown): value is MinimapMode =>
-  value === "off" || value === "small" || value === "growing";
-
-/** The order in which clicking the status bar button goes through the modes. */
-const NEXT: Record<MinimapMode, MinimapMode> = { small: "growing", growing: "off", off: "small" };
-
-// Height of the box in "small" mode, also the least height in "growing" mode
-// (when the panel has room), and its distance from the top and bottom of the
-// panel (docs/DESIGN.md).
-const SMALL_HEIGHT = 220;
-const EDGE_GAP = 12;
+// The least height of the box (when the panel has room); docs/DESIGN.md.
+const MIN_HEIGHT = 100;
 // Empty space around the picture, inside the box.
-const PADDING_X = 8;
-const PADDING_Y = 4;
-// Gap between the box and the editor's scroll bar.
-const SCROLLBAR_GAP = 8;
+const PADDING_X = 5;
+const PADDING_Y = 3;
 // Height of one row of text in the picture, and of the bars in it.
-const ROW_HEIGHT = 3;
-const BAR_HEIGHT = 2;
+const ROW_HEIGHT = 2;
+const BAR_HEIGHT = 1;
 // Measured word widths and row counts of lines are forgotten beyond this many.
 const CACHE_LIMIT = 20000;
 
@@ -46,7 +34,7 @@ interface Bar {
 }
 
 export class Minimap {
-  private mode: MinimapMode = "off";
+  private on = false;
   private readonly box: HTMLElement;
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
@@ -119,27 +107,21 @@ export class Minimap {
     );
   }
 
-  get current(): MinimapMode {
-    return this.mode;
-  }
-
-  /** The mode after `current` when clicking the status bar button. */
-  get next(): MinimapMode {
-    return NEXT[this.mode];
+  get enabled(): boolean {
+    return this.on;
   }
 
   /**
-   * Shows the minimap in `mode`. The editor text gets (or loses) the fixed
+   * Shows or hides the minimap. The editor text gets (or loses) the fixed
    * right margin the box needs, so the text rewraps: listeners keep the
    * panels looking at the same place.
    */
-  setMode(mode: MinimapMode): void {
-    if (mode === this.mode) return;
-    const reserved = (this.mode === "off") !== (mode === "off");
-    this.mode = mode;
-    this.box.hidden = mode === "off";
-    document.documentElement.classList.toggle("has-minimap", mode !== "off");
-    if (reserved) for (const listener of this.listeners) listener();
+  setEnabled(on: boolean): void {
+    if (on === this.on) return;
+    this.on = on;
+    this.box.hidden = !on;
+    document.documentElement.classList.toggle("has-minimap", on);
+    for (const listener of this.listeners) listener();
     this.schedule();
   }
 
@@ -149,7 +131,7 @@ export class Minimap {
   }
 
   private schedule(): void {
-    if (this.mode === "off" || this.frame) return;
+    if (!this.on || this.frame) return;
     this.frame = requestAnimationFrame(() => {
       this.frame = 0;
       this.draw();
@@ -263,7 +245,7 @@ export class Minimap {
   }
 
   private draw(): void {
-    if (this.mode === "off") return;
+    if (!this.on) return;
     const { view } = this.editor;
     const { doc, tabSize } = view.state;
     const scroller = view.scrollDOM;
@@ -287,12 +269,13 @@ export class Minimap {
     const starts = this.rowStart;
     this.total = 2 * PADDING_Y + starts[starts.length - 1] * ROW_HEIGHT;
 
-    // The box sits left of the scroll bar (when there is one).
-    this.box.style.right = `${SCROLLBAR_GAP + scroller.offsetWidth - scroller.clientWidth}px`;
+    // The box grows with the picture. Reaching the bottom of the panel, it
+    // loses its bottom border, which would double the status bar's.
+    const available = this.area.clientHeight;
+    const full = Math.max(MIN_HEIGHT, Math.ceil(this.total) + 1) >= available;
+    this.box.classList.toggle("minimap-full", full);
     const border = this.box.offsetHeight - this.box.clientHeight;
-    const available = this.area.clientHeight - 2 * EDGE_GAP - border;
-    const wanted = Math.max(SMALL_HEIGHT - border, this.mode === "growing" ? Math.ceil(this.total) : 0);
-    const height = Math.max(0, Math.min(wanted, available));
+    const height = Math.max(0, full ? available - border : Math.max(MIN_HEIGHT - border, Math.ceil(this.total)));
     this.height = height;
     this.box.style.height = `${height + border}px`;
 
