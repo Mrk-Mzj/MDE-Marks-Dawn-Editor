@@ -122,6 +122,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 ### Known deviations from the spec in this version
 
 - **Changing the encoding** in the *Save as* dialog (UTF-8 / UTF-8 with BOM) is not available yet; a Windows-1250 file is converted to UTF-8 only when it contains characters Windows-1250 cannot store.
+- **Colours**: dark only, built from the tokens in `src/styles.css` (docs/DESIGN.md). Besides the shadcn/ui tokens MDE has its own surfaces: the top bar and the status bar `#151515` (status bar icons and labels `#808080`), inactive tabs `#1b1b1b`, the active tab, the toolbar, the find bar and the minimap slider (drawn under the word bars) `#222222`, the panels and the minimap `#1b1b1b`, the scroll bar thumb `#313131`. Body text in the panels is `#f3f3f3`; formatted text (bold, italic, underline, headings H1–H5), list bullets and numbers and task boxes are `#ffffff`.
 - **Dialogs are native Windows dialogs** (light, not themed). They will be replaced by dark in-app dialogs. The question about opening a linked file offers *Open and don't ask for .xxx files* as a button, because the native dialog has no checkbox.
 - **Start-up** takes about 0.55–0.65 s from launch to a visible window with the file loaded (target: < 0.5 s).
 - WebView2 keeps its browser cache in `%LOCALAPPDATA%\com.marksdawn.mde\`; the session lives in `%APPDATA%\MDE\`.
@@ -155,6 +156,8 @@ Portable build — builds the release and copies the single `MDE.exe` to `portab
 ```bash
 npm run portable
 ```
+
+The app icon comes from `src-tauri/icons/icon.svg`. After changing it, rebuild `icon.ico` (16–256px) and `icon.png` (512px) with `npx tauri icon src-tauri/icons/icon.svg -o <temp folder>` and copy those two files into `src-tauri/icons/`; touch `src-tauri/build.rs` before the next build, or Cargo keeps the old icon in the exe.
 
 `npx tauri build` alone leaves the exe in `src-tauri/target/release/MDE.exe`. The other `mde.exe` files under `target/` (`release/deps/`, `debug/`) are compiler intermediates, not for distribution.
 
@@ -230,6 +233,7 @@ src-tauri/            backend (Rust, Tauri 2)
   windows-app-manifest.xml  exe manifest (common controls 6, Windows 10/11 compatibility)
   tauri.conf.json     app config, Content Security Policy
   capabilities/       permissions granted to the frontend
+  icons/              app icon: icon.svg (source), icon.ico and icon.png (built from it)
 tools/mockup/         generator of docs/mockup/MDE.svg (`npm run mockup`)
   run.mjs             starts Vite and headless Edge, saves the SVG
   setup.js            puts the app in the state shown by the mockup (runs in the page)

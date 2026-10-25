@@ -54,7 +54,7 @@ const theme = EditorView.theme(
     "&": {
       height: "100%",
       backgroundColor: "var(--background)",
-      color: "var(--foreground)",
+      color: "var(--content-foreground)",
       fontFamily: "var(--font-sans)",
       fontSize: "var(--content-font-size)",
     },
@@ -90,7 +90,7 @@ const theme = EditorView.theme(
     ".cm-scroller::-webkit-scrollbar-thumb": {
       border: "3px solid transparent",
       borderRadius: "6px",
-      background: "var(--input) padding-box",
+      background: "var(--scrollbar) padding-box",
     },
     ".cm-scroller::-webkit-scrollbar-thumb:hover": { background: "var(--ring) padding-box" },
     ".cm-scroller::-webkit-scrollbar-track": { background: "transparent" },

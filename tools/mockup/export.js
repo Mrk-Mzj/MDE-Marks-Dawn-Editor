@@ -59,6 +59,7 @@
   const tokenNames = [
     "background", "foreground", "card", "popover", "primary", "secondary", "muted", "accent",
     "muted-foreground", "destructive", "border", "input", "ring", "warning", "search-match", "search-current",
+    "topbar", "tab", "toolbar", "statusbar", "statusbar-foreground", "scrollbar", "content-foreground", "content-strong",
   ];
   const rootStyle = getComputedStyle(document.documentElement);
   const tokens = tokenNames.map((name) => {
@@ -433,7 +434,10 @@
       };
     }
     const kids = [];
-    const nodes = el.shadowRoot ? el.shadowRoot.childNodes : el.childNodes;
+    // Children with a positive z-index (the minimap's word bars over its
+    // slider) are painted last, as the browser does.
+    const z = (node) => (node.nodeType === Node.ELEMENT_NODE ? parseInt(getComputedStyle(node).zIndex, 10) || 0 : 0);
+    const nodes = [...(el.shadowRoot ? el.shadowRoot.childNodes : el.childNodes)].sort((a, b) => Math.max(z(a), 0) - Math.max(z(b), 0));
     for (const node of nodes) {
       if (node.nodeType === Node.TEXT_NODE) {
         if (node.data.trim()) kids.push(...(emitText(node, style, local) || []));
@@ -454,8 +458,8 @@
       const thumb = Math.max(20, (track * track) / el.scrollHeight);
       const top = r.top + el.clientTop + (el.scrollTop / (el.scrollHeight - track)) * (track - thumb);
       const x = r.left + el.clientLeft + el.clientWidth + 3;
-      const inputC = tokens.find((t) => t.name === "input").c;
-      out.push(shape("uchwyt paska przewijania · input", x, top + 3, 6, thumb - 6, [3, 3, 3, 3], paint("fill", inputC, opacity)));
+      const thumbC = tokens.find((t) => t.name === "scrollbar").c;
+      out.push(shape("uchwyt paska przewijania · scrollbar", x, top + 3, 6, thumb - 6, [3, 3, 3, 3], paint("fill", thumbC, opacity)));
     }
 
     if (!out.length) return [];
@@ -469,7 +473,7 @@
 
   // ---------- Things drawn by Windows, not by the page ----------
   const tok = (n) => tokens.find((t) => t.name === n).c;
-  const card = tok("card");
+  const topbar = tok("topbar");
   const mutedFg = tok("muted-foreground");
   const caption = [];
   const capX = W - 138;
@@ -482,7 +486,7 @@
     const x = capX + i * 46;
     caption.push(
       `<g ${named("Przycisk okna: " + name)}>` +
-        shape("tło · card", x, 0, 46, 39, null, paint("fill", card, 1)) +
+        shape("tło · topbar", x, 0, 46, 39, null, paint("fill", topbar, 1)) +
         `<g ${named("ikona · muted-foreground")} fill="none" ${paint("stroke", mutedFg, 1)} stroke-width="1">${draw(x + 23, 19.5)}</g>` +
       `</g>`,
     );
@@ -510,9 +514,9 @@
   const LX = W + 48;
   const legend = [];
   const uses = {
-    background: "tło okna, paneli, aktywnej zakładki",
-    foreground: "tekst główny",
-    card: "górny pasek, pasek stanu, minimapa, bloki kodu",
+    background: "tło okna, paneli i minimapy",
+    foreground: "tekst interfejsu",
+    card: "pasek ostrzeżenia, bloki kodu",
     popover: "menu i okienka",
     primary: "akcja główna (rzadko)",
     secondary: "akcja drugorzędna",
@@ -521,11 +525,19 @@
     "muted-foreground": "tekst pomocniczy, ikony",
     destructive: "błędy, usuwanie",
     border: "linie i obramowania",
-    input: "pola, paski przewijania, linia cytatu",
+    input: "pola, linia cytatu",
     ring: "pierścień focusa",
     warning: "błąd pisowni, kropka zmian",
     "search-match": "wyniki wyszukiwania",
     "search-current": "bieżący wynik",
+    topbar: "górny pasek, przyciski okna",
+    tab: "nieaktywne zakładki",
+    toolbar: "aktywna zakładka, pasek narzędzi, suwak minimapy",
+    statusbar: "pasek stanu",
+    "statusbar-foreground": "ikony i napisy paska stanu",
+    scrollbar: "uchwyt paska przewijania",
+    "content-foreground": "tekst akapitów",
+    "content-strong": "tekst sformatowany, punktory, pola zadań",
   };
   legend.push(`<text ${named("Tytuł legendy")} x="${LX}" y="40" font-family="Segoe UI" font-size="18" font-weight="600" fill="#fafafa">Tokeny kolorów</text>`);
   legend.push(`<text ${named("Opis legendy")} x="${LX}" y="62" font-family="Segoe UI" font-size="12" fill="#a1a1a1">Wartości z src/styles.css (sRGB)</text>`);

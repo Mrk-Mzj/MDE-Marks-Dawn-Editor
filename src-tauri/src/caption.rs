@@ -40,9 +40,9 @@ const HEIGHT: f64 = 39.0;
 /// Size of the icon font in CSS pixels; Windows draws its own caption icons at 10px.
 const ICON_SIZE: f64 = 10.0;
 
-// Colors of docs/DESIGN.md (0x00BBGGRR): `card`, `accent`, `muted-foreground`,
+// Colors of docs/DESIGN.md (0x00BBGGRR): `topbar`, `accent`, `muted-foreground`,
 // `accent-foreground`, and `window-close` with white.
-const CARD: COLORREF = rgb(0x17, 0x17, 0x17);
+const TOPBAR: COLORREF = rgb(0x15, 0x15, 0x15);
 const ACCENT: COLORREF = rgb(0x26, 0x26, 0x26);
 const MUTED_FOREGROUND: COLORREF = rgb(0xa1, 0xa1, 0xa1);
 const ACCENT_FOREGROUND: COLORREF = rgb(0xfa, 0xfa, 0xfa);
@@ -378,7 +378,7 @@ unsafe fn paint(hwnd: HWND, caption: &Caption) {
     let memory = CreateCompatibleDC(Some(dc));
     let bitmap = CreateCompatibleBitmap(dc, client.right, client.bottom);
     let old_bitmap = SelectObject(memory, bitmap.into());
-    let background = CreateSolidBrush(CARD);
+    let background = CreateSolidBrush(TOPBAR);
     FillRect(memory, &client, background);
     let _ = DeleteObject(background.into());
 

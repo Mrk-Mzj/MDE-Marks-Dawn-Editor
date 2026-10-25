@@ -344,7 +344,7 @@ fn main() {
                 // rounded corners and resize borders.
                 .decorations(false)
                 .shadow(true)
-                .background_color(tauri::window::Color(10, 10, 10, 255))
+                .background_color(tauri::window::Color(27, 27, 27, 255))
                 // Shown by the frontend after the first paint to avoid a flash.
                 .visible(false)
                 .on_navigation(is_app_url)
