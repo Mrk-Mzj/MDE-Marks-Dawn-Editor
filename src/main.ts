@@ -309,7 +309,7 @@ function activate(doc: Doc): void {
   active = doc;
   editor.setState(doc.state, doc.scroll);
   renderPreview(doc.state.doc.toString(), doc.previewScroll);
-  scrollSync.followEditorSoon();
+  scrollSync.linkSoon();
   updateNotice();
   updateTitle();
   editor.focus();
@@ -581,7 +581,7 @@ async function reloadFromDisk(doc: Doc): Promise<void> {
     const previewScroll = preview.scrollTop;
     editor.setState(state, scroll);
     renderPreview(file.text, previewScroll);
-    scrollSync.followEditorSoon();
+    scrollSync.linkSoon();
     updateNotice();
     updateTitle();
   } else {
