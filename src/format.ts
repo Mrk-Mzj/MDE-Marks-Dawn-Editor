@@ -8,9 +8,9 @@ import type { EditorView } from "@codemirror/view";
 import type { SyntaxNode, Tree } from "@lezer/common";
 
 export type InlineStyle = "bold" | "italic" | "underline";
-export type ListKind = "bullet" | "ordered";
+export type ListKind = "bullet" | "ordered" | "task";
 
-/** Block markers at the start of a line: `> ` quotes, indentation, a list marker and `#` heading marker. */
+/** Block markers at the start of a line: `> ` quotes, indentation, a list marker (with a task box) and `#` heading marker. */
 interface Block {
   quote: string;
   indent: string;
@@ -18,7 +18,7 @@ interface Block {
   heading: string;
 }
 
-const blockPattern = /^((?:[ \t]*>[ \t]?)*)([ \t]*)((?:[-*+]|\d{1,9}[.)])(?:[ \t]+|$))?(#{1,6}(?:[ \t]+|$))?/;
+const blockPattern = /^((?:[ \t]*>[ \t]?)*)([ \t]*)((?:[-*+]|\d{1,9}[.)])(?:[ \t]+\[[ xX]\])?(?:[ \t]+|$))?(#{1,6}(?:[ \t]+|$))?/;
 
 function parseBlock(text: string): Block {
   const match = blockPattern.exec(text)!;
@@ -27,7 +27,8 @@ function parseBlock(text: string): Block {
 
 const prefixLength = (b: Block) => b.quote.length + b.indent.length + b.list.length + b.heading.length;
 const headingLevel = (b: Block) => b.heading.trimEnd().length;
-const listKind = (b: Block): ListKind | null => (b.list ? (/\d/.test(b.list) ? "ordered" : "bullet") : null);
+const listKind = (b: Block): ListKind | null =>
+  b.list ? (b.list.includes("[") ? "task" : /\d/.test(b.list) ? "ordered" : "bullet") : null;
 const isBlank = (line: Line) => /^\s*$/.test(line.text);
 
 /** What the line with the cursor is: shown as the pressed state of the toolbar buttons. */
@@ -443,7 +444,7 @@ export function toggleList(view: EditorView, kind: ListKind): void {
       const key = b.quote + b.indent;
       const n = next.get(key) ?? 1;
       next.set(key, n + 1);
-      insert = kind === "bullet" ? "- " : `${n}. `;
+      insert = kind === "bullet" ? "- " : kind === "task" ? "- [ ] " : `${n}. `;
     }
     if (b.list === insert) return [];
     const at = line.from + b.quote.length + b.indent.length;

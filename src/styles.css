@@ -92,9 +92,10 @@ button {
   pointer-events: none;
 }
 
-/* Bold toolbar icon: a semibold stroke instead of the regular 1.75. */
-.icon-bold {
-  stroke-width: 2.5;
+/* Filled parts of an icon (the digits and bullets of the list icons). */
+.icon .icon-fill {
+  fill: currentColor;
+  stroke: none;
 }
 
 :focus-visible {
@@ -109,7 +110,9 @@ button {
   gap: 4px;
   height: var(--topbar-height);
   flex-shrink: 0;
-  padding: 0 0 0 4px;
+  /* The menu icon's left edge lines up with the text of the panels and the
+     B of the formatting toolbar: 6px button padding + 2px icon inset. */
+  padding: 0 0 0 calc(var(--content-padding-x) - 8px);
   background: var(--card);
   border-bottom: 1px solid var(--border);
 }
@@ -126,7 +129,16 @@ button {
 .menu-anchor {
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  /* Puts the menu icon (bars 3–13px into the 16px icon, 6px into the 28px
+     button) level with the capital letters of the tab names, whose top is
+     19.5px and baseline 29.5px below the top of the bar. */
+  padding-top: 10.5px;
+}
+
+#menu-button {
+  width: 28px;
+  height: 28px;
 }
 
 .icon-button {
@@ -226,10 +238,11 @@ button {
 
 .tab-dot {
   display: none;
-  width: 8px;
-  height: 8px;
+  /* As tall as a lowercase letter of the tab name (its x-height). */
+  width: 1ex;
+  height: 1ex;
   border-radius: 50%;
-  background: var(--foreground);
+  background: var(--warning);
 }
 
 .tab-dirty .tab-dot {
@@ -480,13 +493,15 @@ body.resizing-panes .pane {
 /* Menu button: icon and a small chevron. */
 .icon-button-menu {
   width: auto;
-  gap: 2px;
   padding: 0 6px 0 8px;
 }
 
+/* The chevron sits about 2px from the H glyph: both icons have empty space
+   at their sides (3.5px right of H, 3px left of the chevron), taken back here. */
 .icon-button-menu .icon + .icon {
   width: 12px;
   height: 12px;
+  margin-left: -4.5px;
 }
 
 .toolbar-separator {
@@ -816,6 +831,25 @@ body.resizing-panes .pane {
   padding-left: 1.75em;
 }
 
+/* A task item: the box takes the bullet's place, as in the one-pane mode. */
+.markdown-body li.task-list-item {
+  list-style: none;
+}
+
+.markdown-body .task-box {
+  display: inline-block;
+  min-width: 1.5em;
+  margin-left: -1.75em;
+  padding-right: 0.25em;
+  color: var(--muted-foreground);
+}
+
+.markdown-body .task-box .icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+}
+
 /* One blank line of the file: an empty line of text (see the blank-lines extension). */
 .markdown-body .blank-line {
   height: 1.6em;
@@ -969,7 +1003,8 @@ body.resizing-panes .pane {
 /* Plain status text on the left (the character count), in line with the button labels. */
 .status-text {
   margin-right: auto;
-  padding: 0 8px;
+  /* Starts on the same vertical line as the text of the panels. */
+  padding: 0 8px 0 calc(var(--content-padding-x) - 4px);
   overflow: hidden;
   color: var(--muted-foreground);
   font-size: 12px;

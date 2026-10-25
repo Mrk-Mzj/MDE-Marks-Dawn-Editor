@@ -979,11 +979,26 @@ const undoAutoformat: Command = (view) => {
   return true;
 };
 
-// ---------- Links ----------
+// ---------- Links and task boxes ----------
+
+/** A click on a task box checks or unchecks it: `[ ]` ⇄ `[x]` in the file. */
+function toggleTask(event: MouseEvent, view: EditorView): boolean {
+  const box = (event.target as Element).closest(".cm-live-task");
+  if (!box) return false;
+  const pos = view.posAtDOM(box);
+  const line = view.state.doc.lineAt(pos);
+  const match = /^([ \t]*(?:[-*+]|\d{1,9}[.)])[ \t]+\[)([ xX])\]/.exec(line.text.slice(pos - line.from));
+  if (!match) return false;
+  event.preventDefault();
+  const at = pos + match[1].length;
+  view.dispatch({ changes: { from: at, to: at + 1, insert: match[2] === " " ? "x" : " " }, userEvent: "input.toggle" });
+  return true;
+}
 
 const linkEvents = EditorView.domEventHandlers({
   // Ctrl+click follows a link; a plain click only places the cursor.
   mousedown(event, view) {
+    if (event.button === 0 && !event.ctrlKey && toggleTask(event, view)) return true;
     if (event.button !== 0 || !event.ctrlKey) return false;
     const link = (event.target as Element).closest<HTMLElement>("[data-href]");
     if (!link) return false;
@@ -1093,6 +1108,7 @@ const liveTheme = EditorView.theme({
   ".cm-live-level-2": { marginLeft: "1.75em" },
   ".cm-live-level-3": { marginLeft: "3.5em" },
   ".cm-live-level-4": { marginLeft: "5.25em" },
+  ".cm-live-task": { cursor: "pointer" },
   ".cm-live-task svg": { ...icon, verticalAlign: "-0.125em", color: "var(--muted-foreground)" },
   ".cm-live-image, .cm-live-block .image-placeholder": {
     display: "inline-flex",
