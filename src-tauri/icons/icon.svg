@@ -1,6 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect x="16" y="16" width="480" height="480" rx="108" fill="#171717"/>
-  <rect x="72" y="136" width="368" height="240" rx="40" fill="none" stroke="#fafafa" stroke-width="28"/>
-  <path d="M136 316V196l52 64 52-64v120" fill="none" stroke="#fafafa" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M340 196v116M300 276l40 40 40-40" fill="none" stroke="#fafafa" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 256 256" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:affinity="https://www.affinity.studio/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(10.666667,0,0,10.666667,-1045.333333,-629.333333)">
+        <path d="M122,71C122,77.623 116.623,83 110,83C103.377,83 98,77.623 98,71C98,73 103.377,76 110,76C116.623,76 122,73 122,71Z" style="fill:url(#_Radial1);"/>
+    </g>
+    <g transform="matrix(10.666667,0,0,10.666667,-1045.333333,-629.333333)">
+        <clipPath id="_clip2">
+            <path d="M98.024,70.233C98.42,63.967 103.635,59 110,59C116.365,59 121.58,63.967 121.976,70.233C121.58,72.153 116.365,74 110,74C103.635,74 98.42,72.153 98.024,70.233Z"/>
+        </clipPath>
+        <g clip-path="url(#_clip2)">
+            <g transform="matrix(0.09375,-0,-0,0.09375,98,59)">
+                <use xlink:href="#_Image3" x="0.258" y="0" width="256px" height="160px"/>
+            </g>
+        </g>
+    </g>
+    <defs>
+        <radialGradient id="_Radial1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(19,10,-4.892206,11.91505,98,71)"><stop offset="0" style="stop-color:rgb(188,182,131);stop-opacity:0.5"/><stop offset="1" style="stop-color:rgb(155,112,67);stop-opacity:0.5"/></radialGradient>
+        <image id="_Image3" width="256px" height="160px" xlink:href="data:image/jpeg;base64,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"/>
+    </defs>
 </svg>
