@@ -37,8 +37,10 @@
   --topbar-height: 40px;
   --statusbar-height: 28px;
   --content-font-size: 16px;
-  /* Left and right padding of the text in both panels. */
-  --content-padding-x: 32px;
+  /* Left and right padding of the text in both panels; also the left margin
+     of the menu icon, the toolbar's B and the character count. As wide as
+     the gap between two toolbar letters (B to I). */
+  --content-padding-x: 25px;
   /* Width of the minimap box; the editor text keeps this much more margin on
      the right while the minimap is shown. */
   --minimap-width: 77px;
@@ -129,6 +131,11 @@ button {
 .menu-anchor {
   position: relative;
   display: flex;
+  align-items: center;
+}
+
+/* The main menu only (the toolbar's heading menu is a .menu-anchor too). */
+.topbar > .menu-anchor {
   align-items: flex-start;
   /* Puts the menu icon (bars 3–13px into the 16px icon, 6px into the 28px
      button) level with the capital letters of the tab names, whose top is
@@ -178,6 +185,10 @@ button {
   flex: 1;
   min-width: 0;
   gap: 2px;
+  /* The first tab starts --content-padding-x after the right edge of the
+     toolbar's B (9px wide, starting at --content-padding-x). The menu button
+     ends 20px after it and the bar's gap adds 4px. */
+  margin-left: calc(var(--content-padding-x) - 15px);
   padding-top: 6px;
   overflow: hidden;
 }
