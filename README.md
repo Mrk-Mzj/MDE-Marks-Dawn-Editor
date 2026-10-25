@@ -164,6 +164,20 @@ Rust tests (encoding and line ending round-trips: UTF-8 ± BOM, UTF-16 LE/BE, Wi
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
+### Colour mockup
+
+`docs/mockup/MDE.svg` is a vector mockup of the MDE window for trying out colours in Affinity Designer or Illustrator. It shows two panes, five tabs (one with unsaved changes), the minimap and a misspelled word, plus a legend of the colour tokens. It is not drawn by hand. The generator starts the Vite dev server (port 1431) and headless Microsoft Edge, puts the app in that state, and turns every box, border, text line and icon on the page into SVG at its measured position. That makes the mockup match the app at 1:1 scale. Rebuild it after changing `src/styles.css`:
+
+```bash
+npm run mockup
+```
+
+Optional arguments: `node tools/mockup/run.mjs [out.svg] [width] [height]` (default `docs/mockup/MDE.svg`, 1440×900).
+
+- Layers are named after the part of the app (Affinity reads `serif:id`, Illustrator reads `id`), and each shape names its token, e.g. `tło · card/popover` or `krawędź dolna · border`.
+- To recolour one token everywhere in Affinity, select one shape, then use *Select → Select Same → Fill Colour* (or *Stroke Colour*). Tokens with the same value, such as `card` and `popover`, get selected together.
+- Things the page does not draw itself are added by the generator: the window buttons (native, `caption.rs`), list bullets (`::marker`), the scroll bar thumb and the spelling underline.
+
 ## Project structure
 
 ```
@@ -216,6 +230,11 @@ src-tauri/            backend (Rust, Tauri 2)
   windows-app-manifest.xml  exe manifest (common controls 6, Windows 10/11 compatibility)
   tauri.conf.json     app config, Content Security Policy
   capabilities/       permissions granted to the frontend
+tools/mockup/         generator of docs/mockup/MDE.svg (`npm run mockup`)
+  run.mjs             starts Vite and headless Edge, saves the SVG
+  setup.js            puts the app in the state shown by the mockup (runs in the page)
+  export.js           converts the page into a layered SVG (runs in the page)
+docs/mockup/MDE.svg   colour mockup of the window with named layers and a token legend
 ```
 
 ## Tech stack

@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "tauri": "tauri",
+    "mockup": "node tools/mockup/run.mjs",
     "portable": "tauri build && node -e \"require('fs').mkdirSync('portable',{recursive:true});require('fs').copyFileSync('src-tauri/target/release/MDE.exe','portable/MDE.exe')\""
   },
   "dependencies": {
