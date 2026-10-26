@@ -11,8 +11,11 @@
 // of the file the editor has never displayed (it only estimates their
 // height). Scroll positions are matched by source line, like the two panels
 // (see scrollsync.ts). Only the lines inside the box are drawn, and the row
-// count of a line is remembered by its text, so long files stay fast.
+// count of a line is remembered by its text, so long files stay fast. H1 and
+// H2 headings are drawn lighter (--minimap-h1, --minimap-h2), so the
+// document's sections stand out.
 
+import { syntaxTree } from "@codemirror/language";
 import type { Text } from "@codemirror/state";
 import type { Editor } from "./editor";
 
@@ -307,7 +310,7 @@ export class Minimap {
     this.canvas.style.width = `${inner}px`;
     this.canvas.style.height = `${height}px`;
     ctx.clearRect(0, 0, width, pixels);
-    ctx.fillStyle = getComputedStyle(this.box).color;
+    const boxStyle = getComputedStyle(this.box);
 
     const scaleX = (inner - 2 * PADDING_X) / Math.max(1, textWidth);
     const barHeight = Math.max(1, Math.round(BAR_HEIGHT * ratio));
@@ -320,21 +323,40 @@ export class Minimap {
       if (starts[mid] <= firstRow) lo = mid;
       else hi = mid - 1;
     }
-    ctx.beginPath();
-    for (let index = lo; index < doc.lines; index++) {
+    let last = lo;
+    while (last < doc.lines && PADDING_Y + starts[last] * ROW_HEIGHT - offset <= height) last++;
+    // Lines of H1 and H2 headings (as far as the editor has parsed the file).
+    const paths = { text: new Path2D(), h1: new Path2D(), h2: new Path2D() };
+    const headings = new Map<number, Path2D>();
+    syntaxTree(view.state).iterate({
+      from: doc.line(lo + 1).from,
+      to: doc.line(Math.max(lo + 1, last)).to,
+      enter: (node) => {
+        const level = /^(?:ATX|Setext)Heading([12])$/.exec(node.name)?.[1];
+        if (!level) return;
+        for (let n = doc.lineAt(node.from).number; n <= doc.lineAt(node.to).number; n++) headings.set(n - 1, level === "1" ? paths.h1 : paths.h2);
+        return false;
+      },
+    });
+    for (let index = lo; index < last; index++) {
       const rowTop = PADDING_Y + starts[index] * ROW_HEIGHT - offset;
-      if (rowTop > height) break;
+      const path = headings.get(index) ?? paths.text;
       const rows = this.wrap(doc.line(index + 1).text, textWidth, tabSize);
       rows.forEach((row, n) => {
         const y = Math.round((rowTop + n * ROW_HEIGHT + (ROW_HEIGHT - BAR_HEIGHT) / 2) * ratio);
         for (const bar of row) {
           const left = Math.round((PADDING_X + bar.x * scaleX) * ratio);
           const right = Math.round((PADDING_X + (bar.x + bar.width) * scaleX) * ratio);
-          ctx.rect(left, y, Math.max(1, right - left), barHeight);
+          path.rect(left, y, Math.max(1, right - left), barHeight);
         }
       });
     }
-    ctx.fill();
+    ctx.fillStyle = boxStyle.color;
+    ctx.fill(paths.text);
+    ctx.fillStyle = boxStyle.getPropertyValue("--minimap-h1");
+    ctx.fill(paths.h1);
+    ctx.fillStyle = boxStyle.getPropertyValue("--minimap-h2");
+    ctx.fill(paths.h2);
   }
 
   /** The pointer's distance from the top of the inside of the box. */

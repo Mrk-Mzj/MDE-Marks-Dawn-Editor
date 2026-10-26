@@ -59,7 +59,7 @@
   const tokenNames = [
     "background", "foreground", "card", "popover", "primary", "secondary", "muted", "accent",
     "muted-foreground", "destructive", "border", "input", "ring", "warning", "search-match", "search-current",
-    "topbar", "tab", "toolbar", "statusbar", "statusbar-foreground", "scrollbar", "content-foreground", "content-strong",
+    "topbar", "tab", "toolbar", "statusbar", "statusbar-foreground", "scrollbar", "content-foreground", "content-strong", "table-header", "h1-rule", "h2-rule", "minimap-h1", "minimap-h2",
   ];
   const rootStyle = getComputedStyle(document.documentElement);
   const tokens = tokenNames.map((name) => {
@@ -287,26 +287,39 @@
       while (x < cv.width) {
         if (data[(y * cv.width + x) * 4 + 3] > 20) {
           const start = x;
+          // Heading bars are opaque (--minimap-h1, --minimap-h2), keyed by
+          // their colour; text bars are translucent ("").
+          const i = (y * cv.width + x) * 4;
+          const group = data[i + 3] > 250 ? `${data[i]},${data[i + 1]},${data[i + 2]}` : "";
           while (x < cv.width && data[(y * cv.width + x) * 4 + 3] > 20) x++;
-          runs.push([start, y, x - start]);
+          runs.push([start, y, x - start, group]);
         } else x++;
       }
     }
     // Bars more than one device pixel tall: merge runs stacked on top of each other.
     const merged = [];
     const open = new Map();
-    for (const [x, y, w] of runs) {
-      const k = `${x},${w}`;
+    for (const [x, y, w, group] of runs) {
+      const k = `${x},${w},${group}`;
       const prev = open.get(k);
       if (prev && prev.y + prev.h === y) prev.h++;
       else {
-        const bar = { x, y, w, h: 1 };
+        const bar = { x, y, w, h: 1, group };
         merged.push(bar);
         open.set(k, bar);
       }
     }
-    const rects = merged.map((b) => `<rect x="${f(r.left + b.x * sx)}" y="${f(r.top + b.y * sy)}" width="${f(b.w * sx)}" height="${f(b.h * sy)}"/>`);
-    return [`<g ${named(`obraz minimapy · ${tokenOf(c)}`)} ${paint("fill", c, ctx.opacity)}>${rects.join("")}</g>`];
+    const rects = (group) =>
+      merged
+        .filter((b) => b.group === group)
+        .map((b) => `<rect x="${f(r.left + b.x * sx)}" y="${f(r.top + b.y * sy)}" width="${f(b.w * sx)}" height="${f(b.h * sy)}"/>`)
+        .join("");
+    const groups = [...new Set(merged.map((b) => b.group))];
+    return groups.map((group) => {
+      if (!group) return `<g ${named(`obraz minimapy · ${tokenOf(c)}`)} ${paint("fill", c, ctx.opacity)}>${rects(group)}</g>`;
+      const gc = color(`rgb(${group})`);
+      return `<g ${named(`obraz minimapy, nagłówki · ${tokenOf(gc)}`)} ${paint("fill", gc, ctx.opacity)}>${rects(group)}</g>`;
+    });
   }
 
   function walk(el, ctx) {
@@ -390,29 +403,28 @@
       }
     }
 
-    // List markers (::marker cannot be measured, so the bullet is set as text).
-    if (el.tagName === "LI" && style.display === "list-item" && style.listStyleType !== "none" && visible) {
-      const c = color(style.color);
-      const type = style.listStyleType;
-      const index = [...el.parentElement.children].indexOf(el) + (parseInt(el.parentElement.getAttribute("start")) || 1);
-      const m = metrics(style);
-      const fs = parseFloat(style.fontSize);
-      const lh = parseFloat(style.lineHeight) || m.height;
-      const baseline = r.top + (lh - m.height) / 2 + m.ascent;
-      const symbol = { disc: "kropka", circle: "kółko", square: "kwadrat" }[type];
-      if (symbol) {
-        // Chrome draws these as shapes: about 0.375em wide, centred 0.9em before the text.
-        const cx = r.left - 0.906 * fs;
-        const cy = baseline - 0.355 * fs;
-        const name = named(`znacznik listy (${symbol}) · ${tokenOf(c)}`);
-        if (type === "disc") out.push(`<circle ${name} cx="${f(cx)}" cy="${f(cy)}" r="${f(0.1875 * fs)}" ${paint("fill", c, opacity)}/>`);
-        else if (type === "circle") out.push(`<circle ${name} cx="${f(cx)}" cy="${f(cy)}" r="${f(0.1875 * fs - 0.5)}" fill="none" ${paint("stroke", c, opacity)} stroke-width="1"/>`);
-        else out.push(`<rect ${name} x="${f(cx - 0.1875 * fs)}" y="${f(cy - 0.1875 * fs)}" width="${f(0.375 * fs)}" height="${f(0.375 * fs)}" ${paint("fill", c, opacity)}/>`);
-      } else {
-        const marker = `${index}.`;
-        measureCtx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-        const width = measureCtx.measureText(marker + " ").width;
-        out.push(`<text ${named(`znacznik listy „${marker}” · ${tokenOf(c)}`)} x="${f(r.left - width)}" y="${f(baseline)}" ${textAttrs(style, c, opacity)}>${esc(marker)}</text>`);
+    // List markers: the ::before of a list item (pseudo-elements cannot be
+    // measured, so the marker is placed from its computed style).
+    if (el.tagName === "LI" && visible) {
+      const before = getComputedStyle(el, "::before");
+      if (before.content && before.content !== "none") {
+        const c = color(before.color);
+        const index = [...el.parentElement.children].indexOf(el) + (parseInt(el.parentElement.getAttribute("start")) || 1);
+        const marker = before.content.startsWith("counter") ? `${index}.` : JSON.parse(before.content);
+        const m = metrics(style);
+        const fs = parseFloat(style.fontSize);
+        const lh = parseFloat(style.lineHeight) || m.height;
+        const baseline = r.top + (lh - m.height) / 2 + m.ascent;
+        const x = r.left + parseFloat(before.left);
+        const name = named(`znacznik listy „${marker}” · ${tokenOf(c)}`);
+        const scale = before.transform.startsWith("matrix(") ? parseFloat(before.transform.slice(7)) : 1;
+        if (scale !== 1) {
+          // A bullet: centred in a 1em box and scaled around the box's middle.
+          const mid = r.top + lh / 2;
+          out.push(`<text ${name} x="${f(x + fs / 2)}" y="${f(mid + (baseline - mid) * scale)}" text-anchor="middle" ${textAttrs({ fontFamily: style.fontFamily, fontSize: `${fs * scale}px`, fontWeight: style.fontWeight, fontStyle: style.fontStyle, letterSpacing: style.letterSpacing }, c, opacity)}>${esc(marker)}</text>`);
+        } else {
+          out.push(`<text ${name} x="${f(x)}" y="${f(baseline)}" ${textAttrs(style, c, opacity)}>${esc(marker)}</text>`);
+        }
       }
     }
 
@@ -424,8 +436,9 @@
       local.underline = { c: color(style.textDecorationColor) || color(style.color), offset: isNaN(off) ? fs * 0.1 : off, thickness: isNaN(th) ? 1 : th };
     }
     const clips = style.overflowX !== "visible" || style.overflowY !== "visible";
+    let cr;
     if (clips) {
-      const cr = { left: r.left + el.clientLeft, top: r.top + el.clientTop };
+      cr = { left: r.left + el.clientLeft, top: r.top + el.clientTop };
       cr.right = cr.left + el.clientWidth;
       cr.bottom = cr.top + el.clientHeight;
       local.clip = {
@@ -448,7 +461,14 @@
 
     if (clips && kids.length) {
       const id = `clip${++clipCount}`;
-      defs.push(`<clipPath id="${id}"><rect x="${f(local.clip.left)}" y="${f(local.clip.top)}" width="${f(local.clip.right - local.clip.left)}" height="${f(local.clip.bottom - local.clip.top)}"/></clipPath>`);
+      // Rounded corners (a table) clip along the inside of the border; the
+      // parent's clip still applies, as this group sits inside it.
+      const inner = radii.map((v) => Math.max(0, v - el.clientLeft));
+      defs.push(
+        inner.some((v) => v > 0)
+          ? `<clipPath id="${id}"><path d="${roundRect(cr.left, cr.top, cr.right - cr.left, cr.bottom - cr.top, inner)}"/></clipPath>`
+          : `<clipPath id="${id}"><rect x="${f(local.clip.left)}" y="${f(local.clip.top)}" width="${f(local.clip.right - local.clip.left)}" height="${f(local.clip.bottom - local.clip.top)}"/></clipPath>`,
+      );
       kids.splice(0, kids.length, `<g clip-path="url(#${id})">${kids.join("")}</g>`);
     }
     out.push(...kids);
@@ -537,7 +557,12 @@
     "statusbar-foreground": "ikony i napisy paska stanu",
     scrollbar: "uchwyt paska przewijania",
     "content-foreground": "tekst akapitów",
-    "content-strong": "tekst sformatowany, punktory, pola zadań",
+    "content-strong": "tekst sformatowany, kropka zadania",
+    "table-header": "tło nagłówków tabel",
+    "h1-rule": "linia pod H1",
+    "h2-rule": "linia pod H2",
+    "minimap-h1": "H1 w minimapie",
+    "minimap-h2": "H2 w minimapie",
   };
   legend.push(`<text ${named("Tytuł legendy")} x="${LX}" y="40" font-family="Segoe UI" font-size="18" font-weight="600" fill="#fafafa">Tokeny kolorów</text>`);
   legend.push(`<text ${named("Opis legendy")} x="${LX}" y="62" font-family="Segoe UI" font-size="12" fill="#a1a1a1">Wartości z src/styles.css (sRGB)</text>`);

@@ -245,6 +245,7 @@ function analyze(state: EditorState, from: number, to: number, purpose: "view" |
           escape = ref.to - 1;
         }
         const checked = task ? /x/i.test(doc.sliceString(task.from, task.to)) : null;
+        lineClass(ref.from, ref.from, `cm-live-li cm-live-li-${Math.min(depth, 4)}`);
         hide({
           from: start,
           to: end,
@@ -393,9 +394,6 @@ function prefixEnd(state: EditorState, line: Line): number {
 
 // ---------- Widgets ----------
 
-const SVG = (body: string) =>
-  `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/>${body}</svg>`;
-
 /** A bullet, the rendered number of an ordered list item, or a task check box. */
 class ListWidget extends WidgetType {
   constructor(
@@ -412,15 +410,18 @@ class ListWidget extends WidgetType {
 
   toDOM(): HTMLElement {
     const el = document.createElement("span");
-    el.className = `cm-live-bullet cm-live-level-${Math.min(this.depth, 4)}`;
+    el.className = "cm-live-bullet";
     if (this.checked !== null) {
       el.classList.add("cm-live-task");
-      el.innerHTML = SVG(this.checked ? '<path d="m9 12 2 2 4-4"/>' : "");
+      el.innerHTML = `<span class="cm-live-check">${this.checked ? '<span class="cm-live-check-dot"></span>' : ""}</span>`;
     } else if (this.label !== null) {
       el.classList.add("cm-live-number");
       el.textContent = this.label;
     } else {
-      el.textContent = BULLETS[(this.depth - 1) % BULLETS.length];
+      const dot = document.createElement("span");
+      dot.className = "cm-live-dot";
+      dot.textContent = BULLETS[(this.depth - 1) % BULLETS.length];
+      el.append(dot);
     }
     return el;
   }
@@ -863,10 +864,17 @@ const safeReplacement = EditorState.transactionFilter.of((tr) => {
   if (replaced.length !== 1 || replaced[0].to === replaced[0].from) return tr;
   const { from, to, insert } = replaced[0];
   const changes = tr.startState.changes(safeReplace(tr.startState, from, to, insert));
-  if (JSON.stringify(changes.toJSON()) === JSON.stringify(tr.changes.toJSON())) return tr;
+  // The same text as the browser's own change: keep that change and its cursor.
+  if (changes.apply(tr.startState.doc).eq(tr.newDoc)) return tr;
+  // The cursor goes after the typed or pasted text (mapping `from` would put
+  // it before text inserted where the deletion starts).
+  let cursor = changes.mapPos(from, 1);
+  changes.iterChanges((_fromA, _toA, _fromB, toB, inserted) => {
+    if (inserted.length && inserted.toString() === insert) cursor = toB;
+  });
   return {
     changes,
-    selection: EditorSelection.cursor(changes.mapPos(from, 1)),
+    selection: EditorSelection.cursor(cursor),
     scrollIntoView: true,
     userEvent: tr.annotation(Transaction.userEvent),
   };
@@ -1043,10 +1051,23 @@ export function hiddenRanges(state: EditorState): { from: number; to: number }[]
 const quoteLine = (depth: number) => {
   const step = "(1em + 3px)";
   const lines = Array.from({ length: depth }, (_, i) => `linear-gradient(var(--input), var(--input)) no-repeat calc(var(--content-padding-x) + ${i} * ${step}) 0 / 3px 100%`);
-  return { color: "var(--muted-foreground)", paddingLeft: `calc(var(--content-padding-x) + ${depth} * ${step})`, background: lines.join(", ") };
+  return {
+    color: "var(--muted-foreground)",
+    paddingLeft: `calc(var(--content-padding-x) + ${depth} * ${step})`,
+    background: lines.join(", "),
+    // A list item in the quote starts after the quote's own indent.
+    "--quote-indent": `calc(${depth} * ${step})`,
+  };
 };
 
-const headingRule = (size: string, spacing: string, border: boolean) => ({
+// The line of a list item: indented like a list in the preview, with a
+// hanging indent so that wrapped text lines up with the item's text.
+const listLine = (depth: number) => ({
+  paddingLeft: `calc(var(--content-padding-x) + var(--quote-indent, 0px) + var(--list-indent) + ${depth} * var(--list-marker))`,
+  textIndent: "calc(-1 * var(--list-marker))",
+});
+
+const headingRule = (size: string, spacing: string, border: string | null) => ({
   fontSize: size,
   fontWeight: "600",
   letterSpacing: spacing,
@@ -1057,7 +1078,7 @@ const headingRule = (size: string, spacing: string, border: boolean) => ({
   ...(border
     ? {
         background:
-          "linear-gradient(var(--border), var(--border)) no-repeat var(--content-padding-x) 100% / calc(100% - 2 * var(--content-padding-x) - var(--minimap-space, 0px)) 1px",
+          `linear-gradient(${border}, ${border}) no-repeat var(--content-padding-x) 100% / calc(100% - 2 * var(--content-padding-x) - var(--minimap-space, 0px)) 1px`,
       }
     : {}),
 });
@@ -1065,15 +1086,20 @@ const headingRule = (size: string, spacing: string, border: boolean) => ({
 const icon = { width: "1em", height: "1em", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" };
 
 const liveTheme = EditorView.theme({
-  ".cm-line.cm-live-h1": headingRule("1.875em", "-0.025em", true),
-  ".cm-line.cm-live-h2": headingRule("1.5em", "-0.02em", true),
-  ".cm-line.cm-live-h3": headingRule("1.25em", "-0.01em", false),
-  ".cm-line.cm-live-h4": headingRule("1.1em", "normal", false),
-  ".cm-line.cm-live-h5": headingRule("1em", "normal", false),
-  ".cm-line.cm-live-h6": { ...headingRule("1em", "normal", false), color: "var(--muted-foreground)" },
+  ".cm-line.cm-live-h1": headingRule("1.875em", "-0.025em", "var(--h1-rule)"),
+  ".cm-line.cm-live-h2": headingRule("1.5em", "-0.02em", "var(--h2-rule)"),
+  ".cm-line.cm-live-h3": headingRule("1.25em", "-0.01em", null),
+  ".cm-line.cm-live-h4": headingRule("1.1em", "normal", null),
+  ".cm-line.cm-live-h5": headingRule("1em", "normal", null),
+  ".cm-line.cm-live-h6": { ...headingRule("1em", "normal", null), color: "var(--muted-foreground)" },
   ".cm-line.cm-live-quote-1": quoteLine(1),
   ".cm-line.cm-live-quote-2": quoteLine(2),
   ".cm-line.cm-live-quote-3": quoteLine(3),
+  ".cm-line.cm-live-li-1": listLine(1),
+  ".cm-line.cm-live-li-2": listLine(2),
+  ".cm-line.cm-live-li-3": listLine(3),
+  ".cm-line.cm-live-li-4": listLine(4),
+  ".cm-live-li *": { textIndent: "0" },
   ".cm-line.cm-live-source": { fontFamily: "var(--font-mono)", fontSize: "0.875em", backgroundColor: "var(--card)" },
   ".cm-live-strong": { fontWeight: "700", color: "var(--content-strong)" },
   ".cm-live-em": { fontStyle: "italic", color: "var(--content-strong)" },
@@ -1104,13 +1130,34 @@ const liveTheme = EditorView.theme({
   },
   ".cm-live-link:hover": { textDecorationColor: "var(--foreground)" },
   "&.cm-live-ctrl .cm-live-link": { cursor: "pointer" },
-  ".cm-live-bullet": { display: "inline-block", minWidth: "1.5em", paddingRight: "0.25em", color: "var(--content-strong)" },
+  // Bullets, numbers and task boxes start the marker column; a bullet sits
+  // on the axis of a task box, 30% larger than the glyph.
+  ".cm-live-bullet": { display: "inline-block", minWidth: "var(--list-marker)", color: "var(--warning)" },
+  ".cm-live-dot": { display: "inline-block", width: "1em", textAlign: "center", transform: "scale(1.3)" },
   ".cm-live-number": { fontVariantNumeric: "tabular-nums" },
-  ".cm-live-level-2": { marginLeft: "1.75em" },
-  ".cm-live-level-3": { marginLeft: "3.5em" },
-  ".cm-live-level-4": { marginLeft: "5.25em" },
   ".cm-live-task": { cursor: "pointer" },
-  ".cm-live-task svg": { ...icon, verticalAlign: "-0.125em", color: "var(--content-strong)" },
+  // The box is a CSS border, so its lines stay on whole device pixels (same
+  // as .task-check in src/styles.css); a done task has a large white dot.
+  ".cm-live-check": {
+    position: "relative",
+    display: "inline-block",
+    boxSizing: "border-box",
+    width: "0.75em",
+    height: "0.75em",
+    margin: "0 0.125em",
+    overflow: "hidden",
+    border: "calc(1em / 12) solid var(--warning)",
+    borderRadius: "calc(1em / 12)",
+  },
+  ".cm-live-check-dot": {
+    position: "absolute",
+    inset: "0",
+    width: "0.367em",
+    height: "0.367em",
+    margin: "auto",
+    borderRadius: "50%",
+    background: "var(--content-strong)",
+  },
   ".cm-live-image, .cm-live-block .image-placeholder": {
     display: "inline-flex",
     alignItems: "center",
@@ -1149,9 +1196,26 @@ const liveTheme = EditorView.theme({
     fontSize: "0.875em",
   },
   ".cm-live-block pre code": { padding: "0", background: "transparent" },
-  ".cm-live-block table": { display: "block", maxWidth: "100%", borderCollapse: "collapse", overflowWrap: "anywhere" },
-  ".cm-live-block th, .cm-live-block td": { padding: "6px 12px", border: "1px solid var(--border)" },
-  ".cm-live-block th": { background: "var(--card)", fontWeight: "600" },
+  ".cm-live-block table": {
+    display: "block",
+    width: "fit-content",
+    maxWidth: "100%",
+    border: "1px solid var(--warning)",
+    borderRadius: "var(--radius-lg)",
+    borderCollapse: "separate",
+    borderSpacing: "0",
+    overflow: "hidden",
+    overflowWrap: "anywhere",
+  },
+  ".cm-live-block th, .cm-live-block td": {
+    padding: "6px 12px",
+    borderRight: "1px solid var(--border)",
+    borderBottom: "1px solid var(--border)",
+  },
+  ".cm-live-block tr > :last-child": { borderRight: "0" },
+  ".cm-live-block :is(thead, tbody):last-child > tr:last-child > *": { borderBottom: "0" },
+  ".cm-live-block th": { borderColor: "var(--background) var(--background) var(--warning)", background: "var(--table-header)", color: "var(--background)", fontWeight: "700" },
+  ".cm-live-block th *": { color: "inherit" },
   ".cm-live-block tr:nth-child(2n) td": { background: "color-mix(in oklch, var(--card) 50%, transparent)" },
   ".cm-live-block a": { color: "var(--foreground)", textDecoration: "underline", textDecorationColor: "var(--muted-foreground)", textUnderlineOffset: "3px" },
   "&.cm-live-ctrl .cm-live-block a": { cursor: "pointer" },

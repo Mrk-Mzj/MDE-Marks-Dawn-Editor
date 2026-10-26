@@ -28,7 +28,7 @@ Otwarty plik ma być wyświetlany w obszarze podzielonym na dwie części:
 
 W górnej części zawiera pasek ikon pozwalających na typowe formatowanie zaznaczonego tekstu i akapitów, np.: bold, italic, podkreślenie, lista numerowana i punktowana, lista zadań, nagłówki H1 do H5 i tekst akapitowy, cytat, hiperłącze, tabela. Ikony są wyrównane do lewej, a pierwsza z nich zaczyna się na tej samej pionowej linii co tekst pod paskiem. Podkreślenie owija tekst w znacznik `<u>…</u>` (GFM nie ma własnej składni podkreślenia).
 
-Lista zadań zamienia linie w zadania z polem wyboru (`- [ ] `). Zrobione zadanie (`- [x] `) wyświetla się jako obrysowe pole z ptaszkiem, nie jako wypełnione pole ani „x”. W trybie jednego okna kliknięcie pola zaznacza lub odznacza zadanie.
+Lista zadań zamienia linie w zadania z polem wyboru (`- [ ] `). Zrobione zadanie (`- [x] `) wyświetla się jako obrysowe pole z dużą białą kropką w środku, nie jako wypełnione pole ani „x”. W trybie jednego okna kliknięcie pola zaznacza lub odznacza zadanie.
 
 Ikony stoją w kolejności: B, I, U, styl akapitu (H), lista punktowana, numerowana, lista zadań, cytat, tabela, hiperłącze, bez separatorów. Na końcu jest ikona mikrofonu „Dyktowanie”: uruchamia dyktowanie głosowe Windows (tak jak pozycja „Dyktowanie” w menu pod prawym przyciskiem myszy), a dyktowany tekst trafia w miejsce kursora. Gdy panel jest zbyt wąski, ikony, które się nie mieszczą (z mikrofonem włącznie), chowają się za przyciskiem „Więcej” (…).
 

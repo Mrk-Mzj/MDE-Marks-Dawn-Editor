@@ -78,7 +78,7 @@ md.core.ruler.push("source_lines", (state) => {
 });
 
 // GFM task list items (`- [ ] `, `- [x] `): the box is drawn in place of the
-// bullet, like in the one-pane mode, with a check mark when the task is done.
+// bullet, like in the one-pane mode, with a dot in it when the task is done.
 const taskBox = /^\[([ xX])\](?:[ \t]+|$)/;
 md.core.ruler.push("task_lists", (state) => {
   const { tokens } = state;
@@ -98,9 +98,9 @@ md.core.ruler.push("task_lists", (state) => {
 });
 
 md.renderer.rules.task_box = (tokens, idx) =>
-  `<span class="task-box" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/>${
-    (tokens[idx].meta as { checked: boolean }).checked ? '<path d="m9 12 2 2 4-4"/>' : ""
-  }</svg></span>`;
+  `<span class="task-box" aria-hidden="true"><span class="task-check">${
+    (tokens[idx].meta as { checked: boolean }).checked ? '<span class="task-dot"></span>' : ""
+  }</span></span>`;
 
 md.renderer.rules.blank_lines = (tokens, idx) =>
   '<div class="blank-line" aria-hidden="true"></div>'.repeat((tokens[idx].meta as { count: number }).count);
