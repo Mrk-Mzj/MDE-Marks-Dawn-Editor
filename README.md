@@ -271,6 +271,10 @@ src-tauri/            backend (Rust, Tauri 2)
 
 Tauri 2 (Rust + WebView2) with tauri-plugin-single-instance, the `windows` crate (spell checking, opening links), CodeMirror 6 (with the @lezer/markdown parser for the syntax tree), markdown-it, Vite, TypeScript.
 
+## Contributing
+
+This is a personal project; pull requests are not accepted, but bug reports in [Issues](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/issues) are welcome.
+
 ## License
 
 Copyright © 2026 Marek Mazij.
