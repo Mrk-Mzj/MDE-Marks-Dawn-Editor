@@ -1,6 +1,8 @@
 import "./styles.css";
 
 import type { EditorState } from "@codemirror/state";
+import { AboutDialog } from "./about";
+import { isDialogOpen } from "./dialog";
 import { countChars, Editor } from "./editor";
 import { FindBar, SearchQuery } from "./find";
 import type { ScrollPosition, Selection } from "./editor";
@@ -784,6 +786,8 @@ const commands = {
   exit: () => exclusive(exit),
 };
 
+const aboutDialog = new AboutDialog(() => editor.focus());
+
 new Menu($<HTMLButtonElement>("#menu-button"), [
   { label: t.newFile, shortcut: "Ctrl+N", run: commands.newFile },
   { label: t.open, shortcut: "Ctrl+O", run: commands.open },
@@ -792,6 +796,8 @@ new Menu($<HTMLButtonElement>("#menu-button"), [
   { label: t.saveAs, shortcut: "Ctrl+Shift+S", run: commands.saveAs },
   "separator",
   { label: t.find, shortcut: "Ctrl+F", run: () => findBar.open() },
+  "separator",
+  { label: t.about, run: () => aboutDialog.show() },
   "separator",
   { label: t.closeTab, shortcut: "Ctrl+W", run: commands.closeTab },
   { label: t.exit, shortcut: "Ctrl+Q", run: commands.exit },
@@ -965,6 +971,13 @@ const blockedPlain = new Set(["F5", "F7", "BrowserBack", "BrowserForward", "Brow
 window.addEventListener(
   "keydown",
   (event) => {
+    // A modal dialog keeps the app's shortcuts (Ctrl+W, F3, …) from acting behind it.
+    if (isDialogOpen()) {
+      if (blockedPlain.has(event.code) || event.code === "F3" || (event.ctrlKey && blockedCtrl.has(event.code))) {
+        event.preventDefault();
+      }
+      return;
+    }
     if (event.code === "F3" && !event.ctrlKey && !event.altKey && !event.metaKey) {
       event.preventDefault();
       event.stopPropagation();

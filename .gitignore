@@ -31,7 +31,6 @@ dist/
 build/
 out/
 release/
-portable/
 *.exe
 *.dll
 *.pdb

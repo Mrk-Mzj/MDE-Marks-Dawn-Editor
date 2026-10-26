@@ -19,6 +19,14 @@ const en = {
   findCount: (current: number, total: number) => `Found: ${current} of ${total}`,
   findTotal: (total: number) => `Found: ${total} ${total === 1 ? "result" : "results"}`,
   exit: "Exit",
+  about: "About",
+  aboutVersion: (version: string) => `Version ${version}`,
+  aboutDescription: "A fast, lightweight editor for text and Markdown files on Windows.",
+  aboutLicense:
+    "This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License, version 3. It comes with absolutely no warranty.",
+  aboutProjectPage: "Project page",
+  aboutLicenseText: "License text",
+  okButton: "OK",
   untitled: "Untitled",
   unsavedChanges: "Unsaved changes",
   markdownFiles: "Markdown files",
@@ -29,7 +37,6 @@ const en = {
   saveButton: "Save",
   discardButton: "Don't save",
   cancelButton: "Cancel",
-  errorTitle: "MDE",
   openFailed: (name: string) => `Could not open “${name}”.`,
   saveFailed: (name: string) => `Could not save “${name}”.`,
   invalidUtf16: "The file is marked as UTF-16 but contains invalid data.",
@@ -43,6 +50,7 @@ const en = {
     `“${name}” uses the Windows-1250 encoding, which cannot store these characters: ${chars}
 
 Save the file in UTF-8 instead?`,
+  askUtf8Title: "Character encoding",
   saveUtf8Button: "Save in UTF-8",
   closeNotice: "Close",
   emptyPreview: "The preview of the document will appear here.",
@@ -136,6 +144,14 @@ const pl: Strings = {
     return `Znaleziono: ${total} ${word}`;
   },
   exit: "Wyjdź",
+  about: "O programie",
+  aboutVersion: (version) => `Wersja ${version}`,
+  aboutDescription: "Szybki i lekki edytor plików tekstowych i Markdown dla Windows.",
+  aboutLicense:
+    "Ten program jest wolnym oprogramowaniem: możesz go rozpowszechniać i zmieniać na warunkach licencji GNU General Public License w wersji 3. Program jest dostarczany bez jakiejkolwiek gwarancji.",
+  aboutProjectPage: "Strona projektu",
+  aboutLicenseText: "Tekst licencji",
+  okButton: "OK",
   untitled: "Bez tytułu",
   unsavedChanges: "Niezapisane zmiany",
   markdownFiles: "Pliki Markdown",
@@ -146,7 +162,6 @@ const pl: Strings = {
   saveButton: "Zapisz",
   discardButton: "Nie zapisuj",
   cancelButton: "Anuluj",
-  errorTitle: "MDE",
   openFailed: (name) => `Nie udało się otworzyć pliku „${name}”.`,
   saveFailed: (name) => `Nie udało się zapisać pliku „${name}”.`,
   invalidUtf16: "Plik jest oznaczony jako UTF-16, ale zawiera nieprawidłowe dane.",
@@ -160,6 +175,7 @@ const pl: Strings = {
     `Plik „${name}” używa kodowania Windows-1250, w którym nie da się zapisać znaków: ${chars}
 
 Zapisać plik w UTF-8?`,
+  askUtf8Title: "Kodowanie znaków",
   saveUtf8Button: "Zapisz w UTF-8",
   closeNotice: "Zamknij",
   emptyPreview: "Tu pojawi się podgląd dokumentu.",

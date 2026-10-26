@@ -6,7 +6,7 @@ Między zakładkami przełączamy się skrótami Ctrl+Tab / Ctrl+Shift+Tab i Ctr
 
 
 
-W lewej górnej części ekranu ma znajdować się menu hamburgerowe, czyli przycisk dający dostęp do opcji takich, jak Nowy plik, Otwórz, Zapisz, Zapisz jako, Znajdź, Zamknij zakładkę, Wyjdź.
+W lewej górnej części ekranu ma znajdować się menu hamburgerowe, czyli przycisk dający dostęp do opcji takich, jak Nowy plik, Otwórz, Zapisz, Zapisz jako, Znajdź, O programie, Zamknij zakładkę, Wyjdź. Pozycja „O programie” otwiera okno z ikoną i pełną nazwą programu (MDE: Mark's "Dawn" Editor), wersją, krótkim opisem (szybki i lekki edytor plików tekstowych i Markdown), informacją o prawach autorskich i licencji GNU GPL v3 (wraz z brakiem gwarancji) oraz linkami do strony projektu i tekstu licencji, które otwierają się w domyślnej przeglądarce.
 
 Okno nie ma systemowego paska tytułu. Przyciski minimalizacji, maksymalizacji i zamknięcia znajdują się w pasku zakładek, wyrównane do prawej. Puste miejsca tego paska służą do przesuwania okna, a dwuklik w nich maksymalizuje je lub przywraca.
 
@@ -235,6 +235,8 @@ Kryteria odbioru (do testów):
 ### Inne
 
 Przyjmujemy kodowanie UTF-8.
+
+Okna z pytaniami i komunikatami (np. o zapisie zmian, otwieraniu pliku z linku, błędach) oraz okno „O programie” wyświetlamy wewnątrz programu, w jego ciemnym stylu. Systemowe pozostają tylko okna wyboru pliku (Otwórz, Zapisz jako) i komunikat o braku WebView2.
 
 Stosujemy sprawdzanie pisowni w języku polskim i angielskim. Błędy podkreślamy cienką pomarańczową linią. Status na dolnym pasku programu, opatrzony ikoną kartki i ołówka. Kliknięcie napisu zmienia tryb działania sprawdzania pisowni wg schematu: polski -> angielski -> sprawdzanie pisowni wyłączone.
 

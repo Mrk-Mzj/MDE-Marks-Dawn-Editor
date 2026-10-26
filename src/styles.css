@@ -442,7 +442,179 @@ button {
   color: var(--accent-foreground);
 }
 
+/* Button, variant default (primary). */
+.button-primary {
+  border: 0;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.button-primary:hover {
+  background: color-mix(in oklch, var(--primary) 90%, transparent);
+}
+
 .button:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
+}
+
+/* ---------- Dialogs ---------- */
+
+/* Modal dialog (docs/DESIGN.md, section 7): a popover surface over the dimmed
+   window, centred by the browser (<dialog> with showModal). */
+.dialog {
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: var(--shadow-md);
+}
+
+.dialog[open] {
+  animation: dialog-in 150ms ease-out;
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 50%);
+  animation: backdrop-in 150ms ease-out;
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 24px 20px;
+  line-height: 1.5;
+  user-select: text;
+}
+
+:where(.dialog-content) p {
+  margin: 0;
+}
+
+.dialog-footer .button {
+  min-width: 80px;
+}
+
+/* Questions and messages (src/dialog.ts), like AlertDialog of shadcn/ui. */
+.dialog-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+/* Paths and addresses in the text may be long; line breaks in it are kept. */
+.dialog-text {
+  color: var(--muted-foreground);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.dialog-text-only {
+  color: var(--popover-foreground);
+}
+
+.dialog-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* About: centred, like the About boxes of Windows apps. */
+.dialog-about {
+  width: min(400px, calc(100vw - 32px));
+}
+
+.about {
+  align-items: center;
+  text-align: center;
+}
+
+.about .dialog-footer {
+  justify-content: center;
+}
+
+.about .button {
+  min-width: 96px;
+}
+
+.about-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 12px;
+  user-select: none;
+}
+
+.about-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.about-version {
+  min-height: 1.5em;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.about-description {
+  margin-top: 12px;
+}
+
+.about-copyright {
+  margin-top: 16px;
+}
+
+.about-license {
+  margin-top: 4px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.about-links {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+/* Like the links of the preview. */
+.about-links a {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-decoration-color: var(--muted-foreground);
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: text-decoration-color 150ms;
+}
+
+.about-links a:hover {
+  text-decoration-color: var(--foreground);
+}
+
+.about-links a:focus-visible {
+  outline: 0;
+  border-radius: var(--radius-sm);
   box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
 }
 

@@ -1,11 +1,13 @@
 // Thin wrapper over the Tauri backend. Outside Tauri (plain browser during UI
 // development) the calls fall back to harmless stand-ins.
 
+import { getVersion } from "@tauri-apps/api/app";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { message, open, save } from "@tauri-apps/plugin-dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
+import { showDialog } from "./dialog";
 import { t } from "./i18n";
 
 export type Eol = "lf" | "crlf" | "cr";
@@ -97,6 +99,11 @@ export async function openUrl(url: string): Promise<void> {
   else window.open(url, "_blank", "noopener");
 }
 
+/** The version of the app (from tauri.conf.json). */
+export async function appVersion(): Promise<string> {
+  return inTauri ? getVersion() : "dev";
+}
+
 /** Opens an existing file or folder in the default Windows program. */
 export async function openWithDefaultProgram(path: string): Promise<void> {
   if (inTauri) await invoke("open_path", { path });
@@ -173,15 +180,16 @@ export async function pickSavePath(suggestedName: string): Promise<string | null
 }
 
 export async function askSaveChanges(name: string): Promise<SaveChoice> {
-  if (!inTauri) return window.confirm(t.askSave(name)) ? "discard" : "cancel";
-  const result = await message(t.askSave(name), {
+  return showDialog<SaveChoice>({
     title: t.askSaveTitle,
-    kind: "warning",
-    buttons: { yes: t.saveButton, no: t.discardButton, cancel: t.cancelButton },
+    text: t.askSave(name),
+    buttons: [
+      { label: t.saveButton, value: "save" },
+      { label: t.discardButton, value: "discard" },
+      { label: t.cancelButton, value: "cancel" },
+    ],
+    cancel: "cancel",
   });
-  if (result === t.saveButton || result === "Yes") return "save";
-  if (result === t.discardButton || result === "No") return "discard";
-  return "cancel";
 }
 
 /**
@@ -189,35 +197,40 @@ export async function askSaveChanges(name: string): Promise<SaveChoice> {
  * offered for "don't ask again" unless `program` says the file can run code.
  */
 export async function askOpenLinked(name: string, path: string, extension: string, program: boolean): Promise<OpenChoice> {
-  if (!inTauri) return window.confirm(t.askOpenLinked(name, path)) ? "open" : "cancel";
   if (program) {
-    const result = await message(t.askOpenProgram(name, path), {
+    return showDialog<OpenChoice>({
       title: t.openLinkTitle,
-      kind: "warning",
-      buttons: { ok: t.openButton, cancel: t.cancelButton },
+      text: t.askOpenProgram(name, path),
+      buttons: [
+        { label: t.openButton, value: "open" },
+        { label: t.cancelButton, value: "cancel" },
+      ],
+      cancel: "cancel",
     });
-    return result === t.openButton || result === "Ok" ? "open" : "cancel";
   }
-  const always = t.openAlwaysButton(extension);
-  const result = await message(t.askOpenLinked(name, path), {
+  return showDialog<OpenChoice>({
     title: t.openLinkTitle,
-    kind: "info",
-    buttons: { yes: t.openButton, no: always, cancel: t.cancelButton },
+    text: t.askOpenLinked(name, path),
+    buttons: [
+      { label: t.openButton, value: "open" },
+      { label: t.openAlwaysButton(extension), value: "always" },
+      { label: t.cancelButton, value: "cancel" },
+    ],
+    cancel: "cancel",
   });
-  if (result === t.openButton || result === "Yes") return "open";
-  if (result === always || result === "No") return "always";
-  return "cancel";
 }
 
 /** Asks whether to save in UTF-8 because the file's encoding cannot store `chars`. */
 export async function askSaveAsUtf8(name: string, chars: string): Promise<boolean> {
-  if (!inTauri) return window.confirm(t.askUtf8(name, chars));
-  const result = await message(t.askUtf8(name, chars), {
-    title: t.errorTitle,
-    kind: "warning",
-    buttons: { ok: t.saveUtf8Button, cancel: t.cancelButton },
+  return showDialog({
+    title: t.askUtf8Title,
+    text: t.askUtf8(name, chars),
+    buttons: [
+      { label: t.saveUtf8Button, value: true },
+      { label: t.cancelButton, value: false },
+    ],
+    cancel: false,
   });
-  return result === t.saveUtf8Button || result === "Ok";
 }
 
 export type DictionaryChoice = "settings" | "change" | "cancel";
@@ -225,14 +238,16 @@ export type DictionaryChoice = "settings" | "change" | "cancel";
 /** Tells that Windows lacks the dictionary of `language` and offers to open the language settings. */
 export async function askMissingDictionary(language: string): Promise<DictionaryChoice> {
   if (!inTauri) return "change";
-  const result = await message(t.missingDictionary(language), {
+  return showDialog<DictionaryChoice>({
     title: t.missingDictionaryTitle,
-    kind: "info",
-    buttons: { yes: t.openSettingsButton, no: t.nextLanguageButton, cancel: t.cancelButton },
+    text: t.missingDictionary(language),
+    buttons: [
+      { label: t.openSettingsButton, value: "settings" },
+      { label: t.nextLanguageButton, value: "change" },
+      { label: t.cancelButton, value: "cancel" },
+    ],
+    cancel: "cancel",
   });
-  if (result === t.openSettingsButton || result === "Yes") return "settings";
-  if (result === t.nextLanguageButton || result === "No") return "change";
-  return "cancel";
 }
 
 export async function openLanguageSettings(): Promise<void> {
@@ -240,11 +255,7 @@ export async function openLanguageSettings(): Promise<void> {
 }
 
 export async function showError(text: string): Promise<void> {
-  if (!inTauri) {
-    window.alert(text);
-    return;
-  }
-  await message(text, { title: t.errorTitle, kind: "error" });
+  await showDialog({ text, buttons: [{ label: t.okButton, value: undefined }], cancel: undefined });
 }
 
 export async function setWindowTitle(title: string): Promise<void> {

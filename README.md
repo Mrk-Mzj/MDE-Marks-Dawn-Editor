@@ -1,16 +1,47 @@
-# MDE — Mark's Dawn Editor
+# MDE: Mark's "Dawn" Editor
 
-A fast, lightweight Markdown editor for Windows 11. Portable: a single `MDE.exe`, no installer.
+A fast, lightweight editor for text documents and Markdown files on Windows 11. Portable: a single `MDE.exe`, no installer.
 
 The specification lives in [docs/SPEC.md](docs/SPEC.md) and the visual design in [docs/DESIGN.md](docs/DESIGN.md).
 
-## Status: 0.6
+Free and open source under the [GNU GPL v3](LICENSE).
+
+## Download and installation
+
+**[Download MDE.exe](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases/latest/download/MDE.exe)** — the latest version. Older versions and the release notes are on the [Releases](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) page.
+
+There is nothing to install: save `MDE.exe` anywhere (e.g. a `Programs` folder in your user folder, or a USB stick) and run it. No administrator rights are needed. To open Markdown files with a double click, right-click a `.md` file in Explorer, choose *Open with › Choose another app*, then *Choose an app on your PC* and point to `MDE.exe` (MDE is portable, so it does not register itself).
+
+To uninstall, delete `MDE.exe`, and, if you want to remove your session and settings too, the folders `%APPDATA%\MDE` and `%LOCALAPPDATA%\com.marksdawn.mde`.
+
+### Requirements
+
+- Windows 11, 64-bit (x64; ARM PCs run it through Windows' built-in emulation). Windows 10 with the WebView2 runtime should work too, but it is not tested.
+- The Microsoft Edge WebView2 runtime, which comes with Windows 11. If it is missing, MDE says so and offers to open Microsoft's download page.
+- Spell checking uses the dictionaries of the languages installed in Windows (*Settings › Time & language › Language & region*). Without a Polish or English language there, MDE works normally but shows *no dictionary* for that language.
+
+### The Windows security warning
+
+The first time you download and run `MDE.exe`, Windows (and your browser) will warn you that the file may be unsafe. This is expected.
+
+**Why:** Windows trusts a program when its file is digitally signed with a code signing certificate, which costs a few hundred dollars a year, and when many people have already downloaded it. MDE is a free hobby project without such a certificate and with few downloads, so Microsoft Defender SmartScreen cannot tell who made it and treats it as unknown. The warning does not mean that anything harmful was found in the file. The whole source code is in this repository, so anyone can check what the program does or build `MDE.exe` themselves (see [Building](#building)). Download it only from the [Releases](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) page of this repository.
+
+**How to run it anyway:**
+
+1. **In the browser** (Microsoft Edge): if the download shows *MDE.exe isn't commonly downloaded*, point to it in the downloads list, click **⋯ › Keep**, then **Show more › Keep anyway**. Other browsers may ask a similar question; choose to keep the file.
+2. **In Windows:** when you start the file, a blue window says *Windows protected your PC*. Click **More info**; the publisher shows as *Unknown publisher*. Click **Run anyway**.
+
+Windows remembers the choice, so the warning does not come back for this file. After downloading a new version you may see it again.
+
+If there is no *Run anyway* button (some company or school PCs block unknown programs), right-click `MDE.exe` in Explorer, choose *Properties*, tick **Unblock** at the bottom of the *General* tab and click *OK*. If that option is missing too, your administrator does not allow such programs.
+
+## Status: 1.0
 
 MVP plus tabs, a single instance, session memory, spell checking, the HTML whitelist, clickable links, the formatting toolbar, the minimap and the one-pane mode (the text formatted while editing).
 
 ### Features
 
-- **One pane or two** (*Okna: 1 / 2* in the status bar, between *Map* and *Scroll together*, with an application-window icon): a click switches the mode. One pane is the default at the first start; the choice is a global setting, the same for every tab, remembered in the session (`panes` in `session.json`). Switching keeps the place in the document, the cursor and the selection.
+- **One pane or two** (*Panes: 1 / 2* in the status bar, between *Map* and *Scroll together*, with an application-window icon): a click switches the mode. One pane is the default at the first start; the choice is a global setting, the same for every tab, remembered in the session (`panes` in `session.json`). Switching keeps the place in the document, the cursor and the selection.
   - **Two panes**: the Markdown source editor on the left and the rendered GitHub Flavored Markdown preview on the right (described below).
   - **One pane** (`src/live.ts`): the editor takes the whole width and shows the text formatted, like Notepad does with Markdown, while it stays editable. The Markdown markers (`#`, `**`, `_`, `` ` ``, `~~`, `>`, `[`…`](address)`, `<u>` and the other whitelisted tags, escaping backslashes) are always hidden, also on the line with the cursor; bullets show as •, ◦, ▪ by nesting level, numbered items show their rendered number, task items an outline check box (with a white dot in it when done; clicking the box checks or unchecks the task, `[ ]` ⇄ `[x]` in the file), entities (`&amp;`) the character. The file is still the source of truth: the markers are only hidden, so saving gives the same bytes as in the two-pane mode, and undo, spell checking, Alt+↑/↓ and zoom work as before. The character count still counts the whole file with its Markdown.
   - Formatting: the toolbar, the shortcuts, or Markdown typed by hand, which turns into formatting at once (`# ` … `##### ` at the start of a line, `- `, `* `, `1. `, `> `, `**text**`, `*text*`, `_text_`). Ctrl+Z right after that keeps the typed characters as plain text (the markers get escaping backslashes, which are hidden too); the next Ctrl+Z undoes the typing.
@@ -22,14 +53,14 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - *Scroll together* is dimmed and does nothing (its tooltip says it works with two panes); it keeps its setting for the two-pane mode. The preview is not rendered while it is hidden.
 - **Two panels**: Markdown source editor on the left, rendered GitHub Flavored Markdown preview on the right. Long lines always wrap; there are no horizontal scroll bars.
 - **Resizable panels**: drag the line between the panels to the left or right to give one panel more width at the expense of the other (the pointer turns into a left-right arrow over the line; the line itself keeps its color, so it does not distract). Neither panel gets narrower than 200px. Double-click the line to go back to the even 50/50 split. The split is a global setting, the same for every tab, kept when the window is resized and remembered in the session (`split` in `session.json`, the editor panel's share of the width).
-- **Synchronized scrolling** (an MDE extension; on by default): scrolling either panel (mouse wheel, keyboard, scroll bar, the cursor moving while typing) scrolls the other to the same place of the text. The status bar shows *Scroll together: on* (*Przewijaj razem: wł*) with a two-panel icon (a rectangle split by a vertical line); clicking it switches to *off*, and the panels then scroll independently. It is a global setting, the same for every tab, and it is remembered in the session (`syncScroll` in `session.json`).
+- **Synchronized scrolling** (an MDE extension; on by default): scrolling either panel (mouse wheel, keyboard, scroll bar, the cursor moving while typing) scrolls the other to the same place of the text. The status bar shows *Scroll together: on* with a two-panel icon (a rectangle split by a vertical line); clicking it switches to *off*, and the panels then scroll independently. It is a global setting, the same for every tab, and it is remembered in the session (`syncScroll` in `session.json`).
   - Places are matched by source line: every block in the preview (heading, paragraph, list item, table row, code block, …) knows the lines it comes from, and positions in between are interpolated, so headings line up even where one panel is much taller (tables, code blocks, extra blank lines).
   - The matched point moves with the scroll position, from the top edge of the panels at the start to the bottom edge at the end, so with no difference between them both panels reach the start and the end of the document together.
   - Turning it on links the panels where they are, without lining them up: if the editor shows line 200 and the preview line 400, after a few pages they show 205 and 405. This lets you match the panels by hand where a part of the document is much taller in one of them. To line them up again, turn it off, scroll one panel to the place of the other and turn it back on. Each tab keeps its own difference (taken anew from its scroll positions when you switch to it).
   - When one panel reaches the start or the end of the document first, only the other one keeps scrolling, whichever panel the mouse wheel is turned over. Once both panels are at the start, or both at the end, the difference is reset, so scrolling back moves both together. Scrolling the stopped panel back before that moves both from where they are, with the difference they have at that moment, so nothing jumps.
   - Zooming, resizing the window and re-rendering after an edit keep the difference.
-- **Character count**: the left end of the status bar shows the length of the text in the active tab, *12 345 characters* (*12 345 znaków*), and while text is selected also the selected part, *56 of 12 345 characters* (*56 z 12 345 znaków*). Spaces and tabs count, line breaks do not, and an emoji or another character outside the Basic Multilingual Plane counts once. Numbers use the digit grouping of the interface language (Polish groups from five digits up: 1234, 12 345) and Polish nouns follow the Polish plural rules. The count is updated at most once per frame.
-- **Document map** (minimap; off by default): a small picture of the whole document in the top right corner of the editor panel. The status bar button, between *Spelling* and *Scroll together*, with an icon of a page with three evenly spaced lines of text, turns it *on* and *off* (*Mapa: wł / wył*). It is a global setting, the same for every tab, remembered in the session (`minimap` in `session.json`).
+- **Character count**: the left end of the status bar shows the length of the text in the active tab, *12 345 characters*, and while text is selected also the selected part, *56 of 12 345 characters*. Spaces and tabs count, line breaks do not, and an emoji or another character outside the Basic Multilingual Plane counts once. Numbers use the digit grouping of the interface language (Polish groups from five digits up: 1234, 12 345) and Polish nouns follow the Polish plural rules. The count is updated at most once per frame.
+- **Document map** (minimap; off by default): a small picture of the whole document in the top right corner of the editor panel. The status bar button, between *Spelling* and *Scroll together*, with an icon of a page with three evenly spaced lines of text, turns it *on* and *off*. It is a global setting, the same for every tab, remembered in the session (`minimap` in `session.json`).
   - The box (77px wide) sits in the top right corner of the editor, against the toolbar (or the find bar) and the preview panel. It is at least 100px high and grows with the file, at most down to the bottom of the panel; when the picture is taller still, it scrolls along with the editor so both reach the start and the end together.
   - The minimap takes the place of the editor's scroll bar, which is hidden while the minimap is shown and comes back when it is turned off.
   - Every word is a thin bar where the editor shows it: the text width is scaled to the width of the box and each row of text (also every wrapped row of a long line) is 2px high (a 1px bar and a 1px gap). Lines of H1 and H2 headings (`# ` / `## ` and `===` / `---` underlined, not in code blocks) are drawn lighter (`#ababab`, `#949494`), so the sections stand out. The minimap wraps the lines itself, measuring words in the editor's font at the editor's text width, so the picture is right also for parts of the file the editor has not displayed yet. Only the rows inside the box are drawn, and the row count of each line is cached by its text, so long files stay fast.
@@ -58,8 +89,8 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - **Table**: a grid (up to 8 × 8, mouse or arrow keys + Enter) picks the number of columns and rows (the header row included). The table is inserted below the line with the cursor, separated by empty lines, with the first header cell selected.
   - When the panel is too narrow, the buttons that do not fit move to a *More* (…) menu at the end of the toolbar.
   - **Dictation** (microphone icon, the last button, after Link; tooltip *Dictation (Win+H)*): starts Windows voice typing for the editor, like the *Dictation* item of the right-click menu. MDE presses Win+H for you (`start_dictation` in `src-tauri/src/main.rs`), so the spoken text lands where the cursor is, and the focus stays in the editor. Like the other buttons it moves to the *More* menu when the panel is narrow.
-- **Find** (Ctrl+F, or *Find…* in the menu): a bar between the toolbar and the editor searches the left panel only; there is no replace. Selected text (one line) becomes the query. Matching ignores letter case unless *Match case* (*Uwzględnij wielkość liter*, the **Aa** toggle next to the field) is on, and starts at the cursor, so the match follows the query while typing.
-  - All matches in the editor get a gray background and the current one (also selected) an orange one, like *Find all* in browsers. The bar counts them: *Found: 3 of 12* (*Znaleziono: 3 z 12*), *Found: 12 results* when the cursor is not on a match, *No results*.
+- **Find** (Ctrl+F, or *Find…* in the menu): a bar between the toolbar and the editor searches the left panel only; there is no replace. Selected text (one line) becomes the query. Matching ignores letter case unless *Match case* (the **Aa** toggle next to the field) is on, and starts at the cursor, so the match follows the query while typing.
+  - All matches in the editor get a gray background and the current one (also selected) an orange one, like *Find all* in browsers. The bar counts them: *Found: 3 of 12*, *Found: 12 results* when the cursor is not on a match, *No results*.
   - Enter / Shift+Enter in the field, F3 / Shift+F3 anywhere and the ↑ / ↓ buttons at the right edge of the bar go to the next / previous match, wrapping around the document. F3 with the bar closed opens it with the last query.
   - Esc (in the field or the editor), Ctrl+F pressed again or × closes the bar and returns to the editor with the match selected. The bar stays open across tab switches, and the count follows edits.
   - Formatting shortcuts (Ctrl+B, Ctrl+1 …) do nothing while the find field has the focus.
@@ -94,7 +125,9 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   | Open a link (one pane) | Ctrl+click |
   | Zoom in / out / 100% | Ctrl+plus / Ctrl+minus / Ctrl+0 (or Ctrl + mouse wheel) |
 
+- **About** (the hamburger menu, between *Find…* and *Close tab*, set apart by separators): a dark in-app dialog with the app icon, the full name, the version (read from `tauri.conf.json`), a one-line description, the copyright, the GPL v3 notice (free software, no warranty) and two links that open in the default browser: the project page on GitHub and the license text on gnu.org. OK, Esc or a click outside the dialog closes it and the focus goes back to the editor; the app's shortcuts do nothing while it is open (`src/about.ts`).
 - **Save as** offers the file types *Markdown files* (selected by default, `.md`), *Text files* (`.txt`) and *All files*. Picking *Text files* changes the extension of the suggested name to `.txt`; the content is written the same way in both cases.
+- **Dialogs** (`src/dialog.ts`): questions and messages (unsaved changes, opening a linked file, saving in UTF-8, a missing spelling dictionary, errors) appear inside the window in the app's dark style, not as light Windows message boxes. The window behind is dimmed; the main action is the first, filled button and has the focus; Esc answers *Cancel*, while a click outside does nothing, so a question is never dismissed by accident. A dialog asked for while another is open waits for it, and the app's shortcuts do nothing while one is open. Line breaks in the text are kept and long paths wrap.
 - **Opening files**: Open dialog (several files can be selected), dragging files from Explorer onto the window (each file gets its own tab), or the command line (`MDE.exe file.md`), which makes Explorer's *Open with* work.
 - **Single instance**: starting `MDE.exe` again (also with a file) brings the running window to the front and opens the file there in a new tab, or switches to its tab if it is already open.
 - **Unsaved changes**: closing a tab with unsaved changes asks whether to save, discard or cancel. Exit (Ctrl+Q or the window's close button) does not ask: unsaved edits stay in the session.
@@ -103,7 +136,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - Files are read again from disk at start-up. A tab whose file no longer exists is restored from its stored text and marked with the unsaved-changes dot; Save then asks where to save it (*Save as*).
 - **Changes made by other programs** are checked at start-up and whenever the MDE window gets the focus back:
   - a tab without unsaved changes silently reloads the file;
-  - a tab with unsaved changes keeps them and shows a bar *“changed by another program”* with a **Refresh** button (*Odśwież*: load the version from disk, dropping the edits) and a close button × (keep the edits and ignore that version; saving overwrites it);
+  - a tab with unsaved changes keeps them and shows a bar *“changed by another program”* with a **Refresh** button (load the version from disk, dropping the edits) and a close button × (keep the edits and ignore that version; saving overwrites it);
   - a file deleted while open: the tab keeps its text and gets the unsaved-changes dot.
 - **Byte-faithful saving**:
   - Encodings: UTF-8 with or without BOM, UTF-16 LE/BE (recognized by their BOM) and Windows-1250. A file is saved in the encoding it was read in, with the same BOM or none. New files use UTF-8 without BOM and LF.
@@ -127,7 +160,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 - **Colours**: dark only, built from the tokens in `src/styles.css` (docs/DESIGN.md). Besides the shadcn/ui tokens MDE has its own surfaces: the top bar and the status bar `#151515` (status bar icons and labels `#808080`), inactive tabs `#1b1b1b`, the active tab, the toolbar, the find bar and the minimap slider (drawn under the word bars) `#222222`, the panels and the minimap `#1b1b1b`, the scroll bar thumb `#313131`. Body text in the panels is `#f3f3f3`; formatted text (bold, italic, underline, headings H1–H5) and the dot of a done task are `#ffffff`. The line under H1 is `#4f4f4f`, under H2 `#3b3b3b`.
 - **Tables** look the same in the preview and in the one-pane mode: as wide as their content, with four rounded corners and an amber (`--warning`) frame; an amber line under the header, whose cells are separated by lines in the page background colour, on the `#d1d1d1` background with bold text in the page background colour.
 - **Lists** look the same in the preview and in the one-pane mode: bullets (30% larger, centred on the axis of a task box), numbers and task box frames are amber (`--warning`, the spell-check colour), and a done task has a large white dot in its box. The box is drawn as a CSS border rather than an SVG outline, so its lines fall on whole screen pixels and stay sharp at any zoom. A list is indented by about seven spaces (`--list-indent`, 1.92em), the text of an item starts one marker column (`--list-marker`, 1.5625em) after its bullet, number or box, each nesting level moves one marker column further, and wrapped lines of an item line up with its text. Both sizes are in em, so they follow the zoom.
-- **Dialogs are native Windows dialogs** (light, not themed). They will be replaced by dark in-app dialogs. The question about opening a linked file offers *Open and don't ask for .xxx files* as a button, because the native dialog has no checkbox.
+- **Native dialogs**: the *Open* and *Save as* file pickers and the start-up message about a missing WebView2 are Windows dialogs (light). The question about opening a linked file offers *Open and don't ask for .xxx files* as a button rather than a checkbox.
 - **Start-up** takes about 0.55–0.65 s from launch to a visible window with the file loaded (target: < 0.5 s).
 - WebView2 keeps its browser cache in `%LOCALAPPDATA%\com.marksdawn.mde\`; the session lives in `%APPDATA%\MDE\`.
 - Changes by other programs are noticed when the MDE window gets the focus back, not instantly while it is in the foreground.
@@ -135,7 +168,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 
 ## Building
 
-### Requirements
+### Build requirements
 
 - [Rust](https://rustup.rs/) (stable, `x86_64-pc-windows-msvc`)
 - Visual Studio Build Tools with the *Desktop development with C++* workload
@@ -155,15 +188,21 @@ Development (hot reload):
 npx tauri dev
 ```
 
-Portable build — builds the release and copies the single `MDE.exe` to `portable/MDE.exe` in the repository root (ignored by git). This is the only file to hand out:
+Release build — the single portable `MDE.exe` lands in `src-tauri/target/release/MDE.exe`. This is the only file to hand out:
 
 ```bash
-npm run portable
+npx tauri build
+```
+
+The other `mde.exe` files under `target/` (`release/deps/`, `debug/`) are compiler intermediates, not for distribution.
+
+Publishing a version: built exe files are not kept in the repository. They go to [GitHub Releases](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases): create a release with a version tag (e.g. `v1.0.0`) and attach the file under the exact name `MDE.exe`, so the download link at the top of this file (`releases/latest/download/MDE.exe`) always points to the newest version. With the [GitHub CLI](https://cli.github.com/):
+
+```bash
+gh release create v1.0.0 src-tauri/target/release/MDE.exe --title "MDE 1.0.0" --notes "What changed"
 ```
 
 The app icon comes from `src-tauri/icons/icon.svg`. After changing it, rebuild `icon.ico` (16–256px) and `icon.png` (512px) with `npx tauri icon src-tauri/icons/icon.svg -o <temp folder>` and copy those two files into `src-tauri/icons/`; touch `src-tauri/build.rs` before the next build, or Cargo keeps the old icon in the exe.
-
-`npx tauri build` alone leaves the exe in `src-tauri/target/release/MDE.exe`. The other `mde.exe` files under `target/` (`release/deps/`, `debug/`) are compiler intermediates, not for distribution.
 
 Rust tests (encoding and line ending round-trips: UTF-8 ± BOM, UTF-16 LE/BE, Windows-1250, LF/CRLF/CR, mixed endings after edits):
 
@@ -171,25 +210,11 @@ Rust tests (encoding and line ending round-trips: UTF-8 ± BOM, UTF-16 LE/BE, Wi
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-### Colour mockup
-
-`docs/mockup/MDE.svg` is a vector mockup of the MDE window for trying out colours in Affinity Designer or Illustrator. It shows two panes, five tabs (one with unsaved changes), the minimap and a misspelled word, plus a legend of the colour tokens. It is not drawn by hand. The generator starts the Vite dev server (port 1431) and headless Microsoft Edge, puts the app in that state, and turns every box, border, text line and icon on the page into SVG at its measured position. That makes the mockup match the app at 1:1 scale. Rebuild it after changing `src/styles.css`:
-
-```bash
-npm run mockup
-```
-
-Optional arguments: `node tools/mockup/run.mjs [out.svg] [width] [height]` (default `docs/mockup/MDE.svg`, 1440×900).
-
-- Layers are named after the part of the app (Affinity reads `serif:id`, Illustrator reads `id`), and each shape names its token, e.g. `tło · card/popover` or `krawędź dolna · border`.
-- To recolour one token everywhere in Affinity, select one shape, then use *Select → Select Same → Fill Colour* (or *Stroke Colour*). Tokens with the same value, such as `card` and `popover`, get selected together.
-- Things the page does not draw itself are added by the generator: the window buttons (native, `caption.rs`), list markers (`::before` of the list items), the scroll bar thumb and the spelling underline.
-
 ## Project structure
 
 ```
+LICENSE               GNU General Public License v3 (full text)
 index.html            frontend entry point for Vite (built into the exe, not opened directly)
-portable/             MDE.exe from `npm run portable` (generated, not in git)
 src/                  frontend (TypeScript)
   main.ts             documents (tabs), commands, shortcuts, zoom, session memory,
                       changes made by other programs
@@ -220,7 +245,9 @@ src/                  frontend (TypeScript)
   minimap.ts          minimap of the editor panel (own word wrapping, canvas drawing,
                       dragging the slider)
   menu.ts             drop-down menus (hamburger menu, toolbar menus)
-  platform.ts         Tauri backend and dialogs
+  about.ts            the About dialog (name, version, copyright, license)
+  dialog.ts           in-app dialogs (questions and messages)
+  platform.ts         Tauri backend, file pickers and the app's questions
   i18n.ts             UI strings (Polish, English)
   styles.css          design tokens and styles (docs/DESIGN.md)
 src-tauri/            backend (Rust, Tauri 2)
@@ -238,13 +265,20 @@ src-tauri/            backend (Rust, Tauri 2)
   tauri.conf.json     app config, Content Security Policy
   capabilities/       permissions granted to the frontend
   icons/              app icon: icon.svg (source), icon.ico and icon.png (built from it)
-tools/mockup/         generator of docs/mockup/MDE.svg (`npm run mockup`)
-  run.mjs             starts Vite and headless Edge, saves the SVG
-  setup.js            puts the app in the state shown by the mockup (runs in the page)
-  export.js           converts the page into a layered SVG (runs in the page)
-docs/mockup/MDE.svg   colour mockup of the window with named layers and a token legend
 ```
 
 ## Tech stack
 
 Tauri 2 (Rust + WebView2) with tauri-plugin-single-instance, the `windows` crate (spell checking, opening links), CodeMirror 6 (with the @lezer/markdown parser for the syntax tree), markdown-it, Vite, TypeScript.
+
+## License
+
+Copyright © 2026 Marek Mazij.
+
+MDE is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 (GPL-3.0-only), as published by the Free Software Foundation. The full text is in [LICENSE](LICENSE).
+
+MDE is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+In short: you may use MDE for any purpose, share it and change it. If you distribute it, or a program based on its code, you must do so under the same license and make the source code available.
+
+The libraries MDE is built with keep their own licenses, all compatible with the GPL v3: Tauri, CodeMirror, markdown-it, @lezer/markdown and the `windows` crate are under MIT or Apache-2.0.

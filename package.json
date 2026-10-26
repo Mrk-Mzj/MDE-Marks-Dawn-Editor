@@ -1,14 +1,14 @@
 {
   "name": "mde",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "license": "GPL-3.0-only",
+  "author": "Marek Mazij",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "tauri": "tauri",
-    "mockup": "node tools/mockup/run.mjs",
-    "portable": "tauri build && node -e \"require('fs').mkdirSync('portable',{recursive:true});require('fs').copyFileSync('src-tauri/target/release/MDE.exe','portable/MDE.exe')\""
+    "tauri": "tauri"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",
