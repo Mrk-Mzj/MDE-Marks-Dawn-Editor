@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "release": "node tools/license-txt.mjs && powershell -NoProfile -Command \"Compress-Archive -Force -Path src-tauri/target/release/MDE.exe, release/LICENSE.txt -DestinationPath release/MDE.zip\""
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

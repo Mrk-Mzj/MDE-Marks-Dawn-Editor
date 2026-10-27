@@ -8,7 +8,7 @@ Free and open source under the [GNU GPL v3](LICENSE).
 
 ## Download and installation
 
-**[Download MDE.zip](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases/latest/download/MDE.zip)** — the latest version (`MDE.exe` and the license). Older versions and the release notes are on the [Releases](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) page.
+**[Download MDE.zip](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases/latest/download/MDE.zip)** — the latest version (`MDE.exe` and the license in `LICENSE.txt`). Older versions and the release notes are on the [Releases](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) page.
 
 There is nothing to install: unpack the ZIP (right-click › *Extract All…*) and put `MDE.exe` anywhere (e.g. a `Programs` folder in your user folder, or a USB stick) and run it. No administrator rights are needed. To open Markdown files with a double click, right-click a `.md` file in Explorer, choose *Open with › Choose another app*, then *Choose an app on your PC* and point to `MDE.exe` (MDE is portable, so it does not register itself).
 
@@ -199,11 +199,13 @@ npx tauri build
 
 The other `mde.exe` files under `target/` (`release/deps/`, `debug/`) are compiler intermediates, not for distribution.
 
-Publishing a version: built files are not kept in the repository. MDE is shared as a ZIP holding `MDE.exe` and `LICENSE`; `release/` is ignored by git. Pack it after the build (PowerShell):
+Publishing a version: built files are not kept in the repository. MDE is shared as a ZIP holding `MDE.exe` and `LICENSE.txt`; `release/` is ignored by git. Pack it after the build:
 
-```powershell
-New-Item -ItemType Directory -Force release; Compress-Archive -Force -Path src-tauri/target/release/MDE.exe, LICENSE -DestinationPath release/MDE.zip
+```bash
+npm run release
 ```
+
+It writes `release/LICENSE.txt` (`tools/license-txt.mjs`: the text of `LICENSE` with each paragraph on one line and Windows line endings, so it opens in Notepad with a double click and wraps to the window width; the words are unchanged) and packs it with `MDE.exe` into `release/MDE.zip`.
 
 Then create a [GitHub release](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) with a version tag (e.g. `v1.0.1`) and attach the ZIP under the exact name `MDE.zip`, so the download link at the top of this file (`releases/latest/download/MDE.zip`) always points to the newest version. With the [GitHub CLI](https://cli.github.com/):
 
@@ -260,6 +262,7 @@ src/                  frontend (TypeScript)
   platform.ts         Tauri backend, file pickers and the app's questions
   i18n.ts             UI strings (Polish, English)
   styles.css          design tokens and styles (docs/DESIGN.md)
+tools/license-txt.mjs the license as LICENSE.txt for the release ZIP
 src-tauri/            backend (Rust, Tauri 2)
   src/main.rs         commands: open, save, file stamps, command-line files,
                       opening links (relative path lookup, ShellExecute), starting Windows
