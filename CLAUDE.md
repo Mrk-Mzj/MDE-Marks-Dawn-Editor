@@ -38,7 +38,7 @@ Po wprowadzeniu zmian i nowych funkcjonalności przetestuj czy faktycznie wyglą
 
 Funkcja jest skończona, gdy: działa po uruchomieniu, README.md jest zaktualizowany, a zmiany wizualne zgodne z docs/DESIGN.md.
 
-Po każdej turze programowania funkcji lub poprawek zbuduj plik portable (`npx tauri build` → `src-tauri/target/release/MDE.exe`), żebym mógł od razu testować.
+Plik portable (`npx tauri build` → `src-tauri/target/release/MDE.exe`) buduj tylko na moją prośbę.
 
 Commituj i wysyłaj na GitHuba tylko na moją prośbę.
 

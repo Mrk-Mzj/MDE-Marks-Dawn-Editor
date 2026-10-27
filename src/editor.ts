@@ -65,7 +65,14 @@ const theme = EditorView.theme(
       overflowX: "hidden",
       overflowY: "auto",
     },
-    ".cm-content": { padding: "24px 0", caretColor: "var(--foreground)" },
+    // At most --content-max-width of text (plus its padding), centred in a wider panel.
+    ".cm-content": {
+      padding: "24px 0",
+      maxWidth: "calc(var(--content-max-width) + 2 * var(--content-padding-x) + var(--minimap-space, 0px))",
+      marginLeft: "auto",
+      marginRight: "auto",
+      caretColor: "var(--foreground)",
+    },
     // On the right, the fixed margin for the minimap when it is shown.
     ".cm-line": { padding: "0 calc(var(--content-padding-x) + var(--minimap-space, 0px)) 0 var(--content-padding-x)" },
     // Thin orange underline for misspelled words.

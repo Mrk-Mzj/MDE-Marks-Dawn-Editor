@@ -28,7 +28,7 @@ Otwarty plik ma być wyświetlany w obszarze podzielonym na dwie części:
 
 W górnej części zawiera pasek ikon pozwalających na typowe formatowanie zaznaczonego tekstu i akapitów, np.: bold, italic, podkreślenie, lista numerowana i punktowana, lista zadań, nagłówki H1 do H5 i tekst akapitowy, cytat, hiperłącze, tabela. Ikony są wyrównane do lewej, a pierwsza z nich zaczyna się na tej samej pionowej linii co tekst pod paskiem. Podkreślenie owija tekst w znacznik `<u>…</u>` (GFM nie ma własnej składni podkreślenia).
 
-Lista zadań zamienia linie w zadania z polem wyboru (`- [ ] `). Zrobione zadanie (`- [x] `) wyświetla się jako obrysowe pole z dużą białą kropką w środku, nie jako wypełnione pole ani „x”. W trybie jednego okna kliknięcie pola zaznacza lub odznacza zadanie.
+Lista zadań zamienia linie w zadania z polem wyboru (`- [ ] `). Zrobione zadanie (`- [x] `) wyświetla się jako obrysowe pole z białym ptaszkiem w środku, nie jako wypełnione pole. W trybie jednego okna kliknięcie pola zaznacza lub odznacza zadanie.
 
 Ikony stoją w kolejności: B, I, U, styl akapitu (H), lista punktowana, numerowana, lista zadań, cytat, tabela, hiperłącze, bez separatorów. Na końcu jest ikona mikrofonu „Dyktowanie”: uruchamia dyktowanie głosowe Windows (tak jak pozycja „Dyktowanie” w menu pod prawym przyciskiem myszy), a dyktowany tekst trafia w miejsce kursora. Gdy panel jest zbyt wąski, ikony, które się nie mieszczą (z mikrofonem włącznie), chowają się za przyciskiem „Więcej” (…).
 
@@ -48,6 +48,8 @@ Oba panele mają być oddzielone od siebie pionową linią, którą użytkownik 
 
 
 Wyświetlany tekst przy krawędzi paneli ma zawsze zawijać się do kolejnej linii tak, by uniknąć używania poziomych pasków przewijania.
+
+Szerokość tekstu jest ograniczona do 1380 px przy powiększeniu 100% i rośnie razem z powiększeniem. W szerszym panelu tekst jest wyśrodkowany, z równymi marginesami po obu stronach.
 
 Zawartość obu paneli pokazuje ten sam otwarty plik. Domyślnie przewijanie jest zsynchronizowane: przewinięcie jednego panelu (rolką, klawiaturą, paskiem przewijania lub podczas pisania) przewija drugi do tego samego miejsca dokumentu. Na dolnym pasku, na prawo od statusu pisowni, jest przełącznik z ikoną dwóch paneli: „Przewijaj razem: wł” / „wył”. Kliknięcie go wyłącza synchronizację i wtedy panele przewijają się niezależnie. Ustawienie jest globalne (wspólne dla wszystkich zakładek) i zapamiętywane w sesji. Włączenie synchronizacji spina panele w miejscach, w których są, bez wyrównywania: program zapamiętuje różnicę między nimi (np. lewy panel w linii 200, prawy w 400) i utrzymuje ją przy dalszym przewijaniu (205 i 405). Pozwala to ręcznie zgrać panele tam, gdzie część dokumentu jest w jednym z nich znacznie wyższa. Gdy jeden panel pierwszy dojdzie do początku lub końca dokumentu, przewija się dalej tylko drugi, niezależnie od tego, nad którym panelem jest kursor. Gdy oba panele dojdą do początku (lub oba do końca), różnica jest zerowana. Przewinięcie zatrzymanego panelu z powrotem przesuwa oba od miejsc, w których są, bez przeskoku. Każda zakładka ma własną różnicę.
 

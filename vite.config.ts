@@ -11,5 +11,8 @@ export default defineConfig({
     target: "es2022",
     outDir: "dist",
     emptyOutDir: true,
+    // Emit imported images as files: the CSP (img-src 'self') blocks the
+    // data: URLs Vite would inline small ones as (e.g. the About icon).
+    assetsInlineLimit: 0,
   },
 });

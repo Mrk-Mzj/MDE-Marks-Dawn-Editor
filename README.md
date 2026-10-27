@@ -1,6 +1,6 @@
 # MDE: Mark's "Dawn" Editor
 
-A fast, lightweight editor for text documents and Markdown files on Windows 11. Portable: a single `MDE.exe`, no installer.
+A fast, lightweight editor for text documents and Markdown files on Windows 11. Portable: a single `MDE.exe`, shipped in a ZIP, no installer.
 
 The specification lives in [docs/SPEC.md](docs/SPEC.md) and the visual design in [docs/DESIGN.md](docs/DESIGN.md).
 
@@ -8,9 +8,9 @@ Free and open source under the [GNU GPL v3](LICENSE).
 
 ## Download and installation
 
-**[Download MDE.exe](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases/latest/download/MDE.exe)** — the latest version. Older versions and the release notes are on the [Releases](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) page.
+**[Download MDE.zip](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases/latest/download/MDE.zip)** — the latest version (`MDE.exe` and the license). Older versions and the release notes are on the [Releases](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) page.
 
-There is nothing to install: save `MDE.exe` anywhere (e.g. a `Programs` folder in your user folder, or a USB stick) and run it. No administrator rights are needed. To open Markdown files with a double click, right-click a `.md` file in Explorer, choose *Open with › Choose another app*, then *Choose an app on your PC* and point to `MDE.exe` (MDE is portable, so it does not register itself).
+There is nothing to install: unpack the ZIP (right-click › *Extract All…*) and put `MDE.exe` anywhere (e.g. a `Programs` folder in your user folder, or a USB stick) and run it. No administrator rights are needed. To open Markdown files with a double click, right-click a `.md` file in Explorer, choose *Open with › Choose another app*, then *Choose an app on your PC* and point to `MDE.exe` (MDE is portable, so it does not register itself).
 
 To uninstall, delete `MDE.exe`, and, if you want to remove your session and settings too, the folders `%APPDATA%\MDE` and `%LOCALAPPDATA%\com.marksdawn.mde`.
 
@@ -22,20 +22,22 @@ To uninstall, delete `MDE.exe`, and, if you want to remove your session and sett
 
 ### The Windows security warning
 
-The first time you download and run `MDE.exe`, Windows (and your browser) will warn you that the file may be unsafe. This is expected.
+The first time you download the ZIP and run `MDE.exe`, Windows (and your browser) may warn you that the file may be unsafe. This is expected.
 
 **Why:** Windows trusts a program when its file is digitally signed with a code signing certificate, which costs a few hundred dollars a year, and when many people have already downloaded it. MDE is a free hobby project without such a certificate and with few downloads, so Microsoft Defender SmartScreen cannot tell who made it and treats it as unknown. The warning does not mean that anything harmful was found in the file. The whole source code is in this repository, so anyone can check what the program does or build `MDE.exe` themselves (see [Building](#building)). Download it only from the [Releases](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) page of this repository.
 
 **How to run it anyway:**
 
-1. **In the browser** (Microsoft Edge): if the download shows *MDE.exe isn't commonly downloaded*, point to it in the downloads list, click **⋯ › Keep**, then **Show more › Keep anyway**. Other browsers may ask a similar question; choose to keep the file.
+1. **In the browser** (Microsoft Edge): if the download shows *MDE.zip isn't commonly downloaded*, point to it in the downloads list, click **⋯ › Keep**, then **Show more › Keep anyway**. Other browsers may ask a similar question; choose to keep the file.
 2. **In Windows:** when you start the file, a blue window says *Windows protected your PC*. Click **More info**; the publisher shows as *Unknown publisher*. Click **Run anyway**.
 
 Windows remembers the choice, so the warning does not come back for this file. After downloading a new version you may see it again.
 
-If there is no *Run anyway* button (some company or school PCs block unknown programs), right-click `MDE.exe` in Explorer, choose *Properties*, tick **Unblock** at the bottom of the *General* tab and click *OK*. If that option is missing too, your administrator does not allow such programs.
+If there is no *Run anyway* button (some company or school PCs block unknown programs), right-click `MDE.zip` (before unpacking) or `MDE.exe` in Explorer, choose *Properties*, tick **Unblock** at the bottom of the *General* tab and click *OK*. If that option is missing too, your administrator does not allow such programs.
 
-## Status: 1.0
+## Status: 1.0.1
+
+Versions are numbered x.y.z (major.minor.patch); the number lives in `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json` (the About dialog reads it from there).
 
 MVP plus tabs, a single instance, session memory, spell checking, the HTML whitelist, clickable links, the formatting toolbar, the minimap and the one-pane mode (the text formatted while editing).
 
@@ -43,7 +45,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 
 - **One pane or two** (*Panes: 1 / 2* in the status bar, between *Map* and *Scroll together*, with an application-window icon): a click switches the mode. One pane is the default at the first start; the choice is a global setting, the same for every tab, remembered in the session (`panes` in `session.json`). Switching keeps the place in the document, the cursor and the selection.
   - **Two panes**: the Markdown source editor on the left and the rendered GitHub Flavored Markdown preview on the right (described below).
-  - **One pane** (`src/live.ts`): the editor takes the whole width and shows the text formatted, like Notepad does with Markdown, while it stays editable. The Markdown markers (`#`, `**`, `_`, `` ` ``, `~~`, `>`, `[`…`](address)`, `<u>` and the other whitelisted tags, escaping backslashes) are always hidden, also on the line with the cursor; bullets show as •, ◦, ▪ by nesting level, numbered items show their rendered number, task items an outline check box (with a white dot in it when done; clicking the box checks or unchecks the task, `[ ]` ⇄ `[x]` in the file), entities (`&amp;`) the character. The file is still the source of truth: the markers are only hidden, so saving gives the same bytes as in the two-pane mode, and undo, spell checking, Alt+↑/↓ and zoom work as before. The character count still counts the whole file with its Markdown.
+  - **One pane** (`src/live.ts`): the editor takes the whole width and shows the text formatted, like Notepad does with Markdown, while it stays editable. The Markdown markers (`#`, `**`, `_`, `` ` ``, `~~`, `>`, `[`…`](address)`, `<u>` and the other whitelisted tags, escaping backslashes) are always hidden, also on the line with the cursor; bullets show as •, ◦, ▪ by nesting level, numbered items show their rendered number, task items an amber check box (with a white tick in it when done; clicking the box checks or unchecks the task, `[ ]` ⇄ `[x]` in the file), entities (`&amp;`) the character. The file is still the source of truth: the markers are only hidden, so saving gives the same bytes as in the two-pane mode, and undo, spell checking, Alt+↑/↓ and zoom work as before. The character count still counts the whole file with its Markdown.
   - Formatting: the toolbar, the shortcuts, or Markdown typed by hand, which turns into formatting at once (`# ` … `##### ` at the start of a line, `- `, `* `, `1. `, `> `, `**text**`, `*text*`, `_text_`). Ctrl+Z right after that keeps the typed characters as plain text (the markers get escaping backslashes, which are hidden too); the next Ctrl+Z undoes the typing.
   - Enter in a list item starts the next item (a numbered list counts on, a task item gets a new empty check box); Enter in an empty item ends the list. The same in a quote. Backspace at the start of a heading, list item or quote removes that line's format (the innermost one first); the next Backspace joins the line with the one above. Delete at the end of a line joins the next line without its block markers.
   - The cursor skips the hidden markers: one press of ← / → is one visible character. Backspace and Delete never remove a marker alone; deleting all of a formatted stretch removes its markers too, and deleting or typing over part of it keeps it formatted (`**bo|ld** te|xt` → `**bo**xt`). A cursor never lands in front of a line's hidden `# `, `> ` or `- `, so typing cannot break them.
@@ -66,7 +68,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
   - Every word is a thin bar where the editor shows it: the text width is scaled to the width of the box and each row of text (also every wrapped row of a long line) is 2px high (a 1px bar and a 1px gap). Lines of H1 and H2 headings (`# ` / `## ` and `===` / `---` underlined, not in code blocks) are drawn lighter (`#ababab`, `#949494`), so the sections stand out. The minimap wraps the lines itself, measuring words in the editor's font at the editor's text width, so the picture is right also for parts of the file the editor has not displayed yet. Only the rows inside the box are drawn, and the row count of each line is cached by its text, so long files stay fast.
   - The part of the text on screen is a slightly lighter slider. Dragging it scrolls the editor (the slider stays under the pointer); clicking elsewhere in the box centres the slider there and can be followed by a drag. The mouse wheel over the box scrolls the editor. The minimap never takes the focus from the editor.
   - While the minimap is shown, the editor text has a fixed right margin over the whole height of the panel, wide enough that the box never covers text; turning the minimap off gives the text the full width again. The text rewraps and both panels keep showing the same place.
-- **Live preview**: headings, emphasis, strikethrough, lists, task lists (an outline box in place of the bullet, with a white dot in it for `[x]`), block quotes, code, tables, links and autolinks. MDE extensions beyond GFM (see docs/SPEC.md):
+- **Live preview**: headings, emphasis, strikethrough, lists, task lists (an amber box in place of the bullet, with a white tick in it for `[x]`), block quotes, code, tables, links and autolinks. MDE extensions beyond GFM (see docs/SPEC.md):
   - every Enter in the file is a line break in the preview, as in the editor;
   - the space between blocks comes only from the blank lines in the file, exactly as in the editor and the one-pane mode: every blank line is an empty line of text, and blocks with no blank line between them touch (a heading with a list right below it, a paragraph followed by a quote). This holds for every kind of block — headings, paragraphs, lists and their items, quotes, tables, code blocks, horizontal rules, HTML blocks — at the top level and inside quotes and list items, also for blank lines at the start of the document; blank lines inside code blocks stay part of the code. Blocks have no margins of their own (headings, tables and code blocks keep the same small space they have in the one-pane mode, and margins never collapse), so a block sits at the same height in the preview as in the one-pane mode. The file itself is never changed.
 - **Raw HTML** in a file is cleaned with a whitelist (never executed): `<br>`, `<span>` (only `color` and `background-color`, as plain colors: names, `#hex`, `rgb()`/`hsl()`), `<details>` (with `open`) and `<summary>`, `<sub>`, `<sup>`, `<kbd>` and `<u>` are shown; their other attributes are dropped. `<script>`, `<iframe>`, `<object>`, `<style>`, `<form>` (and a few similar tags) are removed with their content, `on*` attributes never survive, and any other tag is dropped while its text stays. HTML comments disappear. The file itself is never changed.
@@ -157,9 +159,10 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 ### Known deviations from the spec in this version
 
 - **Changing the encoding** in the *Save as* dialog (UTF-8 / UTF-8 with BOM) is not available yet; a Windows-1250 file is converted to UTF-8 only when it contains characters Windows-1250 cannot store.
-- **Colours**: dark only, built from the tokens in `src/styles.css` (docs/DESIGN.md). Besides the shadcn/ui tokens MDE has its own surfaces: the top bar and the status bar `#151515` (status bar icons and labels `#808080`), inactive tabs `#1b1b1b`, the active tab, the toolbar, the find bar and the minimap slider (drawn under the word bars) `#222222`, the panels and the minimap `#1b1b1b`, the scroll bar thumb `#313131`. Body text in the panels is `#f3f3f3`; formatted text (bold, italic, underline, headings H1–H5) and the dot of a done task are `#ffffff`. The line under H1 is `#4f4f4f`, under H2 `#3b3b3b`.
-- **Tables** look the same in the preview and in the one-pane mode: as wide as their content, with four rounded corners and an amber (`--warning`) frame; an amber line under the header, whose cells are separated by lines in the page background colour, on the `#d1d1d1` background with bold text in the page background colour.
-- **Lists** look the same in the preview and in the one-pane mode: bullets (30% larger, centred on the axis of a task box), numbers and task box frames are amber (`--warning`, the spell-check colour), and a done task has a large white dot in its box. The box is drawn as a CSS border rather than an SVG outline, so its lines fall on whole screen pixels and stay sharp at any zoom. A list is indented by about seven spaces (`--list-indent`, 1.92em), the text of an item starts one marker column (`--list-marker`, 1.5625em) after its bullet, number or box, each nesting level moves one marker column further, and wrapped lines of an item line up with its text. Both sizes are in em, so they follow the zoom.
+- **Text width**: the text of a document is at most 1380px wide at 100% zoom (`--content-max-width`, 86.25em of the text size, so it scales with the zoom and a line keeps the same words). In a wider panel it is centred between equal margins — 270px each in the one-pane mode on a 1920px wide screen — in the editor, the one-pane mode and the preview. The minimap then sits in the right margin; when the margin is too narrow for it, the text moves away from it only by the missing part.
+- **Colours**: dark only, built from the tokens in `src/styles.css` (docs/DESIGN.md). Besides the shadcn/ui tokens MDE has its own surfaces: the top bar and the status bar `#151515` (status bar icons and labels `#808080`), inactive tabs `#1b1b1b`, the active tab, the toolbar and the find bar `#222222`, the minimap slider (drawn under the word bars) `#323232`, the panels and the minimap `#1b1b1b`, the scroll bar thumb `#313131`. Body text in the panels is `#f3f3f3`; formatted text (bold, italic, underline, headings H1–H5) and the tick of a done task are `#ffffff`. The line under H1 is `#4f4f4f`, under H2 `#3b3b3b`.
+- **Tables** look the same in the preview and in the one-pane mode: as wide as their content, with four rounded corners and an amber (`--warning`) frame; an amber line under the header, whose cells are separated by lines in the page background colour, on the `#b36b00` background with bold white (`#ffffff`) text.
+- **Lists** look the same in the preview and in the one-pane mode: bullets (30% larger, centred on the axis of a task box), numbers and task box frames are amber (`--warning`, the spell-check colour), and a done task has a white tick in its box. The box follows the owner's design (`src/taskbox.ts`): 14 × 14px at 100% zoom (0.875em), its bottom 1px (0.0625em) below the baseline so it looks centred on the text; its frame is a CSS border of the same geometry (2px wide, outer corners 1.4px, square inner ones), so it falls on whole screen pixels at any zoom; the tick is the owner's SVG laid over the box. A list is indented by about seven spaces (`--list-indent`, 1.92em), the text of an item starts one marker column (`--list-marker`, 1.5625em) after its bullet, number or box, each nesting level moves one marker column further, and wrapped lines of an item line up with its text. Both sizes are in em, so they follow the zoom.
 - **Native dialogs**: the *Open* and *Save as* file pickers and the start-up message about a missing WebView2 are Windows dialogs (light). The question about opening a linked file offers *Open and don't ask for .xxx files* as a button rather than a checkbox.
 - **Start-up** takes about 0.55–0.65 s from launch to a visible window with the file loaded (target: < 0.5 s).
 - WebView2 keeps its browser cache in `%LOCALAPPDATA%\com.marksdawn.mde\`; the session lives in `%APPDATA%\MDE\`.
@@ -188,7 +191,7 @@ Development (hot reload):
 npx tauri dev
 ```
 
-Release build — the single portable `MDE.exe` lands in `src-tauri/target/release/MDE.exe`. This is the only file to hand out:
+Release build — the single portable `MDE.exe` lands in `src-tauri/target/release/MDE.exe`:
 
 ```bash
 npx tauri build
@@ -196,10 +199,16 @@ npx tauri build
 
 The other `mde.exe` files under `target/` (`release/deps/`, `debug/`) are compiler intermediates, not for distribution.
 
-Publishing a version: built exe files are not kept in the repository. They go to [GitHub Releases](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases): create a release with a version tag (e.g. `v1.0.0`) and attach the file under the exact name `MDE.exe`, so the download link at the top of this file (`releases/latest/download/MDE.exe`) always points to the newest version. With the [GitHub CLI](https://cli.github.com/):
+Publishing a version: built files are not kept in the repository. MDE is shared as a ZIP holding `MDE.exe` and `LICENSE`; `release/` is ignored by git. Pack it after the build (PowerShell):
+
+```powershell
+New-Item -ItemType Directory -Force release; Compress-Archive -Force -Path src-tauri/target/release/MDE.exe, LICENSE -DestinationPath release/MDE.zip
+```
+
+Then create a [GitHub release](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) with a version tag (e.g. `v1.0.1`) and attach the ZIP under the exact name `MDE.zip`, so the download link at the top of this file (`releases/latest/download/MDE.zip`) always points to the newest version. With the [GitHub CLI](https://cli.github.com/):
 
 ```bash
-gh release create v1.0.0 src-tauri/target/release/MDE.exe --title "MDE 1.0.0" --notes "What changed"
+gh release create v1.0.1 release/MDE.zip --title "MDE 1.0.1" --notes "What changed"
 ```
 
 The app icon comes from `src-tauri/icons/icon.svg`. After changing it, rebuild `icon.ico` (16–256px) and `icon.png` (512px) with `npx tauri icon src-tauri/icons/icon.svg -o <temp folder>` and copy those two files into `src-tauri/icons/`; touch `src-tauri/build.rs` before the next build, or Cargo keeps the old icon in the exe.
@@ -235,6 +244,7 @@ src/                  frontend (TypeScript)
   preview.ts          markdown-it preview (right panel), incl. the blank-lines extension,
                       link clicks and the source-line map of its blocks
   sanitize.ts         whitelist sanitizer for raw HTML
+  taskbox.ts          the task-list box (CSS frame, SVG tick), shared by the preview and one pane
   links.ts            which links are followed and how (web, relative, blocked)
   format.ts           formatting commands (bold, headings, lists, quote, link, table);
                       bold/italic/underline work on the GFM syntax tree (@lezer/markdown)

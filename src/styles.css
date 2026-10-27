@@ -42,12 +42,15 @@
   --content-foreground: #f3f3f3;
   --content-strong: #ffffff;
   /* Table header cells; the lines under H1 and H2 headings. */
-  --table-header: #d1d1d1;
+  --table-header: #b36b00;
+  --table-header-foreground: #ffffff;
   --h1-rule: #4f4f4f;
   --h2-rule: #3b3b3b;
   /* Minimap bars of the lines of H1 and H2 headings. */
   --minimap-h1: #ababab;
   --minimap-h2: #949494;
+  /* Minimap slider (the part of the text on screen), under the word bars. */
+  --minimap-slider: #323232;
 
   --font-sans: "Segoe UI", Arial, system-ui, sans-serif;
   --font-mono: "Cascadia Mono", Consolas, "Courier New", ui-monospace, monospace;
@@ -59,6 +62,10 @@
      of the menu icon, the toolbar's B and the character count. As wide as
      the gap between two toolbar letters (B to I). */
   --content-padding-x: 25px;
+  /* The widest the text of a document gets (1380px at 100% zoom; it scales
+     with the zoom, so a line keeps the same words). In a wider panel the
+     text stays centred, with equal margins on both sides. */
+  --content-max-width: calc(var(--content-font-size) * 86.25);
   /* Width of the minimap box; the editor text keeps this much more margin on
      the right while the minimap is shown. */
   --minimap-width: 77px;
@@ -874,18 +881,30 @@ body.resizing-panes .pane {
 
 /* ---------- Editor ---------- */
 
-/* The editor and the minimap above it. */
+/* The editor and the minimap above it. A size container, so the editor
+   can tell how much margin the centred text leaves for the minimap. */
 .editor-area {
   position: relative;
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  container-type: inline-size;
 }
 
 .has-minimap {
   --minimap-space: var(--minimap-width);
   --editor-scrollbar-width: 0px;
+}
+
+/* Text narrower than the panel is centred; the minimap then sits in the
+   right margin, and the text keeps only the room the margin lacks. */
+.has-minimap .editor-host {
+  --minimap-space: clamp(
+    0px,
+    calc(var(--minimap-width) - (100cqw - var(--content-max-width) - 2 * var(--content-padding-x)) / 2),
+    var(--minimap-width)
+  );
 }
 
 .editor-host {
@@ -940,18 +959,18 @@ body.resizing-panes .pane {
   top: 0;
   left: 0;
   right: 0;
-  background: var(--toolbar);
+  background: var(--minimap-slider);
   transition: background-color 150ms;
   pointer-events: none;
 }
 
 .minimap:hover > .minimap-slider {
-  background: color-mix(in oklch, var(--foreground) 3%, var(--toolbar));
+  background: color-mix(in oklch, var(--foreground) 3%, var(--minimap-slider));
 }
 
 .minimap-dragging > .minimap-slider,
 .minimap-dragging:hover > .minimap-slider {
-  background: color-mix(in oklch, var(--foreground) 7%, var(--toolbar));
+  background: color-mix(in oklch, var(--foreground) 7%, var(--minimap-slider));
 }
 
 /* ---------- Preview ---------- */
@@ -961,7 +980,8 @@ body.resizing-panes .pane {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 24px var(--content-padding-x) 48px;
+  /* Text wider than --content-max-width is centred between equal margins. */
+  padding: 24px max(var(--content-padding-x), calc((100% - var(--content-max-width)) / 2)) 48px;
   color: var(--content-foreground);
   font-size: var(--content-font-size);
   line-height: 1.6;
@@ -1101,31 +1121,32 @@ body.resizing-panes .pane {
   margin-left: calc(-1 * var(--list-marker));
 }
 
-/* The box is a CSS border, not an SVG outline: the browser puts borders on
-   whole device pixels, so its lines stay sharp at any zoom and display
-   scaling. It stands on the baseline, 0.75em square in a 1em column (the
-   axis bullets are centred on). Same as .cm-live-check in src/live.ts. */
+/* The box from src/taskbox.ts: 0.875em square (14px at 16px text) in a 1em
+   column (the axis bullets are centred on), 0.0625em (1px) below the
+   baseline so it looks centred on the text. The frame is a CSS border (2px,
+   outer corners 1.4px, so the inner ones are square), which the browser
+   puts on whole device pixels; a done task has the SVG tick laid over the
+   whole box. Same as .cm-live-check in src/live.ts. */
 .markdown-body .task-check {
   position: relative;
   display: inline-block;
   box-sizing: border-box;
-  width: 0.75em;
-  height: 0.75em;
-  margin: 0 0.125em;
-  overflow: hidden;
-  border: calc(1em / 12) solid var(--warning);
-  border-radius: calc(1em / 12);
+  width: 0.875em;
+  height: 0.875em;
+  margin: 0 0.0625em;
+  border: 0.125em solid var(--warning);
+  border-radius: 0.0875em;
+  vertical-align: -0.0625em;
 }
 
-/* A done task: a large white dot in the box. */
-.markdown-body .task-dot {
+.markdown-body .task-tick {
   position: absolute;
-  inset: 0;
-  width: 0.367em;
-  height: 0.367em;
-  margin: auto;
-  border-radius: 50%;
-  background: var(--content-strong);
+  top: -0.125em;
+  left: -0.125em;
+  width: 0.875em;
+  height: 0.875em;
+  overflow: visible;
+  stroke: var(--content-strong);
 }
 
 /* One blank line of the file: an empty line of text (see the blank-lines extension). */
@@ -1261,7 +1282,7 @@ body.resizing-panes .pane {
 .markdown-body th {
   border-color: var(--background) var(--background) var(--warning);
   background: var(--table-header);
-  color: var(--background);
+  color: var(--table-header-foreground);
   font-weight: 700;
 }
 

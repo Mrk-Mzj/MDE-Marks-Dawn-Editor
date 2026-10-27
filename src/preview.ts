@@ -4,6 +4,7 @@ import MarkdownIt from "markdown-it";
 import { t } from "./i18n";
 import { classifyHref } from "./links";
 import { markRawHtml, sanitize } from "./sanitize";
+import { taskBoxHtml } from "./taskbox";
 
 // Raw HTML is let through by markdown-it but tagged by `markRawHtml` and
 // reduced to the whitelist by `sanitize` before it reaches the page.
@@ -98,9 +99,7 @@ md.core.ruler.push("task_lists", (state) => {
 });
 
 md.renderer.rules.task_box = (tokens, idx) =>
-  `<span class="task-box" aria-hidden="true"><span class="task-check">${
-    (tokens[idx].meta as { checked: boolean }).checked ? '<span class="task-dot"></span>' : ""
-  }</span></span>`;
+  `<span class="task-box" aria-hidden="true">${taskBoxHtml("task-check", (tokens[idx].meta as { checked: boolean }).checked)}</span>`;
 
 md.renderer.rules.blank_lines = (tokens, idx) =>
   '<div class="blank-line" aria-hidden="true"></div>'.repeat((tokens[idx].meta as { count: number }).count);

@@ -25,6 +25,7 @@ import type { SyntaxNode } from "@lezer/common";
 import { classifyHref } from "./links";
 import { renderFragment } from "./preview";
 import { allowedColors } from "./sanitize";
+import { taskBoxHtml } from "./taskbox";
 
 export interface LiveConfig {
   /** Opens a link (Ctrl+click). */
@@ -413,7 +414,7 @@ class ListWidget extends WidgetType {
     el.className = "cm-live-bullet";
     if (this.checked !== null) {
       el.classList.add("cm-live-task");
-      el.innerHTML = `<span class="cm-live-check">${this.checked ? '<span class="cm-live-check-dot"></span>' : ""}</span>`;
+      el.innerHTML = taskBoxHtml("cm-live-check", this.checked);
     } else if (this.label !== null) {
       el.classList.add("cm-live-number");
       el.textContent = this.label;
@@ -1136,27 +1137,29 @@ const liveTheme = EditorView.theme({
   ".cm-live-dot": { display: "inline-block", width: "1em", textAlign: "center", transform: "scale(1.3)" },
   ".cm-live-number": { fontVariantNumeric: "tabular-nums" },
   ".cm-live-task": { cursor: "pointer" },
-  // The box is a CSS border, so its lines stay on whole device pixels (same
-  // as .task-check in src/styles.css); a done task has a large white dot.
+  // The box from src/taskbox.ts, same as .task-check in src/styles.css: a
+  // 0.875em (14px) square in a 1em column, 0.0625em (1px) below the
+  // baseline, its frame a CSS border (2px, outer corners 1.4px); a done
+  // task has the SVG tick.
   ".cm-live-check": {
     position: "relative",
     display: "inline-block",
     boxSizing: "border-box",
-    width: "0.75em",
-    height: "0.75em",
-    margin: "0 0.125em",
-    overflow: "hidden",
-    border: "calc(1em / 12) solid var(--warning)",
-    borderRadius: "calc(1em / 12)",
+    width: "0.875em",
+    height: "0.875em",
+    margin: "0 0.0625em",
+    border: "0.125em solid var(--warning)",
+    borderRadius: "0.0875em",
+    verticalAlign: "-0.0625em",
   },
-  ".cm-live-check-dot": {
+  ".cm-live-check .task-tick": {
     position: "absolute",
-    inset: "0",
-    width: "0.367em",
-    height: "0.367em",
-    margin: "auto",
-    borderRadius: "50%",
-    background: "var(--content-strong)",
+    top: "-0.125em",
+    left: "-0.125em",
+    width: "0.875em",
+    height: "0.875em",
+    overflow: "visible",
+    stroke: "var(--content-strong)",
   },
   ".cm-live-image, .cm-live-block .image-placeholder": {
     display: "inline-flex",
@@ -1214,7 +1217,7 @@ const liveTheme = EditorView.theme({
   },
   ".cm-live-block tr > :last-child": { borderRight: "0" },
   ".cm-live-block :is(thead, tbody):last-child > tr:last-child > *": { borderBottom: "0" },
-  ".cm-live-block th": { borderColor: "var(--background) var(--background) var(--warning)", background: "var(--table-header)", color: "var(--background)", fontWeight: "700" },
+  ".cm-live-block th": { borderColor: "var(--background) var(--background) var(--warning)", background: "var(--table-header)", color: "var(--table-header-foreground)", fontWeight: "700" },
   ".cm-live-block th *": { color: "inherit" },
   ".cm-live-block tr:nth-child(2n) td": { background: "color-mix(in oklch, var(--card) 50%, transparent)" },
   ".cm-live-block a": { color: "var(--foreground)", textDecoration: "underline", textDecorationColor: "var(--muted-foreground)", textUnderlineOffset: "3px" },
