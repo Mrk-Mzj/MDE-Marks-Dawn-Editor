@@ -51,6 +51,9 @@
   --minimap-h2: #949494;
   /* Minimap slider (the part of the text on screen), under the word bars. */
   --minimap-slider: #323232;
+  /* Either side of the page (the panel background, --background) once the
+     panel is wider than the page: a darker band, like the window behind it. */
+  --backdrop: #151515;
 
   --font-sans: "Segoe UI", Arial, system-ui, sans-serif;
   --font-mono: "Cascadia Mono", Consolas, "Courier New", ui-monospace, monospace;
@@ -62,10 +65,13 @@
      of the menu icon, the toolbar's B and the character count. As wide as
      the gap between two toolbar letters (B to I). */
   --content-padding-x: 25px;
-  /* The widest the text of a document gets (1380px at 100% zoom; it scales
-     with the zoom, so a line keeps the same words). In a wider panel the
-     text stays centred, with equal margins on both sides. */
-  --content-max-width: calc(var(--content-font-size) * 86.25);
+  /* The widest the text of a document gets (1314px at 100% zoom; it scales
+     with the zoom, so a line keeps the same words). With its padding on
+     each side it makes the page; in a wider panel the page stays
+     centred, with --backdrop on both sides. */
+  --content-max-width: calc(var(--content-font-size) * 82.125);
+  /* Left and right padding of the text on the page in the one-pane mode. */
+  --page-padding-x: 33px;
   /* Width of the minimap box; the editor text keeps this much more margin on
      the right while the minimap is shown. */
   --minimap-width: 77px;
@@ -897,8 +903,8 @@ body.resizing-panes .pane {
   --editor-scrollbar-width: 0px;
 }
 
-/* Text narrower than the panel is centred; the minimap then sits in the
-   right margin, and the text keeps only the room the margin lacks. */
+/* A page narrower than the panel is centred; the minimap then sits in the
+   backdrop on the right, and the text keeps only the room it lacks there. */
 .has-minimap .editor-host {
   --minimap-space: clamp(
     0px,
@@ -915,6 +921,13 @@ body.resizing-panes .pane {
 }
 
 /* The editor itself lives in a shadow root; its styles are in src/editor.ts. */
+
+/* In the one-pane mode the text keeps --page-padding-x from the page's
+   edges; with two panes it stays on --content-padding-x, in line with the
+   toolbar's B. */
+.single-pane .editor-host {
+  --content-padding-x: var(--page-padding-x);
+}
 
 /* ---------- Minimap ---------- */
 
@@ -980,8 +993,11 @@ body.resizing-panes .pane {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  /* Text wider than --content-max-width is centred between equal margins. */
+  /* Text wider than --content-max-width is centred between equal margins,
+     on a page --content-padding-x wider on each side, with --backdrop
+     around it. */
   padding: 24px max(var(--content-padding-x), calc((100% - var(--content-max-width)) / 2)) 48px;
+  background: linear-gradient(var(--background), var(--background)) center / min(100%, calc(var(--content-max-width) + 2 * var(--content-padding-x))) 100% no-repeat var(--backdrop);
   color: var(--content-foreground);
   font-size: var(--content-font-size);
   line-height: 1.6;

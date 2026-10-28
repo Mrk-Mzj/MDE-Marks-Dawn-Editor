@@ -26,7 +26,7 @@ Otwarty plik ma być wyświetlany w obszarze podzielonym na dwie części:
 
 1. lewy panel służy do edycji pliku. Wyświetla niesformatowaną składnię Markdown. 
 
-W górnej części zawiera pasek ikon pozwalających na typowe formatowanie zaznaczonego tekstu i akapitów, np.: bold, italic, podkreślenie, lista numerowana i punktowana, lista zadań, nagłówki H1 do H5 i tekst akapitowy, cytat, hiperłącze, tabela. Ikony są wyrównane do lewej, a pierwsza z nich zaczyna się na tej samej pionowej linii co tekst pod paskiem. Podkreślenie owija tekst w znacznik `<u>…</u>` (GFM nie ma własnej składni podkreślenia).
+W górnej części zawiera pasek ikon pozwalających na typowe formatowanie zaznaczonego tekstu i akapitów, np.: bold, italic, podkreślenie, lista numerowana i punktowana, lista zadań, nagłówki H1 do H5 i tekst akapitowy, cytat, hiperłącze, tabela. Ikony są wyrównane do lewej. W trybie dwóch okien pierwsza z nich zaczyna się na tej samej pionowej linii co tekst pod paskiem; w trybie jednego okna tekst ma szerszy margines, a ikony zostają na swoim miejscu. Podkreślenie owija tekst w znacznik `<u>…</u>` (GFM nie ma własnej składni podkreślenia).
 
 Lista zadań zamienia linie w zadania z polem wyboru (`- [ ] `). Zrobione zadanie (`- [x] `) wyświetla się jako obrysowe pole z białym ptaszkiem w środku, nie jako wypełnione pole. W trybie jednego okna kliknięcie pola zaznacza lub odznacza zadanie.
 
@@ -49,7 +49,7 @@ Oba panele mają być oddzielone od siebie pionową linią, którą użytkownik 
 
 Wyświetlany tekst przy krawędzi paneli ma zawsze zawijać się do kolejnej linii tak, by uniknąć używania poziomych pasków przewijania.
 
-Szerokość tekstu jest ograniczona do 1380 px przy powiększeniu 100% i rośnie razem z powiększeniem. W szerszym panelu tekst jest wyśrodkowany, z równymi marginesami po obu stronach.
+Szerokość tekstu jest ograniczona do 1314 px przy powiększeniu 100% i rośnie razem z powiększeniem. Tekst leży na „kartce” z marginesami po bokach: 33 px w trybie jednego okna, a w trybie dwóch okien 25 px (tekst zaczyna się wtedy w linii z ikonami paska formatowania). W panelu szerszym od kartki jest ona wyśrodkowana, a po obu stronach są ciemniejsze pola udające tło programu; ich szerokość zależy od rozmiaru okna i może wynosić 0 px.
 
 Zawartość obu paneli pokazuje ten sam otwarty plik. Domyślnie przewijanie jest zsynchronizowane: przewinięcie jednego panelu (rolką, klawiaturą, paskiem przewijania lub podczas pisania) przewija drugi do tego samego miejsca dokumentu. Na dolnym pasku, na prawo od statusu pisowni, jest przełącznik z ikoną dwóch paneli: „Przewijaj razem: wł” / „wył”. Kliknięcie go wyłącza synchronizację i wtedy panele przewijają się niezależnie. Ustawienie jest globalne (wspólne dla wszystkich zakładek) i zapamiętywane w sesji. Włączenie synchronizacji spina panele w miejscach, w których są, bez wyrównywania: program zapamiętuje różnicę między nimi (np. lewy panel w linii 200, prawy w 400) i utrzymuje ją przy dalszym przewijaniu (205 i 405). Pozwala to ręcznie zgrać panele tam, gdzie część dokumentu jest w jednym z nich znacznie wyższa. Gdy jeden panel pierwszy dojdzie do początku lub końca dokumentu, przewija się dalej tylko drugi, niezależnie od tego, nad którym panelem jest kursor. Gdy oba panele dojdą do początku (lub oba do końca), różnica jest zerowana. Przewinięcie zatrzymanego panelu z powrotem przesuwa oba od miejsc, w których są, bez przeskoku. Każda zakładka ma własną różnicę.
 

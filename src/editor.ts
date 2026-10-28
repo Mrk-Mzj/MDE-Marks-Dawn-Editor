@@ -64,11 +64,14 @@ const theme = EditorView.theme(
       lineHeight: "1.6",
       overflowX: "hidden",
       overflowY: "auto",
+      // The page under the text, with --backdrop on both sides in a wider panel.
+      background:
+        "linear-gradient(var(--background), var(--background)) center / min(100%, calc(var(--content-max-width) + 2 * var(--content-padding-x))) 100% no-repeat var(--backdrop)",
     },
-    // At most --content-max-width of text (plus its padding), centred in a wider panel.
+    // At most --content-max-width of text (plus its padding): the page, centred in a wider panel.
     ".cm-content": {
       padding: "24px 0",
-      maxWidth: "calc(var(--content-max-width) + 2 * var(--content-padding-x) + var(--minimap-space, 0px))",
+      maxWidth: "calc(var(--content-max-width) + 2 * var(--content-padding-x))",
       marginLeft: "auto",
       marginRight: "auto",
       caretColor: "var(--foreground)",

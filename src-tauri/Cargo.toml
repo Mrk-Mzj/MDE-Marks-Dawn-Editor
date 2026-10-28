@@ -1,6 +1,6 @@
 [package]
 name = "mde"
-version = "1.0.1"
+version = "1.0.2"
 description = "Mark's Dawn Editor - a fast, lightweight Markdown editor"
 edition = "2021"
 authors = ["Marek Mazij"]
