@@ -1497,11 +1497,17 @@ body.resizing-panes .pane {
   border-top: 1px solid var(--border);
 }
 
-/* Plain status text on the left (the character count), in line with the button labels. */
+/* The spelling button opens the bar: its icon starts on the same vertical line
+   as the toolbar's B (the bar has 4px of padding, the button 8px). */
+#spell-status {
+  margin-left: calc(var(--content-padding-x) - 12px);
+}
+
+/* Plain status text after the spelling button (the character count), in line
+   with the button labels and spaced like the next button would be. */
 .status-text {
   margin-right: auto;
-  /* Starts on the same vertical line as the text of the panels. */
-  padding: 0 8px 0 calc(var(--content-padding-x) - 4px);
+  padding: 0 8px;
   overflow: hidden;
   color: var(--statusbar-foreground);
   font-size: 12px;

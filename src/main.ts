@@ -1128,7 +1128,7 @@ window.addEventListener(
   { capture: true, passive: false },
 );
 
-// The status buttons are right-aligned, so a label of fractional width would
+// Most status buttons are right-aligned, so a label of fractional width would
 // move the icons of the buttons to its left off the pixel grid: each button
 // gets a whole-pixel width (it can still shrink, its label cut short, in a
 // narrow window).

@@ -53,7 +53,6 @@
       </section>
     </main>
     <footer class="statusbar" data-slot="statusbar">
-      <span id="char-count" class="status-text"></span>
       <button id="spell-status" class="status-button" data-slot="button" type="button">
         <svg class="icon icon-px" viewBox="0 0 16 16" aria-hidden="true">
           <path d="M8.5 14.5H12a1.5 1.5 0 0 0 1.5-1.5V5.5l-4-4H4A1.5 1.5 0 0 0 2.5 3v4" />
@@ -62,13 +61,7 @@
         </svg>
         <span id="spell-status-text"></span>
       </button>
-      <button id="minimap-status" class="status-button" data-slot="button" type="button">
-        <svg class="icon icon-px" viewBox="0 0 16 16" aria-hidden="true">
-          <rect x="1.5" y="2.5" width="12" height="12" rx="1.5" />
-          <path d="M4 5.5h7M4 8.5h4M4 11.5h6" />
-        </svg>
-        <span id="minimap-status-text"></span>
-      </button>
+      <span id="char-count" class="status-text"></span>
       <button id="panes-status" class="status-button" data-slot="button" type="button">
         <svg class="icon icon-px" viewBox="0 0 16 16" aria-hidden="true">
           <rect x="1.5" y="3.5" width="13" height="10" rx="1.5" />
@@ -82,6 +75,13 @@
           <path d="M7.5 3v11" />
         </svg>
         <span id="sync-status-text"></span>
+      </button>
+      <button id="minimap-status" class="status-button" data-slot="button" type="button">
+        <svg class="icon icon-px" viewBox="0 0 16 16" aria-hidden="true">
+          <rect x="1.5" y="2.5" width="12" height="12" rx="1.5" />
+          <path d="M4 5.5h7M4 8.5h4M4 11.5h6" />
+        </svg>
+        <span id="minimap-status-text"></span>
       </button>
     </footer>
   </body>
