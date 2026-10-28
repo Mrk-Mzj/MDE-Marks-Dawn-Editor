@@ -9,7 +9,8 @@ export interface DialogButton<T> {
 export interface DialogOptions<T> {
   title?: string;
   text: string;
-  /** Left to right; the first one is the main action (filled, focused). */
+  /** The main action (filled, focused) first, Cancel last. They are shown the other way round:
+   *  Cancel on the left, the main action on the right. */
   buttons: DialogButton<T>[];
   /** The answer when the dialog is dismissed with Esc. */
   cancel: T;
@@ -63,7 +64,9 @@ function ask<T>({ title, text, buttons, cancel }: DialogOptions<T>): Promise<T> 
 
     const footer = document.createElement("div");
     footer.className = "dialog-footer";
-    buttons.forEach(({ label, value }, index) => {
+    // Right to left in the order given, so Tab also moves from Cancel to the main action.
+    [...buttons].reverse().forEach(({ label, value }, reversed) => {
+      const index = buttons.length - 1 - reversed;
       const button = document.createElement("button");
       button.type = "button";
       button.className = index === 0 ? "button button-primary" : "button button-outline";

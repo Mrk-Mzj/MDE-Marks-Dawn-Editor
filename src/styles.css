@@ -32,6 +32,7 @@
   --search-current: #e58b00;
   /* Surfaces of the window chrome (values chosen by the project owner). */
   --topbar: #151515;
+  --topbar-separator: #2c2d2d;
   --tab: #1b1b1b;
   --toolbar: #222222;
   --statusbar: #151515;
@@ -59,6 +60,8 @@
   --font-mono: "Cascadia Mono", Consolas, "Courier New", ui-monospace, monospace;
 
   --topbar-height: 40px;
+  /* Top of the 10px icons of the native window buttons (src-tauri/src/caption.rs). */
+  --caption-icon-top: 14px;
   --statusbar-height: 28px;
   --content-font-size: 16px;
   /* Left and right padding of the text in both panels; also the left margin
@@ -183,6 +186,40 @@ button {
 #menu-button {
   width: 28px;
   height: 28px;
+}
+
+/* Tab groups, spaced like the native window buttons: the minimize icon is
+   18px into its 46px button and the icons are 36px apart, so the separator
+   sits 36px left of the minimize icon and the groups icon 36px left of the
+   separator. The icon (15×10px) has whole pixels on every side in its button
+   and is level with the window icons, so it stays on the pixel grid. */
+.topbar > .groups-anchor {
+  position: relative;
+  /* 48px from the button to the window buttons, less the bar's 4px gap. */
+  margin-right: 44px;
+  padding-top: calc(var(--caption-icon-top) - 9px);
+}
+
+#groups-button {
+  width: 29px;
+  height: 28px;
+}
+
+.groups-icon {
+  width: 15px;
+  height: 10px;
+}
+
+/* The separator; outside the anchor, so it drags the window like the bar. */
+.groups-anchor::after {
+  content: "";
+  position: absolute;
+  top: var(--caption-icon-top);
+  left: calc(100% + 29px);
+  width: 1px;
+  height: 10px;
+  background: var(--topbar-separator);
+  pointer-events: none;
 }
 
 .icon-button {
@@ -468,6 +505,116 @@ button {
 
 .button:focus-visible {
   box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
+}
+
+.button:disabled {
+  opacity: 0.5;
+}
+
+.button-primary:disabled:hover {
+  background: var(--primary);
+}
+
+/* ---------- Tab groups ---------- */
+
+/* The list below the tab groups button (src/groups.ts), placed like a menu. */
+.groups {
+  position: fixed;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  width: 360px;
+  max-width: calc(100vw - 8px);
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: var(--shadow-md);
+  animation: menu-in 150ms ease-out;
+}
+
+/* "Open in a new window:" above the groups. */
+.groups-heading {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 8px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: min(420px, calc(100vh - 120px));
+  overflow-y: auto;
+}
+
+.groups-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  flex-shrink: 0;
+  padding: 0 2px 0 8px;
+  border-radius: var(--radius-sm);
+  cursor: default;
+  transition: background-color 150ms;
+}
+
+/* Hover is fainter than the current group's background, so the two never look alike. */
+.groups-item:hover {
+  background: color-mix(in oklch, var(--accent) 50%, transparent);
+}
+
+.groups-item:focus-visible {
+  box-shadow: inset 0 0 0 2px color-mix(in oklch, var(--ring) 50%, transparent);
+}
+
+/* The group of this window. */
+.groups-item[aria-current="true"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.groups-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.groups-count {
+  flex: 1;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.groups-action {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.groups-action:hover {
+  background: color-mix(in oklch, var(--foreground) 10%, transparent);
+  color: var(--foreground);
+}
+
+.groups-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 2px 0;
+}
+
+.groups-input {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ---------- Dialogs ---------- */
@@ -918,6 +1065,10 @@ body.resizing-panes .pane {
   min-height: 0;
   overflow: clip;
   user-select: text;
+  /* The page and its left edge, centred on the whole editor width (100cqw),
+     so the scroll bar that replaces the minimap does not move it. */
+  --page-width: calc(var(--content-max-width) + 2 * var(--content-padding-x));
+  --page-left: max(0px, calc((100cqw - var(--page-width)) / 2));
 }
 
 /* The editor itself lives in a shadow root; its styles are in src/editor.ts. */

@@ -3,6 +3,7 @@
 
 mod caption;
 mod context_menu;
+mod groups;
 mod runtime_check;
 mod session;
 mod spell;
@@ -13,7 +14,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use serde::Serialize;
-use tauri::{Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent};
 use textfile::{Encoding, Eol, LineBreak};
 
 /// What a document looked like on disk when it was last opened or saved.
@@ -24,8 +27,9 @@ struct Original {
     bytes: Vec<u8>,
 }
 
+/// By window label and document id: two windows may open the same file.
 #[derive(Default)]
-struct Documents(Mutex<HashMap<String, Original>>);
+struct Documents(Mutex<HashMap<(String, String), Original>>);
 
 #[derive(Serialize)]
 struct OpenedFile {
@@ -70,14 +74,14 @@ fn io_error(err: std::io::Error) -> String {
 }
 
 #[tauri::command]
-fn open_file(doc_id: String, path: String, docs: State<Documents>) -> Result<OpenedFile, String> {
+fn open_file(doc_id: String, path: String, window: WebviewWindow, docs: State<Documents>) -> Result<OpenedFile, String> {
     let path = PathBuf::from(path);
     let bytes = std::fs::read(&path).map_err(io_error)?;
     let stamp = std::fs::metadata(&path).map(|m| stamp_of(&m)).unwrap_or_default();
     let decoded = textfile::decode(&bytes).map_err(|e| e.code().to_owned())?;
 
     docs.0.lock().unwrap().insert(
-        doc_id,
+        (window.label().to_owned(), doc_id),
         Original {
             text: decoded.text.clone(),
             encoding: decoded.encoding,
@@ -109,25 +113,27 @@ fn save_file(
     encoding: Encoding,
     eol: Eol,
     breaks: Vec<LineBreak>,
+    window: WebviewWindow,
     docs: State<Documents>,
 ) -> Result<SavedFile, String> {
     let path = PathBuf::from(path);
+    let key = (window.label().to_owned(), doc_id);
     let mut docs = docs.0.lock().unwrap();
 
-    let bytes = match docs.get(&doc_id) {
+    let bytes = match docs.get(&key) {
         Some(original) if original.text == text && original.encoding == encoding => original.bytes.clone(),
         _ => textfile::encode(&text, encoding, eol, &breaks).map_err(|e| e.code())?,
     };
     std::fs::write(&path, &bytes).map_err(io_error)?;
     let stamp = std::fs::metadata(&path).map(|m| stamp_of(&m)).unwrap_or_default();
 
-    docs.insert(doc_id, Original { text, encoding, bytes });
+    docs.insert(key, Original { text, encoding, bytes });
     Ok(SavedFile { name: display_name(&path), stamp })
 }
 
 #[tauri::command]
-fn close_document(doc_id: String, docs: State<Documents>) {
-    docs.0.lock().unwrap().remove(&doc_id);
+fn close_document(doc_id: String, window: WebviewWindow, docs: State<Documents>) {
+    docs.0.lock().unwrap().remove(&(window.label().to_owned(), doc_id));
 }
 
 /// The words that are misspelled in `lang` ("pl" or "en"), or `None` when
@@ -270,11 +276,11 @@ fn file_args(args: impl IntoIterator<Item = std::ffi::OsString>, cwd: &Path) -> 
         .collect()
 }
 
-/// The files passed on the command line, e.g. by Explorer's "Open with".
+/// The files the window was opened with: the command line of the first
+/// window (e.g. Explorer's "Open with") or of a later MDE.exe.
 #[tauri::command]
-fn initial_files() -> Vec<String> {
-    let cwd = std::env::current_dir().unwrap_or_default();
-    file_args(std::env::args_os(), &cwd)
+fn initial_files(window: WebviewWindow, registry: State<session::Registry>) -> Vec<String> {
+    registry.0.lock().unwrap().get_mut(window.label()).map(|entry| std::mem::take(&mut entry.files)).unwrap_or_default()
 }
 
 /// Only the app's own pages may load in the webview; links in the preview
@@ -287,6 +293,76 @@ fn is_app_url(url: &tauri::Url) -> bool {
     }
 }
 
+/// Unminimizes the window and gives it the focus.
+fn bring_to_front(window: &WebviewWindow) {
+    let _ = window.unminimize();
+    let _ = window.show();
+    let _ = window.set_focus();
+}
+
+fn install_native(window: &WebviewWindow) -> Result<(), Box<dyn std::error::Error>> {
+    caption::install(window.hwnd()?)?;
+    context_menu::install(window)?;
+    Ok(())
+}
+
+/// Opens a window for the default session (`group` is `None`) or a tab
+/// group; its page opens `files` once it has started.
+fn open_window(app: &AppHandle, group: Option<String>, files: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+    static NEXT: AtomicUsize = AtomicUsize::new(0);
+    let n = NEXT.fetch_add(1, Ordering::Relaxed);
+    let label = if n == 0 { "main".to_owned() } else { format!("window-{n}") };
+    // Registered first: the page asks for its session as soon as it starts.
+    app.state::<session::Registry>()
+        .0
+        .lock()
+        .unwrap()
+        .insert(label.clone(), session::WindowEntry { group: group.clone(), files, ..Default::default() });
+
+    let window = WebviewWindowBuilder::new(app, &label, WebviewUrl::default())
+        .title("MDE")
+        // The UI language follows the Windows display language, the same
+        // source as the native strings (the webview's own language can differ).
+        .initialization_script(if runtime_check::ui_is_polish() {
+            "window.__MDE_LANG__ = 'pl';"
+        } else {
+            "window.__MDE_LANG__ = 'en';"
+        })
+        .inner_size(1200.0, 800.0)
+        .min_inner_size(640.0, 400.0)
+        .theme(Some(tauri::Theme::Dark))
+        // The top bar replaces the title bar: the frontend draws the tabs,
+        // src/caption.rs the window buttons. Windows keeps the shadow,
+        // rounded corners and resize borders.
+        .decorations(false)
+        .shadow(true)
+        .background_color(tauri::window::Color(27, 27, 27, 255))
+        // Shown by the frontend after the first paint to avoid a flash.
+        .visible(false)
+        .on_navigation(is_app_url)
+        .build()?;
+    session::restore_window(&window, group.as_deref());
+    // The window buttons and the context menu belong to the thread of the
+    // window (the main one); a window may be opened from another thread.
+    let native = window.clone();
+    window.run_on_main_thread(move || {
+        if let Err(err) = install_native(&native) {
+            eprintln!("Could not set up the window: {err}");
+        }
+    })?;
+    let tracked = window.clone();
+    window.on_window_event(move |event| match event {
+        WindowEvent::Moved(_) | WindowEvent::Resized(_) => session::track_window(&tracked),
+        WindowEvent::Destroyed => {
+            let label = tracked.label().to_owned();
+            tracked.state::<session::Registry>().0.lock().unwrap().remove(&label);
+            tracked.state::<Documents>().0.lock().unwrap().retain(|(window, _), _| *window != label);
+        }
+        _ => {}
+    });
+    Ok(())
+}
+
 fn main() {
     if !runtime_check::ensure_webview2() {
         return;
@@ -294,18 +370,27 @@ fn main() {
     tauri::Builder::default()
         // Must be the first plugin: a second MDE.exe hands its files over to
         // the running one and exits before anything else starts.
+        // A later MDE.exe always goes to the default window, which is opened
+        // (with its session) when it is closed.
         .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
             let files = file_args(args.into_iter().map(Into::into), Path::new(&cwd));
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.unminimize();
-                let _ = window.show();
-                let _ = window.set_focus();
+            let open = app.state::<session::Registry>().window_of(None).and_then(|label| app.get_webview_window(&label));
+            if let Some(window) = open {
+                bring_to_front(&window);
+                let _ = app.emit_to(window.label(), "open-files", files);
+            } else {
+                let app = app.clone();
+                // Not built inside this callback, which runs on the event loop.
+                tauri::async_runtime::spawn(async move {
+                    if let Err(err) = open_window(&app, None, files) {
+                        eprintln!("Could not open the window: {err}");
+                    }
+                });
             }
-            let _ = app.emit("open-files", files);
         }))
         .plugin(tauri_plugin_dialog::init())
         .manage(Documents::default())
-        .manage(session::Geometry::default())
+        .manage(session::Registry::default())
         .manage(spell::Worker::start())
         .invoke_handler(tauri::generate_handler![
             open_file,
@@ -324,40 +409,18 @@ fn main() {
             session::read_tab_text,
             session::write_tab_text,
             session::delete_tab_text,
-            session::prune_tab_texts
+            session::prune_tab_texts,
+            groups::list_groups,
+            groups::current_group,
+            groups::create_group,
+            groups::rename_group,
+            groups::delete_group,
+            groups::finish_delete_group,
+            groups::open_group
         ])
         .setup(|app| {
-            let window = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
-                .title("MDE")
-                // The UI language follows the Windows display language, the same
-                // source as the native strings (the webview's own language can differ).
-                .initialization_script(if runtime_check::ui_is_polish() {
-                    "window.__MDE_LANG__ = 'pl';"
-                } else {
-                    "window.__MDE_LANG__ = 'en';"
-                })
-                .inner_size(1200.0, 800.0)
-                .min_inner_size(640.0, 400.0)
-                .theme(Some(tauri::Theme::Dark))
-                // The top bar replaces the title bar: the frontend draws the tabs,
-                // src/caption.rs the window buttons. Windows keeps the shadow,
-                // rounded corners and resize borders.
-                .decorations(false)
-                .shadow(true)
-                .background_color(tauri::window::Color(27, 27, 27, 255))
-                // Shown by the frontend after the first paint to avoid a flash.
-                .visible(false)
-                .on_navigation(is_app_url)
-                .build()?;
-            session::restore_window(&window);
-            caption::install(window.hwnd()?)?;
-            context_menu::install(&window)?;
-            let tracked = window.clone();
-            window.on_window_event(move |event| {
-                if matches!(event, WindowEvent::Moved(_) | WindowEvent::Resized(_)) {
-                    session::track_window(&tracked);
-                }
-            });
+            let cwd = std::env::current_dir().unwrap_or_default();
+            open_window(app.handle(), None, file_args(std::env::args_os(), &cwd))?;
             Ok(())
         })
         .run(tauri::generate_context!())

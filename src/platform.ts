@@ -119,9 +119,85 @@ export async function initialFiles(): Promise<string[]> {
   return inTauri ? invoke<string[]>("initial_files") : [];
 }
 
-/** Calls `handler` with the files passed to another MDE.exe started while this one runs. */
+/** Calls `handler` with the files passed to another MDE.exe started while this one runs (default window only). */
 export async function onOpenFilesRequested(handler: (paths: string[]) => void): Promise<void> {
-  if (inTauri) await listen<string[]>("open-files", (event) => handler(event.payload));
+  // Sent to one window: `listen` of the event module would hear it in every window.
+  if (inTauri) await getCurrentWindow().listen<string[]>("open-files", (event) => handler(event.payload));
+}
+
+// ---------- Tab groups ----------
+
+/** A saved tab group as the list shows it. */
+export interface GroupInfo {
+  id: string;
+  name: string;
+  /** Tabs stored in the group's session. */
+  tabs: number;
+  /** This window works on the group. */
+  current: boolean;
+  /** Some window works on the group. */
+  open: boolean;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+}
+
+export async function listGroups(): Promise<GroupInfo[]> {
+  return inTauri ? invoke<GroupInfo[]>("list_groups") : [];
+}
+
+/** The group this window works on, or `null` for the default window. */
+export async function currentGroup(): Promise<Group | null> {
+  return inTauri ? invoke<Group | null>("current_group") : null;
+}
+
+/** Makes this window's tabs a new group, which the window works on from now on. */
+export async function createGroup(name: string): Promise<Group> {
+  if (!inTauri) throw new Error("unavailable");
+  return invoke<Group>("create_group", { name });
+}
+
+export async function renameGroup(id: string, name: string): Promise<void> {
+  if (inTauri) await invoke("rename_group", { id, name });
+}
+
+/** Deletes a group, or asks its window to close first ("closing"). */
+export async function deleteGroup(id: string): Promise<"deleted" | "closing"> {
+  return inTauri ? invoke<"deleted" | "closing">("delete_group", { id }) : "deleted";
+}
+
+/** Deletes this window's group and closes the window. */
+export async function finishDeleteGroup(): Promise<void> {
+  if (inTauri) await invoke("finish_delete_group");
+}
+
+/** Shows the group's window, opening it when needed. */
+export async function openGroup(id: string): Promise<void> {
+  if (inTauri) await invoke("open_group", { id });
+}
+
+/** Calls `handler` when any window changed the list of groups. */
+export async function onGroupsChanged(handler: () => void): Promise<void> {
+  if (inTauri) await listen("groups-changed", () => handler());
+}
+
+/** Calls `handler` when another window deletes this window's group. */
+export async function onDeleteGroupRequested(handler: () => void): Promise<void> {
+  if (inTauri) await getCurrentWindow().listen("delete-group", () => handler());
+}
+
+export async function askDeleteGroup(name: string, tabs: number, open: boolean): Promise<boolean> {
+  return showDialog({
+    title: open ? t.askDeleteOpenGroup : t.askDeleteGroup,
+    text: t.deleteGroupText(name, tabs),
+    buttons: [
+      { label: open ? t.deleteAndCloseButton : t.deleteButton, value: true },
+      { label: t.cancelButton, value: false },
+    ],
+    cancel: false,
+  });
 }
 
 /**

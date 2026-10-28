@@ -5,6 +5,7 @@ import { AboutDialog } from "./about";
 import { isDialogOpen } from "./dialog";
 import { countChars, Editor } from "./editor";
 import { FindBar, SearchQuery } from "./find";
+import { GroupsPopover } from "./groups";
 import type { ScrollPosition, Selection } from "./editor";
 import { applyLink, blockState, inlineState, insertLink, insertTable, linkAt, setHeading, toggleInline, toggleList, toggleQuote } from "./format";
 import { lang, t } from "./i18n";
@@ -12,7 +13,7 @@ import { classifyHref, extensionOf, isMarkdownFile, needsConfirmation } from "./
 import { Menu } from "./menu";
 import { Minimap } from "./minimap";
 import * as platform from "./platform";
-import type { FileFormat, LineBreak, OpenedFile } from "./platform";
+import type { FileFormat, GroupInfo, LineBreak, OpenedFile } from "./platform";
 import { Preview } from "./preview";
 import { ScrollSync } from "./scrollsync";
 import { isSpellMode, SpellService } from "./spell";
@@ -140,6 +141,9 @@ let busy = false;
 // Work that arrived while busy (files from another MDE.exe, checking the disk).
 let pendingFiles: string[] = [];
 let pendingDiskCheck = false;
+let pendingGroupDelete = false;
+// The tab group this window works on; null for the default window.
+let group: platform.Group | null = null;
 
 const tabs = new TabStrip(
   $("#tabs"),
@@ -241,7 +245,7 @@ function updateTabs(): void {
 
 function updateTitle(): void {
   updateTabs();
-  void platform.setWindowTitle(`${active.dirty ? "• " : ""}${active.name} — MDE`);
+  void platform.setWindowTitle(`${active.dirty ? "• " : ""}${active.name} – MDE`);
 }
 
 interface NoticeAction {
@@ -361,7 +365,10 @@ async function exclusive(action: () => Promise<unknown>): Promise<void> {
   } finally {
     busy = false;
   }
-  if (pendingFiles.length > 0) {
+  if (pendingGroupDelete) {
+    pendingGroupDelete = false;
+    await exclusive(closeForGroupDelete);
+  } else if (pendingFiles.length > 0) {
     const files = pendingFiles;
     pendingFiles = [];
     await exclusive(() => openPaths(files));
@@ -470,6 +477,96 @@ async function exit(): Promise<void> {
   } finally {
     await platform.destroyWindow();
   }
+}
+
+// ---------- Tab groups ----------
+
+/** Saves this window's tabs as a new group; the window works on it from now on. */
+async function createGroup(name: string): Promise<string | null> {
+  // Whatever the window worked on so far keeps its tabs as they are now.
+  await saveSession();
+  try {
+    group = await platform.createGroup(name);
+  } catch (err) {
+    const code = String(err);
+    if (code !== "exists" && code !== "empty") await platform.showError(`${t.groupFailed}\n\n${errorText(code)}`);
+    return code;
+  }
+  for (const doc of docs) doc.textStale = true;
+  await saveSession();
+  updateTitle();
+  return null;
+}
+
+async function renameGroup(id: string, name: string): Promise<string | null> {
+  try {
+    await platform.renameGroup(id, name);
+    return null;
+  } catch (err) {
+    return String(err);
+  }
+}
+
+async function removeGroup(info: GroupInfo): Promise<void> {
+  const tabsCount = info.current ? docs.length : info.tabs;
+  if (!(await platform.askDeleteGroup(info.name, tabsCount, info.open))) return;
+  try {
+    await platform.deleteGroup(info.id);
+  } catch (err) {
+    await platform.showError(`${t.groupFailed}\n\n${errorText(String(err))}`);
+  }
+}
+
+/**
+ * The group of this window is being deleted: asks about unsaved changes as
+ * closing the tabs would, then deletes the group with the window. Cancel keeps both.
+ */
+async function closeForGroupDelete(): Promise<void> {
+  for (const doc of [...docs]) {
+    if (!doc.dirty || !docs.includes(doc)) continue;
+    activate(doc);
+    const choice = await platform.askSaveChanges(doc.name);
+    if (choice === "cancel" || (choice === "save" && !(await save(doc)))) return;
+  }
+  // Nothing is stored any more: the group's folder goes away.
+  sessionReady = false;
+  window.clearTimeout(sessionTimer);
+  await sessionQueue;
+  await platform.finishDeleteGroup();
+}
+
+const groupsPopover = new GroupsPopover(
+  $<HTMLButtonElement>("#groups-button"),
+  {
+    groups: t.groups,
+    saveNew: t.groupsSaveNew,
+    openIn: t.groupsOpenIn,
+    current: t.groupCurrent,
+    placeholder: t.groupName,
+    tabs: t.groupTabs,
+    rename: t.groupRename,
+    remove: t.groupDelete,
+    exists: t.groupExists,
+    cancel: t.cancelButton,
+    save: t.saveButton,
+  },
+  {
+    list: () => platform.listGroups(),
+    create: createGroup,
+    rename: renameGroup,
+    open: (id) => void platform.openGroup(id).catch((err) => platform.showError(errorText(String(err)))),
+    remove: removeGroup,
+    tabCount: () => docs.length,
+    closed: () => editor.focus(),
+  },
+);
+
+async function onGroupsChanged(): Promise<void> {
+  if (group) {
+    group = await platform.currentGroup();
+    if (active) updateTitle();
+  }
+  await groupsPopover.refresh();
 }
 
 // ---------- Zoom ----------
@@ -998,6 +1095,8 @@ window.addEventListener(
     if (!event.ctrlKey || event.altKey || event.metaKey) return;
     // In the find field, Ctrl+B and the like would format the editor's text unseen.
     if (event.target instanceof HTMLInputElement && editorOnly.has(event.code)) return;
+    // While a group's name is typed, Ctrl+W, Ctrl+S and the like stay out of the way.
+    if (event.target instanceof Element && event.target.closest(".groups")) return;
     const command = shortcuts[(event.shiftKey ? "Shift+" : "") + event.code];
     if (command) {
       event.preventDefault();
@@ -1125,7 +1224,15 @@ function openRequested(paths: string[]): void {
 
 void platform.onCloseRequested(() => void commands.exit());
 // The top bar itself and the free part of the tab strip move the window.
-initTitleBar($(".topbar"), (target) => target === $(".topbar") || target === $("#tabs"));
+initTitleBar(
+  $(".topbar"),
+  (target) => target === $(".topbar") || target === $("#tabs") || target === $(".groups-anchor"),
+);
+void platform.onGroupsChanged(() => void onGroupsChanged());
+void platform.onDeleteGroupRequested(() => {
+  if (busy) pendingGroupDelete = true;
+  else void exclusive(closeForGroupDelete);
+});
 void platform.onFilesDropped(openRequested);
 void platform.onOpenFilesRequested(openRequested);
 void platform.onWindowFocused(requestDiskCheck);
@@ -1133,6 +1240,7 @@ void platform.onWindowFocused(requestDiskCheck);
 async function start(): Promise<void> {
   busy = true;
   try {
+    group = await platform.currentGroup();
     const [activeIndex, files] = await Promise.all([restoreSession(), platform.initialFiles()]);
     if (docs.length === 0) docs.push(newDoc());
     setPanes(panes);

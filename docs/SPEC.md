@@ -1,22 +1,52 @@
-#### Zakładki i menu
+#### Karty i menu
 
-Program ma mieć możliwość otwierania kilku plików na raz, w zakładkach umieszczonych u góry programu. Zakładki mają zamykać się po kliknięciu środkowym przyciskiem myszy. Mają nie mieć widocznego przycisku do zamykania X do momentu aż najedzie się kursorem na daną zakładkę. Zakładki mają zawierać nazwę otwartego pliku (bez rozszerzenia) i symbol kropki który pojawi się, gdy zmiany w danej zakładce nie zostały zapisane.
+Nazewnictwo: elementy u góry okna z nazwami otwartych plików to „karty” (ang. tabs). Słowa „zakładka” nie używamy w tym znaczeniu, bo w dokumencie oznacza ono zapamiętane miejsce w tekście.
 
-Między zakładkami przełączamy się skrótami Ctrl+Tab / Ctrl+Shift+Tab i Ctrl+PgDn / Ctrl+PgUp, a także kółkiem myszy nad paskiem zakładek. Kolejność zakładek można zmieniać przeciąganiem. Gdy zakładki nie mieszczą się na pasku, zwężają się, a potem pasek przesuwa się tak, by aktywna zakładka była widoczna. Zamknięcie ostatniej zakładki zostawia nową, pustą zakładkę „Bez tytułu”.
+Program ma mieć możliwość otwierania kilku plików na raz, w kartach umieszczonych u góry programu. Karty mają zamykać się po kliknięciu środkowym przyciskiem myszy. Mają nie mieć widocznego przycisku do zamykania X do momentu aż najedzie się kursorem na daną kartę. Karty mają zawierać nazwę otwartego pliku (bez rozszerzenia) i symbol kropki który pojawi się, gdy zmiany w danej karcie nie zostały zapisane.
 
-
-
-W lewej górnej części ekranu ma znajdować się menu hamburgerowe, czyli przycisk dający dostęp do opcji takich, jak Nowy plik, Otwórz, Zapisz, Zapisz jako, Znajdź, O programie, Zamknij zakładkę, Wyjdź. Pozycja „O programie” otwiera okno z ikoną i pełną nazwą programu (MDE: Mark's "Dawn" Editor), wersją, krótkim opisem (szybki i lekki edytor plików tekstowych i Markdown), informacją o prawach autorskich i licencji GNU GPL v3 (wraz z brakiem gwarancji) oraz linkami do strony projektu i tekstu licencji, które otwierają się w domyślnej przeglądarce.
-
-Okno nie ma systemowego paska tytułu. Przyciski minimalizacji, maksymalizacji i zamknięcia znajdują się w pasku zakładek, wyrównane do prawej. Puste miejsca tego paska służą do przesuwania okna, a dwuklik w nich maksymalizuje je lub przywraca.
+Między kartami przełączamy się skrótami Ctrl+Tab / Ctrl+Shift+Tab i Ctrl+PgDn / Ctrl+PgUp, a także kółkiem myszy nad paskiem kart. Kolejność kart można zmieniać przeciąganiem. Gdy karty nie mieszczą się na pasku, zwężają się, a potem pasek przesuwa się tak, by aktywna karta była widoczna. Zamknięcie ostatniej karty zostawia nową, pustą kartę „Bez tytułu”.
 
 
 
-Polecenia mają być obsługiwane powszechnie używanymi skrótami klawiszowymi, np. Nowy plik (Ctrl+N), Zapisz (Ctrl+S), Zamknij zakładkę (Ctrl+W), Wyjdź (Ctrl+Q), itd.
+W lewej górnej części ekranu ma znajdować się menu hamburgerowe, czyli przycisk dający dostęp do opcji takich, jak Nowy plik, Otwórz, Zapisz, Zapisz jako, Znajdź, O programie, Zamknij kartę, Wyjdź. Pozycja „O programie” otwiera okno z ikoną i pełną nazwą programu (MDE: Mark's "Dawn" Editor), wersją, krótkim opisem (szybki i lekki edytor plików tekstowych i Markdown), informacją o prawach autorskich i licencji GNU GPL v3 (wraz z brakiem gwarancji) oraz linkami do strony projektu i tekstu licencji, które otwierają się w domyślnej przeglądarce.
+
+Okno nie ma systemowego paska tytułu. Przyciski minimalizacji, maksymalizacji i zamknięcia znajdują się w pasku kart, wyrównane do prawej. Puste miejsca tego paska służą do przesuwania okna, a dwuklik w nich maksymalizuje je lub przywraca.
+
+
+
+Polecenia mają być obsługiwane powszechnie używanymi skrótami klawiszowymi, np. Nowy plik (Ctrl+N), Zapisz (Ctrl+S), Zamknij kartę (Ctrl+W), Wyjdź (Ctrl+Q), itd.
 
 Znajdź (Ctrl+F) służy wyłącznie do wyszukiwania w lewym panelu, z przechodzeniem do następnego i poprzedniego wyniku (F3 / Shift+F3). Nie ma funkcji zamiany. Wszystkie dopasowania są podświetlone, a bieżące wyróżnione mocniej; pasek pokazuje liczbę wyników. Domyślnie wielkość liter nie ma znaczenia; przełącznik „Uwzględnij wielkość liter” (Aa) to zmienia. Ponowne Ctrl+F lub Esc zamyka wyszukiwanie.
 
 Język interfejsu wybieramy według języka Windows: polski dla polskiej wersji systemu, angielski dla każdej innej. Język wszystkich napisów, także natywnych, wybiera program na podstawie języka wyświetlania Windows.
+
+
+
+#### Grupy kart
+
+Grupa kart to zapisany zestaw kart wraz z ustawieniami okna, do którego można wrócić (odpowiednik Obszarów roboczych z Edge). Każda grupa otwiera się we własnym oknie programu.
+
+Okno domyślne: uruchomienie MDE z Windows (bez pliku lub z plikiem) otwiera okno domyślne z jego sesją, tak jak dotąd. Okna domyślnego nie ma na liście grup.
+
+Przycisk „Grupy kart” stoi na prawym końcu górnego paska, przed przyciskami okna, oddzielony od nich pionową kreską: odstęp ikony od kreski i kreski od przycisku minimalizacji jest taki sam jak odstęp między ikonami przycisków okna (podpowiedź „Grupy kart”). Kliknięcie otwiera okienko z listą. Esc albo kliknięcie poza okienkiem je zamyka.
+
+Lista:
+
+* Na górze jest pozycja „Zapisz nową grupę kart”. Gdy istnieją grupy, pod nią stoi separator, napis „Otwórz w nowym oknie:” i lista grup, od najnowszej. Gdy lista się nie mieści, ma pasek przewijania.
+* Pozycja grupy to nazwa i liczba kart w nawiasie, np. „Kampania RPG (5 kart)” (odmiana: 1 karta, 2 karty, 5 kart), a po prawej ikony ołówka (zmiana nazwy) i kosza (usunięcie). Grupa bieżącego okna ma jaśniejsze tło i dopisek „– otwarta”, np. „RPGi (3 karty) – otwarta”. Długa nazwa jest ucinana wielokropkiem, a pełna jest w podpowiedzi.
+* Kliknięcie nazwy lub wolnego miejsca pozycji otwiera grupę w nowym oknie. Jeśli jest już otwarta w innym oknie, fokus przechodzi do tamtego okna. Jeśli to grupa bieżącego okna, okienko listy się zamyka.
+
+Nadawanie nazwy (nowej grupie i przy zmianie nazwy) odbywa się w miejscu pozycji listy, nie w nowym oknie: pole tekstowe, a obok przyciski „Anuluj” i „Zapisz”. Enter zapisuje, Esc anuluje. Spacje na początku i końcu nazwy są obcinane. „Zapisz” jest nieaktywny, gdy nazwa jest pusta albo taka sama jak innej grupy (bez rozróżniania wielkości liter).
+
+Zapisanie nowej grupy: karty bieżącego okna (z niezapisanymi zmianami, przewinięciami i kursorem) oraz jego ustawienia stają się nową grupą, a okno od tej chwili pracuje na niej. Jeśli było to okno domyślne, jego sesja zostaje pusta: następne uruchomienie MDE z Windows pokaże jedną kartę „Bez tytułu” z dotychczasowymi ustawieniami. Jeśli było to okno innej grupy, tamta grupa zostaje w stanie z tej chwili.
+
+Usuwanie: kosz pyta „Usunąć?” z przyciskami „Anuluj” i „Usuń”. Gdy grupa jest otwarta w którymś oknie, pytanie brzmi „Usunąć grupę i zamknąć jej okno?”, a przyciski „Anuluj” i „Usuń i zamknij”. Okno tej grupy pyta wtedy o karty z niezapisanymi zmianami tak samo jak przy zamykaniu karty; „Anuluj” przerywa usuwanie. Usunięcie grupy nie zmienia plików na dysku.
+
+Zapis sesji: każde okno zapisuje swoją sesję na bieżąco i przy zamknięciu: okno grupy w grupie, okno domyślne w sesji domyślnej. Osobno dla każdej grupy (i dla okna domyślnego) zapamiętujemy: karty i ich treść, przewinięcia i kursor, rozmiar, położenie i maksymalizację okna, powiększenie, podział paneli, minimapę, tryb „Okna: 1 / 2”, „Przewijaj razem”, tryb sprawdzania pisowni i typy plików otwieranych z linków bez pytania.
+
+Tytuł okna (pasek zadań, Alt+Tab) to „nazwa pliku – MDE” (z półpauzą), bez nazwy grupy, w każdym oknie.
+
+Ten sam plik może być otwarty w dwóch oknach. Każde okno ma własną kopię treści; zmianę zapisaną w drugim oknie wykrywamy przy powrocie fokusu, tak jak zmianę dokonaną innym programem.
 
 
 
@@ -32,14 +62,14 @@ Lista zadań zamienia linie w zadania z polem wyboru (`- [ ] `). Zrobione zadani
 
 Ikony stoją w kolejności: B, I, U, styl akapitu (H), lista punktowana, numerowana, lista zadań, cytat, tabela, hiperłącze, bez separatorów. Na końcu jest ikona mikrofonu „Dyktowanie”: uruchamia dyktowanie głosowe Windows (tak jak pozycja „Dyktowanie” w menu pod prawym przyciskiem myszy), a dyktowany tekst trafia w miejsce kursora. Gdy panel jest zbyt wąski, ikony, które się nie mieszczą (z mikrofonem włącznie), chowają się za przyciskiem „Więcej” (…).
 
-Prawa górna część tego panelu może zawierać miniaturowy podgląd całego dokumentu (minimapę) w formie okienka dosuniętego do prawego górnego narożnika panelu (styka się z paskiem narzędzi i z panelem podglądu). Okienko ma co najmniej 100 px wysokości, a dla dłuższych plików wydłuża się wraz z długością pliku, najwyżej do dołu panelu. Minimapa zajmuje miejsce paska przewijania lewego panelu, który jest wtedy ukryty. Na dolnym pasku, między statusem pisowni a przełącznikiem „Przewijaj razem”, jest przełącznik z ikoną kartki z liniami tekstu: „Mapa: wł” / „wył”. „Wył” ukrywa minimapę, a tekst ma wtedy pełną szerokość panelu. Przy pierwszym uruchomieniu minimapa jest wyłączona. Ustawienie jest globalne (wspólne dla wszystkich zakładek) i zapamiętywane w sesji. Gdy minimapa jest widoczna, tekst w lewym panelu ma stały prawy margines na całej wysokości panelu, tak szeroki, by okienko miniatury nigdy nie zasłaniało tekstu. Fragment podglądu, który pokazuje obszar pliku widoczny na ekranie, jest oznaczony delikatnie jaśniejszym kolorem. Kliknięcie myszą i przeciągnięcie w górę lub w dół w rejonie miniatury przewija zawartość lewego panelu.
+Prawa górna część tego panelu może zawierać miniaturowy podgląd całego dokumentu (minimapę) w formie okienka dosuniętego do prawego górnego narożnika panelu (styka się z paskiem narzędzi i z panelem podglądu). Okienko ma co najmniej 100 px wysokości, a dla dłuższych plików wydłuża się wraz z długością pliku, najwyżej do dołu panelu. Minimapa zajmuje miejsce paska przewijania lewego panelu, który jest wtedy ukryty. Na dolnym pasku, między statusem pisowni a przełącznikiem „Przewijaj razem”, jest przełącznik z ikoną kartki z liniami tekstu: „Mapa: wł” / „wył”. „Wył” ukrywa minimapę, a tekst ma wtedy pełną szerokość panelu. Przy pierwszym uruchomieniu minimapa jest wyłączona. Ustawienie jest wspólne dla wszystkich kart okna, zapamiętywane w sesji osobno dla każdej grupy kart (i dla okna domyślnego). Gdy minimapa jest widoczna, tekst w lewym panelu ma stały prawy margines na całej wysokości panelu, tak szeroki, by okienko miniatury nigdy nie zasłaniało tekstu. Fragment podglądu, który pokazuje obszar pliku widoczny na ekranie, jest oznaczony delikatnie jaśniejszym kolorem. Kliknięcie myszą i przeciągnięcie w górę lub w dół w rejonie miniatury przewija zawartość lewego panelu.
 
 Użycie Alt + strzałka w górę przesuwa linię z kursorem (lub zaznaczone linie) o jedną linię w górę, a Alt + strzałka w dół o jedną linię w dół. Puste linie są mijane pojedynczo: przesuwana linia zamienia się miejscami z sąsiednią pustą linią, a gdy styka się z linią tekstu, zamienia się miejscami z nią. Akapit wielolinijkowy przesuwa się, zaznaczając jego linie. Wyjątek stanowią listy: punkt listy przesuwa się razem z jego wcięciami (podpunktami), w obrębie punktów tego samego poziomu tej listy.
  
 2. prawy panel służy do wyświetlania wyrenderowanej treści pliku, zgodnie ze składnią Markdown (np. dywiz wyświetla się jako punktor, hasztag jako H1, itd)
 
 
-Na dolnym pasku, wyrównany do lewej, jest licznik znaków bieżącej zakładki: „XXX znaków”, a gdy zaznaczono tekst, „Y z XXX znaków”. Liczymy spacje i tabulatory, nie liczymy końców linii; rzeczownik odmienia się zgodnie z liczbą.
+Na dolnym pasku, wyrównany do lewej, jest licznik znaków bieżącej karty: „XXX znaków”, a gdy zaznaczono tekst, „Y z XXX znaków”. Liczymy spacje i tabulatory, nie liczymy końców linii; rzeczownik odmienia się zgodnie z liczbą.
 
 
 
@@ -51,13 +81,13 @@ Wyświetlany tekst przy krawędzi paneli ma zawsze zawijać się do kolejnej lin
 
 Szerokość tekstu jest ograniczona do 1314 px przy powiększeniu 100% i rośnie razem z powiększeniem. Tekst leży na „kartce” z marginesami po bokach: 33 px w trybie jednego okna, a w trybie dwóch okien 25 px (tekst zaczyna się wtedy w linii z ikonami paska formatowania). W panelu szerszym od kartki jest ona wyśrodkowana, a po obu stronach są ciemniejsze pola udające tło programu; ich szerokość zależy od rozmiaru okna i może wynosić 0 px.
 
-Zawartość obu paneli pokazuje ten sam otwarty plik. Domyślnie przewijanie jest zsynchronizowane: przewinięcie jednego panelu (rolką, klawiaturą, paskiem przewijania lub podczas pisania) przewija drugi do tego samego miejsca dokumentu. Na dolnym pasku, na prawo od statusu pisowni, jest przełącznik z ikoną dwóch paneli: „Przewijaj razem: wł” / „wył”. Kliknięcie go wyłącza synchronizację i wtedy panele przewijają się niezależnie. Ustawienie jest globalne (wspólne dla wszystkich zakładek) i zapamiętywane w sesji. Włączenie synchronizacji spina panele w miejscach, w których są, bez wyrównywania: program zapamiętuje różnicę między nimi (np. lewy panel w linii 200, prawy w 400) i utrzymuje ją przy dalszym przewijaniu (205 i 405). Pozwala to ręcznie zgrać panele tam, gdzie część dokumentu jest w jednym z nich znacznie wyższa. Gdy jeden panel pierwszy dojdzie do początku lub końca dokumentu, przewija się dalej tylko drugi, niezależnie od tego, nad którym panelem jest kursor. Gdy oba panele dojdą do początku (lub oba do końca), różnica jest zerowana. Przewinięcie zatrzymanego panelu z powrotem przesuwa oba od miejsc, w których są, bez przeskoku. Każda zakładka ma własną różnicę.
+Zawartość obu paneli pokazuje ten sam otwarty plik. Domyślnie przewijanie jest zsynchronizowane: przewinięcie jednego panelu (rolką, klawiaturą, paskiem przewijania lub podczas pisania) przewija drugi do tego samego miejsca dokumentu. Na dolnym pasku, na prawo od statusu pisowni, jest przełącznik z ikoną dwóch paneli: „Przewijaj razem: wł” / „wył”. Kliknięcie go wyłącza synchronizację i wtedy panele przewijają się niezależnie. Ustawienie jest wspólne dla wszystkich kart okna, zapamiętywane w sesji osobno dla każdej grupy kart (i dla okna domyślnego). Włączenie synchronizacji spina panele w miejscach, w których są, bez wyrównywania: program zapamiętuje różnicę między nimi (np. lewy panel w linii 200, prawy w 400) i utrzymuje ją przy dalszym przewijaniu (205 i 405). Pozwala to ręcznie zgrać panele tam, gdzie część dokumentu jest w jednym z nich znacznie wyższa. Gdy jeden panel pierwszy dojdzie do początku lub końca dokumentu, przewija się dalej tylko drugi, niezależnie od tego, nad którym panelem jest kursor. Gdy oba panele dojdą do początku (lub oba do końca), różnica jest zerowana. Przewinięcie zatrzymanego panelu z powrotem przesuwa oba od miejsc, w których są, bez przeskoku. Każda karta ma własną różnicę.
 
 
 
 #### Tryb pracy: jedno lub dwa okna
 
-Na dolnym pasku, między przełącznikiem minimapy a „Przewijaj razem”, jest przełącznik z ikoną okna aplikacji: „Okna: 1” / „Okna: 2”. Kliknięcie go przełącza tryb. Przy pierwszym uruchomieniu włączony jest tryb jednego okna. Ustawienie jest globalne (wspólne dla wszystkich zakładek) i zapamiętywane w sesji. Po przełączeniu trybu miejsce w dokumencie, kursor i zaznaczenie zostają takie same.
+Na dolnym pasku, między przełącznikiem minimapy a „Przewijaj razem”, jest przełącznik z ikoną okna aplikacji: „Okna: 1” / „Okna: 2”. Kliknięcie go przełącza tryb. Przy pierwszym uruchomieniu włączony jest tryb jednego okna. Ustawienie jest wspólne dla wszystkich kart okna, zapamiętywane w sesji osobno dla każdej grupy kart (i dla okna domyślnego). Po przełączeniu trybu miejsce w dokumencie, kursor i zaznaczenie zostają takie same.
 
 Tryb dwóch okien to opisany wyżej widok z panelem edycji i panelem podglądu.
 
@@ -81,7 +111,7 @@ W trybie jednego okna jeden panel zajmuje miejsce obu paneli i nie ma linii podz
 
 
 
-Powiększanie: rozmiar zawartości okna (tekstu plików md) ma się skalować z użyciem skrótów Ctrl+ i Ctrl-, a także przy przytrzymaniu wciśniętego klawisza Ctrl i użyciu rolki w myszce. Powiększanie jest ustawieniem globalnym, to znaczy, że dotyczy treści obu paneli na raz, dla każdej z otwartych zakładek, i dla plików otwieranych w przyszłości. Ma być zapamiętywane jako ustawienie aplikacji. Ctrl+0 przywraca skalę 100%.
+Powiększanie: rozmiar zawartości okna (tekstu plików md) ma się skalować z użyciem skrótów Ctrl+ i Ctrl-, a także przy przytrzymaniu wciśniętego klawisza Ctrl i użyciu rolki w myszce. Powiększanie dotyczy treści obu paneli na raz, wszystkich kart okna i plików otwieranych w nim w przyszłości. Jest zapamiętywane w sesji osobno dla każdej grupy kart (i dla okna domyślnego). Ctrl+0 przywraca skalę 100%.
 
 
 
@@ -98,33 +128,33 @@ Nie wprowadzamy wtyczek ani zapisu w chmurze.
 #### Otwieranie, zapisywanie, pamięć sesji
 
 
-Zamknięcie zakładki z niezapisanymi zmianami ma wywołać okno z pytaniem czy zapisać zmiany, odrzucić, czy anulować zamykanie.
+Zamknięcie karty z niezapisanymi zmianami ma wywołać okno z pytaniem czy zapisać zmiany, odrzucić, czy anulować zamykanie.
 
-Zamknięcie programu (Ctrl+Q lub X okna) nie wywołuje pytania o zapis: niezapisane edycje trafiają do sesji i wracają przy następnym uruchomieniu.
+Zamknięcie okna (Ctrl+Q, „Wyjdź” lub X okna) zamyka tylko bieżące okno i nie wywołuje pytania o zapis: niezapisane edycje trafiają do sesji tego okna (grupy kart albo okna domyślnego) i wracają przy jego następnym otwarciu. Program kończy działanie po zamknięciu ostatniego okna.
 
 
 
-Po zamknięciu programu zapamiętujemy sesje, czyli listy otwartych zakładek, proporcje rozmiaru między lewym i prawym panelem, a także miejsca, do których pliki zostały przewinięte. Zapamiętujemy także edycje plików nawet jeśli nie zostały zapisane oraz rozmiar, położenie i maksymalizację okna.
+Po zamknięciu programu zapamiętujemy sesje, czyli listy otwartych kart, proporcje rozmiaru między lewym i prawym panelem, a także miejsca, do których pliki zostały przewinięte. Zapamiętujemy także edycje plików nawet jeśli nie zostały zapisane oraz rozmiar, położenie i maksymalizację okna.
 
-Jeśli przy przywracaniu sesji pliku nie ma już na dysku (usunięty lub przeniesiony), zakładka wraca z zapamiętaną treścią i kropką niezapisanych zmian, a zapis otwiera okno „Zapisz jako”. Dlatego sesja przechowuje kopię treści każdej otwartej zakładki; kopię usuwamy przy zamknięciu zakładki.
+Jeśli przy przywracaniu sesji pliku nie ma już na dysku (usunięty lub przeniesiony), karta wraca z zapamiętaną treścią i kropką niezapisanych zmian, a zapis otwiera okno „Zapisz jako”. Dlatego sesja przechowuje kopię treści każdej otwartej karty; kopię usuwamy przy zamknięciu karty.
 
-Proporcje między lewym i prawym panelem są wspólne dla wszystkich zakładek i zapamiętywane jako ustawienie aplikacji.
+Proporcje między lewym i prawym panelem są wspólne dla wszystkich kart okna i zapamiętywane w sesji osobno dla każdej grupy kart (i dla okna domyślnego).
 
 
 Przy otwarciu programu przywracamy taką sesję, by użytkownik mógł kontynuować pracę od miejsca, w którym ją zostawił.
-Zakładka po zamknięciu znika z sesji, to znaczy nie przechowujemy dłużej zapisanych danych na jej temat (miejsca do którego przewinięto plik, niezapisanych edycji, itd.)
+Karta po zamknięciu znika z sesji, to znaczy nie przechowujemy dłużej zapisanych danych na jej temat (miejsca do którego przewinięto plik, niezapisanych edycji, itd.)
 
 
 
-Otwieranie pliku ma odbywać się w nowej zakładce po prawej strony listy otwartych zakładek. Dostęp do funkcji Otwórz ma miejsce przez menu, przez skrót klawiszowy (te dwa warianty otwierają okno Eksploratora do wskazania pliku), a także przez przeciągnięcie pliku z Eksploratora w okno programu (ten wariant otwiera plik bezpośrednio, bez dodatkowego okna). Upuszczenie kilku plików otwiera każdy w osobnej zakładce.
+Otwieranie pliku ma odbywać się w nowej karcie po prawej strony listy otwartych kart. Dostęp do funkcji Otwórz ma miejsce przez menu, przez skrót klawiszowy (te dwa warianty otwierają okno Eksploratora do wskazania pliku), a także przez przeciągnięcie pliku z Eksploratora w okno programu (ten wariant otwiera plik bezpośrednio, bez dodatkowego okna). Upuszczenie kilku plików otwiera każdy w osobnej karcie.
 
 W oknie „Zapisz jako” domyślnie wybrany jest typ Markdown (.md); z listy rozwijanej można wybrać też plik tekstowy (.txt) lub wszystkie pliki.
 
 Plik można też otworzyć przez „Otwórz za pomocą” w Eksploratorze, czyli przez argument wiersza poleceń (`MDE.exe plik.md`). Program jest portable, więc sam nie rejestruje skojarzeń plików; użytkownik wskazuje exe w oknie „Otwórz za pomocą”.
 
-Program działa w jednej instancji. Ponowne uruchomienie (także z plikiem jako argumentem) przenosi fokus do już otwartego okna i otwiera w nim plik w nowej zakładce, zamiast uruchamiać drugie okno. Jeśli plik jest już otwarty, przełączamy się na jego zakładkę.
+Program działa jako jeden proces, który może mieć kilka okien: okno domyślne i okna grup kart. Ponowne uruchomienie (także z plikiem jako argumentem, np. przez „Otwórz za pomocą”) przenosi fokus do okna domyślnego, a jeśli jest zamknięte, otwiera je z jego sesją. Plik otwiera się tam w nowej karcie. Jeśli plik jest już otwarty w oknie domyślnym, przełączamy się na jego kartę.
 
-Zmiany pliku na dysku dokonane poza programem sprawdzamy przy przywracaniu sesji i za każdym razem, gdy okno programu odzyskuje fokus. Jeśli zakładka nie ma niezapisanych zmian, plik przeładowujemy po cichu. Jeśli ma, zostaje kropka niezapisanych zmian i pokazujemy pasek z przyciskiem „Odśwież” (wczytuje wersję z dysku, odrzucając zmiany) i ikoną X (zamyka pasek, zachowując nasze zmiany). Plik usunięty z dysku podczas pracy: zakładka zachowuje treść i dostaje kropkę niezapisanych zmian.
+Zmiany pliku na dysku dokonane poza programem sprawdzamy przy przywracaniu sesji i za każdym razem, gdy okno programu odzyskuje fokus. Jeśli karta nie ma niezapisanych zmian, plik przeładowujemy po cichu. Jeśli ma, zostaje kropka niezapisanych zmian i pokazujemy pasek z przyciskiem „Odśwież” (wczytuje wersję z dysku, odrzucając zmiany) i ikoną X (zamyka pasek, zachowując nasze zmiany). Plik usunięty z dysku podczas pracy: karta zachowuje treść i dostaje kropkę niezapisanych zmian.
 
 
 
@@ -167,7 +197,7 @@ Linki:
 
 * Dozwolone schematy: http, https, mailto. Linki zewnętrzne otwierają się w domyślnej przeglądarce.
 * Adres zaczynający się od www. (w linku albo jako zwykły tekst) jest traktowany jak adres strony i otwierany przez https://, bez potrzeby dopisywania schematu. Inne adresy bez schematu traktujemy jak ścieżki do plików.
-* Względny link do pliku Markdown (.md, .markdown, .mdown, .mkd) otwiera plik w nowej zakładce. 
+* Względny link do pliku Markdown (.md, .markdown, .mdown, .mkd) otwiera plik w nowej karcie. 
 * Względny link do pliku innego typu (np. .pdf, .txt): przy pierwszym kliknięciu danego typu program pyta o potwierdzenie (z opcją „nie pytaj więcej dla tego typu”), a potem otwiera plik w domyślnym programie Windows. Opcja „nie pytaj więcej dla tego typu” jest przyciskiem w oknie potwierdzenia.
 * Pliki wykonywalne i inne typy, które Windows uznaje za niebezpieczne (np. .exe, .bat, .cmd, .ps1, .vbs, .msi, .lnk, .chm, .hta), a także foldery i pliki bez rozszerzenia, zawsze wymagają potwierdzenia.
 * Zablokowane: javascript:, data: oraz file: i inne nieznane schematy, a także ścieżki bezwzględne (C:\…, /…, \\serwer\…).
@@ -239,6 +269,8 @@ Kryteria odbioru (do testów):
 Przyjmujemy kodowanie UTF-8.
 
 Okna z pytaniami i komunikatami (np. o zapisie zmian, otwieraniu pliku z linku, błędach) oraz okno „O programie” wyświetlamy wewnątrz programu, w jego ciemnym stylu. Systemowe pozostają tylko okna wyboru pliku (Otwórz, Zapisz jako) i komunikat o braku WebView2.
+
+W oknach z pytaniami i w polach do wpisywania nazw przycisk anulowania („Anuluj”) stoi po lewej, a przycisk zatwierdzenia po prawej; inne przyciski (np. „Nie zapisuj”) stoją między nimi.
 
 Stosujemy sprawdzanie pisowni w języku polskim i angielskim. Błędy podkreślamy cienką pomarańczową linią. Status na dolnym pasku programu, opatrzony ikoną kartki i ołówka. Kliknięcie napisu zmienia tryb działania sprawdzania pisowni wg schematu: polski -> angielski -> sprawdzanie pisowni wyłączone.
 

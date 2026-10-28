@@ -66,14 +66,15 @@ const theme = EditorView.theme(
       overflowY: "auto",
       // The page under the text, with --backdrop on both sides in a wider panel.
       background:
-        "linear-gradient(var(--background), var(--background)) center / min(100%, calc(var(--content-max-width) + 2 * var(--content-padding-x))) 100% no-repeat var(--backdrop)",
+        "linear-gradient(var(--background), var(--background)) var(--page-left) 0 / min(100%, var(--page-width)) 100% no-repeat var(--backdrop)",
     },
-    // At most --content-max-width of text (plus its padding): the page, centred in a wider panel.
+    // At most --content-max-width of text (plus its padding): the page, centred
+    // in a wider panel on the editor's whole width, scroll bar or not.
     ".cm-content": {
       padding: "24px 0",
-      maxWidth: "calc(var(--content-max-width) + 2 * var(--content-padding-x))",
-      marginLeft: "auto",
-      marginRight: "auto",
+      maxWidth: "var(--page-width)",
+      marginLeft: "var(--page-left)",
+      marginRight: "0",
       caretColor: "var(--foreground)",
     },
     // On the right, the fixed margin for the minimap when it is shown.
