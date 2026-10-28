@@ -1128,6 +1128,20 @@ window.addEventListener(
   { capture: true, passive: false },
 );
 
+// The status buttons are right-aligned, so a label of fractional width would
+// move the icons of the buttons to its left off the pixel grid: each button
+// gets a whole-pixel width (it can still shrink, its label cut short, in a
+// narrow window).
+const statusButtons = [...document.querySelectorAll<HTMLElement>(".status-button")];
+function snapStatusButtons(): void {
+  for (const button of statusButtons) {
+    button.style.flex = "none";
+    button.style.flex = `0 1 ${Math.ceil(button.getBoundingClientRect().width)}px`;
+  }
+}
+const statusLabels = new MutationObserver(snapStatusButtons);
+for (const button of statusButtons) statusLabels.observe(button, { subtree: true, childList: true, characterData: true });
+
 const spellStatus = $<HTMLButtonElement>("#spell-status");
 function updateSpellStatus(): void {
   $("#spell-status-text").textContent = t.spellStatus(spell.mode, spell.dictionaryMissing);

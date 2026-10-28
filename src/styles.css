@@ -134,6 +134,13 @@ button {
   pointer-events: none;
 }
 
+/* Drawn for 16px on a 16-unit grid: 1px lines centred on half pixels, so that
+   they stay sharp (the icon itself must sit on whole pixels). */
+.icon-px {
+  stroke-width: 1;
+  stroke-linecap: butt;
+}
+
 /* Filled parts of an icon (the digits and bullets of the list icons). */
 .icon .icon-fill {
   fill: currentColor;
@@ -177,10 +184,10 @@ button {
 /* The main menu only (the toolbar's heading menu is a .menu-anchor too). */
 .topbar > .menu-anchor {
   align-items: flex-start;
-  /* Puts the menu icon (bars 3–13px into the 16px icon, 6px into the 28px
-     button) level with the capital letters of the tab names, whose top is
-     19.5px and baseline 29.5px below the top of the bar. */
-  padding-top: 10.5px;
+  /* Puts the menu icon on whole pixels, with its top bar (4px into the 16px
+     icon, 6px into the 28px button) level with the top of the capital letters
+     of the tab names, 19.5px below the top of the bar. */
+  padding-top: 10px;
 }
 
 #menu-button {
@@ -1483,7 +1490,9 @@ body.resizing-panes .pane {
   gap: 4px;
   height: var(--statusbar-height);
   flex-shrink: 0;
-  padding: 0 4px;
+  /* 1px at the bottom centres the 24px buttons in the 26px left below the top
+     border on whole pixels, which keeps their icons sharp. */
+  padding: 0 4px 1px;
   background: var(--statusbar);
   border-top: 1px solid var(--border);
 }
