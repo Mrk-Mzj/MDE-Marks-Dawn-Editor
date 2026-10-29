@@ -26,7 +26,7 @@ Tab groups: saved sets of tabs, each opening in a window of its own, which you c
 
 The documents in the screenshots are in [docs/samples](docs/samples).
 
-## Download and installation
+# Download and installation
 
 **[Download MDE.zip](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases/latest/download/MDE.zip)** — the latest version (`MDE.exe` and the license in `LICENSE.txt`). Older versions and the release notes are on the [Releases](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) page.
 
@@ -34,13 +34,13 @@ There is nothing to install: unpack the ZIP (right-click › *Extract All…*) a
 
 To uninstall, delete `MDE.exe`, and, if you want to remove your session and settings too, the folders `%APPDATA%\MDE` and `%LOCALAPPDATA%\com.marksdawn.mde`.
 
-### Requirements
+## Requirements
 
 - Windows 11, 64-bit (x64; ARM PCs run it through Windows' built-in emulation). Windows 10 with the WebView2 runtime should work too, but it is not tested.
 - The Microsoft Edge WebView2 runtime, which comes with Windows 11. If it is missing, MDE says so and offers to open Microsoft's download page.
 - Spell checking uses the dictionaries of the languages installed in Windows (*Settings › Time & language › Language & region*). Without a Polish or English language there, MDE works normally but shows *no dictionary* for that language.
 
-### The Windows security warning
+## The Windows security warning
 
 The first time you download the ZIP and run `MDE.exe`, Windows (and your browser) may warn you that the file may be unsafe. This is expected.
 
@@ -55,13 +55,13 @@ Windows remembers the choice, so the warning does not come back for this file. A
 
 If there is no *Run anyway* button (some company or school PCs block unknown programs), right-click `MDE.zip` (before unpacking) or `MDE.exe` in Explorer, choose *Properties*, tick **Unblock** at the bottom of the *General* tab and click *OK*. If that option is missing too, your administrator does not allow such programs.
 
-## Status: 1.1.1
+# Status: 1.1.1
 
 Versions are numbered x.y.z (major.minor.patch); the number lives in `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json` (the About dialog reads it from there).
 
 MVP plus tabs, a single instance, session memory, spell checking, the HTML whitelist, clickable links, the formatting toolbar, the minimap, the one-pane mode (the text formatted while editing) and tab groups (1.1.0).
 
-### Features
+## Features
 
 - **One pane or two** (*Panes: 1 / 2*, the first of the right-aligned status bar buttons, before *Scroll together*, with an application-window icon): a click switches the mode. One pane is the default at the first start; the choice is a setting of the window, the same for every tab in it (each tab group keeps its own), remembered in the session (`panes` in `session.json`). Switching keeps the place in the document, the cursor and the selection.
   - **Two panes**: the Markdown source editor on the left and the rendered GitHub Flavored Markdown preview on the right (described below).
@@ -197,9 +197,9 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 - Changes by other programs are noticed when the MDE window gets the focus back, not instantly while it is in the foreground.
 - **The minimap in the one-pane mode** draws the Markdown source lines (markers included, all at the text size), not the formatted text; the slider still follows the editor.
 
-## Building
+# Building
 
-### Build requirements
+## Build requirements
 
 - [Rust](https://rustup.rs/) (stable, `x86_64-pc-windows-msvc`)
 - Visual Studio Build Tools with the *Desktop development with C++* workload
@@ -207,7 +207,7 @@ MVP plus tabs, a single instance, session memory, spell checking, the HTML white
 - WebView2 runtime (preinstalled on Windows 11). If it is missing, MDE shows a dialog (Polish or English, by the Windows UI language) with "Install" (opens Microsoft's installer download) and "Cancel", then exits (`src-tauri/src/runtime_check.rs`).
 - Fonts: Segoe UI and Cascadia Mono from Windows; fallbacks are Arial and Consolas / Courier New. The window buttons use Segoe Fluent Icons, else Segoe MDL2 Assets.
 
-### Commands
+## Commands
 
 ```bash
 npm install
@@ -249,7 +249,7 @@ Rust tests (encoding and line ending round-trips: UTF-8 ± BOM, UTF-16 LE/BE, Wi
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-## Project structure
+# Project structure
 
 ```
 LICENSE               GNU General Public License v3 (full text)
@@ -314,15 +314,15 @@ src-tauri/            backend (Rust, Tauri 2)
   icons/              app icon: icon.svg (source), icon.ico and icon.png (built from it)
 ```
 
-## Tech stack
+# Tech stack
 
 Tauri 2 (Rust + WebView2) with tauri-plugin-single-instance, the `windows` crate (spell checking, opening links), CodeMirror 6 (with the @lezer/markdown parser for the syntax tree), markdown-it, Vite, TypeScript.
 
-## Contributing
+# Contributing
 
 This is a personal project; pull requests are not accepted, but bug reports in [Issues](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/issues) are welcome.
 
-## License
+# License
 
 Copyright © 2026 Marek Mazij.
 
