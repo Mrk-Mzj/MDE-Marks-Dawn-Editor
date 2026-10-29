@@ -24,7 +24,7 @@ Język interfejsu niech będzie spójny z wersją językową Windows użytkownik
 
 ### Pliki dokumentacji i założeń projektowych
 
-* Nowe elementy i zmiany dokumentuj w pliku **README.md** w głównym katalogu repozytorium. Możesz robić to samodzielnie.
+* Nowe elementy i zmiany dokumentuj samodzielnie w pliku **docs/FEATURES.md**: to szczegółowy opis działania każdej funkcji. **README.md** w głównym katalogu repozytorium to krótka wizytówka projektu na GitHubie: przy nowej funkcji dopisz tam co najwyżej jeden jednozdaniowy punkt na liście funkcji, a znane braki wobec SPEC wpisuj krótko w „Known limitations”. Szczegółów nie dopisuj do README.
 * Wygląd elementów opisuje plik **@docs/DESIGN.md**. Przy zmianach w wyglądzie modyfikuj go samodzielnie.
 * Budując i modyfikując projekt opieraj się na specyfikacji zapisanej w podkatalogu **@docs/SPEC.md**. To źródło prawdy. Jeśli czegoś nie rozumiesz /dopytaj. Możesz proponować zapisanie zmian w tym pliku, ale faktyczne zmiany wprowadzaj dopiero po zatwierdzeniu przeze mnie.
 
@@ -36,7 +36,7 @@ Pytaj przed dodaniem zależności i uzasadniaj, czemu są potrzebne.
 
 Po wprowadzeniu zmian i nowych funkcjonalności przetestuj czy faktycznie wyglądają i działają zgodnie z założeniami. Popraw kod, jeśli tak nie jest. Dopiero potem pisz, że są gotowe.
 
-Funkcja jest skończona, gdy: działa po uruchomieniu, README.md jest zaktualizowany, a zmiany wizualne zgodne z docs/DESIGN.md.
+Funkcja jest skończona, gdy: działa po uruchomieniu, docs/FEATURES.md jest zaktualizowany (a README.md, jeśli dochodzi nowa funkcja albo zmienia się znane ograniczenie), a zmiany wizualne zgodne z docs/DESIGN.md.
 
 Plik portable (`npx tauri build` → `src-tauri/target/release/MDE.exe`) buduj tylko na moją prośbę.
 
