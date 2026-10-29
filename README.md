@@ -6,6 +6,26 @@ The specification lives in [docs/SPEC.md](docs/SPEC.md) and the visual design in
 
 Free and open source under the [GNU GPL v3](LICENSE).
 
+## Screenshots
+
+![One pane: a document with a table and a task list, rendered and editable](docs/screenshots/one-pane.png)
+
+The one-pane mode: the Markdown is rendered as you edit it, with the table, the task list and the headings shown as they will look, and the syntax hidden.
+
+![Two panes: the Markdown source on the left and the preview on the right](docs/screenshots/two-panes.png)
+
+The two-pane mode: the Markdown source on the left and the rendered preview on the right, scrolling together.
+
+![The minimap in the top right corner of the editor panel](docs/screenshots/minimap.png)
+
+The minimap: a small picture of the whole document in the top right corner of the editor, with the visible part highlighted; drag it to scroll.
+
+![The tab groups list open below the button in the top bar](docs/screenshots/tab-groups.png)
+
+Tab groups: saved sets of tabs, each opening in a window of its own, which you can rename or delete right in the list.
+
+The documents in the screenshots are in [docs/samples](docs/samples).
+
 ## Download and installation
 
 **[Download MDE.zip](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases/latest/download/MDE.zip)** — the latest version (`MDE.exe` and the license in `LICENSE.txt`). Older versions and the release notes are on the [Releases](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) page.
@@ -233,6 +253,8 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 ```
 LICENSE               GNU General Public License v3 (full text)
+docs/                 SPEC.md (the specification), DESIGN.md (the visual design),
+                      screenshots/ (the README images), samples/ (their documents)
 index.html            frontend entry point for Vite (built into the exe, not opened directly)
 src/                  frontend (TypeScript)
   main.ts             documents (tabs), commands, shortcuts, zoom, session memory,
