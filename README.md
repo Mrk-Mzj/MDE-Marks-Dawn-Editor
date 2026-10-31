@@ -23,7 +23,7 @@ Free and open source under the [GNU GPL v3](LICENSE).
 - [Contributing](#contributing)
 - [License](#license)
 
-## Screenshots
+# Screenshots
 
 ![One pane: a document with a table and a task list, rendered and editable](docs/screenshots/one-pane.png)
 
