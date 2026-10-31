@@ -80,6 +80,7 @@ Save the file in UTF-8 instead?`,
   tableSize: (columns: number, rows: number) => `${columns} × ${rows} (columns × rows)`,
   tableColumn: (n: number) => `Column ${n}`,
   more: "More",
+  colourScheme: "Switch between dark and light colours",
   dictation: "Dictation",
   spellStatus: (mode: "pl" | "en" | "off", dictionaryMissing: boolean) => {
     const language = { pl: "Polish", en: "English", off: "off" }[mode];
@@ -221,9 +222,11 @@ Zapisać plik w UTF-8?`,
   tableSize: (columns, rows) => `${columns} × ${rows} (kolumny × wiersze)`,
   tableColumn: (n) => `Kolumna ${n}`,
   more: "Więcej",
+  colourScheme: "Przełącz ciemny / jasny schemat barw",
   dictation: "Dyktowanie",
   spellStatus: (mode, dictionaryMissing) => {
-    const language = { pl: "polski", en: "angielski", off: "wyłączona" }[mode];
+    // Agrees with the feminine "Pisownia".
+    const language = { pl: "polska", en: "angielska", off: "wyłączona" }[mode];
     return `Pisownia: ${language}${dictionaryMissing ? " (brak słownika)" : ""}`;
   },
   spellTitle: (dictionaryMissing) =>

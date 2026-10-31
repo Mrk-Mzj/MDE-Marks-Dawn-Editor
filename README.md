@@ -6,6 +6,23 @@ The specification lives in [docs/SPEC.md](docs/SPEC.md) and the visual design in
 
 Free and open source under the [GNU GPL v3](LICENSE).
 
+## Contents
+
+- [Screenshots](#screenshots)
+- [Download and installation](#download-and-installation)
+  - [Requirements](#requirements)
+  - [The Windows security warning](#the-windows-security-warning)
+- [Status: 1.2.0](#status-120)
+  - [Features](#features)
+  - [Known limitations](#known-limitations)
+- [Building](#building)
+  - [Build requirements](#build-requirements)
+  - [Commands](#commands)
+- [Project structure](#project-structure)
+- [Tech stack](#tech-stack)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Screenshots
 
 ![One pane: a document with a table and a task list, rendered and editable](docs/screenshots/one-pane.png)
@@ -55,7 +72,7 @@ Windows remembers the choice, so the warning does not come back for this file. A
 
 If there is no *Run anyway* button (some company or school PCs block unknown programs), right-click `MDE.zip` (before unpacking) or `MDE.exe` in Explorer, choose *Properties*, tick **Unblock** at the bottom of the *General* tab and click *OK*. If that option is missing too, your administrator does not allow such programs.
 
-# Status: 1.1.1
+# Status: 1.2.0
 
 ## Features
 
@@ -65,6 +82,7 @@ If there is no *Run anyway* button (some company or school PCs block unknown pro
 - **Tabs and tab groups.** Tabs can be dragged into a new order; a tab group is a saved set of tabs that opens in a window of its own.
 - **Session memory.** Open tabs, unsaved edits, scroll positions, the window and the settings come back after a restart.
 - **Minimap**, a small picture of the whole document for finding your way and scrolling.
+- **Dark or light colour scheme**, switched with one button for every window.
 - **Synchronized scrolling** of the source and the preview.
 - **Find** (Ctrl+F) with every match highlighted.
 - **Spell checking** in Polish and English, with the dictionaries of Windows.
@@ -133,10 +151,10 @@ npm run release
 
 It writes `release/LICENSE.txt` (`tools/license-txt.mjs`: the text of `LICENSE` with each paragraph on one line and Windows line endings, so it opens in Notepad with a double click and wraps to the window width; the words are unchanged) and packs it with `MDE.exe` into `release/MDE.zip`.
 
-Then create a [GitHub release](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) with a version tag (e.g. `v1.1.1`) and attach the ZIP under the exact name `MDE.zip`, so the download link at the top of this file (`releases/latest/download/MDE.zip`) always points to the newest version. With the [GitHub CLI](https://cli.github.com/):
+Then create a [GitHub release](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) with a version tag (e.g. `v1.2.0`) and attach the ZIP under the exact name `MDE.zip`, so the download link at the top of this file (`releases/latest/download/MDE.zip`) always points to the newest version. With the [GitHub CLI](https://cli.github.com/):
 
 ```bash
-gh release create v1.1.1 release/MDE.zip --title "MDE 1.1.1" --notes "What changed"
+gh release create v1.2.0 release/MDE.zip --title "MDE 1.2.0" --notes "What changed"
 ```
 
 The app icon comes from `src-tauri/icons/icon.svg`. After changing it, rebuild `icon.ico` (16–256px) and `icon.png` (512px) with `npx tauri icon src-tauri/icons/icon.svg -o <temp folder>` and copy those two files into `src-tauri/icons/`; touch `src-tauri/build.rs` before the next build, or Cargo keeps the old icon in the exe.
@@ -184,8 +202,9 @@ src/                  frontend (TypeScript)
                       link address field (one pane)
   zoom.ts             zoom levels and stepping (Ctrl+plus/minus/0, Ctrl+wheel)
   scrollsync.ts       synchronized scrolling of the two panels (matched by source line)
-  minimap.ts          minimap of the editor panel (own word wrapping, canvas drawing,
-                      dragging the slider)
+  minimap.ts          minimap box (canvas drawing, dragging the slider) and the minimap
+                      of the editor panel (own word wrapping)
+  previewmap.ts       minimap of the preview panel (words measured in the rendered preview)
   menu.ts             drop-down menus (hamburger menu, toolbar menus)
   about.ts            the About dialog (name, version, copyright, license)
   dialog.ts           in-app dialogs (questions and messages)
@@ -200,6 +219,7 @@ src-tauri/            backend (Rust, Tauri 2)
                       single instance; opening windows (default and tab groups)
   src/spell.rs        Windows Spell Checking API on a dedicated COM thread
   src/caption.rs      native minimize / maximize / close buttons over the top bar
+  src/settings.rs     app-wide settings (the colour scheme) in %APPDATA%\MDE\settings.json
   src/context_menu.rs the right-click menu (WebView2 menu trimmed and reordered)
   src/session.rs      session storage in %APPDATA%\MDE (tabs, tab texts, window), one
                       folder per window; the open windows and their groups

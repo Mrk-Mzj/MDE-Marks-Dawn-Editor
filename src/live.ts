@@ -1101,7 +1101,7 @@ const liveTheme = EditorView.theme({
   ".cm-line.cm-live-li-3": listLine(3),
   ".cm-line.cm-live-li-4": listLine(4),
   ".cm-live-li *": { textIndent: "0" },
-  ".cm-line.cm-live-source": { fontFamily: "var(--font-mono)", fontSize: "0.875em", backgroundColor: "var(--card)" },
+  ".cm-line.cm-live-source": { fontFamily: "var(--font-mono)", fontSize: "0.875em", backgroundColor: "var(--source-line)" },
   ".cm-live-strong": { fontWeight: "700", color: "var(--content-strong)" },
   ".cm-live-em": { fontStyle: "italic", color: "var(--content-strong)" },
   ".cm-live-strike": { textDecoration: "line-through" },

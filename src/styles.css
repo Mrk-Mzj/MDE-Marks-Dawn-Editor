@@ -1,4 +1,5 @@
-/* Design tokens from docs/DESIGN.md (shadcn/ui, neutral, dark only). */
+/* Design tokens from docs/DESIGN.md (shadcn/ui, neutral). Dark is the default;
+   the light scheme follows below. */
 :root {
   color-scheme: dark;
 
@@ -55,6 +56,8 @@
   /* Either side of the page (the panel background, --background) once the
      panel is wider than the page: a darker band, like the window behind it. */
   --backdrop: #151515;
+  /* One-pane mode: the lines of a block shown as its source (a table, code). */
+  --source-line: var(--card);
 
   --font-sans: "Segoe UI", Arial, system-ui, sans-serif;
   --font-mono: "Cascadia Mono", Consolas, "Courier New", ui-monospace, monospace;
@@ -85,6 +88,56 @@
   --list-indent: 1.92em;
   --list-marker: 1.5625em;
   --shadow-md: 0 4px 12px rgb(0 0 0 / 40%), 0 1px 3px rgb(0 0 0 / 30%);
+}
+
+
+/* Light scheme: every gray of the dark one with its HSL lightness inverted
+   (L → 100 − L, so #1b1b1b → #e4e4e4 and white → black); the yellows and
+   oranges (warning, current find match, table header), the red and the
+   shadows stay as they are. The surfaces of the window were then set by the
+   project owner: top bar 90% lightness, backdrop and minimap slider 89%,
+   inactive tabs 87%, toolbar, status bar and active tab 85%, the page 95%,
+   the source lines of the one-pane mode 93%. */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --background: #f2f2f2;
+  --foreground: #050505;
+  --card: #e8e8e8;
+  --card-foreground: #050505;
+  --popover: #e8e8e8;
+  --popover-foreground: #050505;
+  --primary: #1a1a1a;
+  --primary-foreground: #e8e8e8;
+  --secondary: #d9d9d9;
+  --secondary-foreground: #050505;
+  --muted: #d9d9d9;
+  --muted-foreground: #5e5e5e;
+  /* Darker than the inversion (#d9d9d9), which is the toolbar's own colour. */
+  --accent: #cfcfcf;
+  --accent-foreground: #050505;
+  --border: oklch(0 0 0 / 10%);
+  --input: oklch(0 0 0 / 15%);
+  --ring: #8c8c8c;
+  --search-match: #9a9a9a;
+  --topbar: #e6e6e6;
+  --topbar-separator: #d3d2d2;
+  --tab: #dedede;
+  --toolbar: #d9d9d9;
+  --statusbar: #d9d9d9;
+  --statusbar-foreground: #757575;
+  --scrollbar: #cecece;
+  --content-foreground: #0c0c0c;
+  --content-strong: #000000;
+  --table-header: #ffa923;
+  --table-header-foreground: #000000;
+  --h1-rule: #b0b0b0;
+  --h2-rule: #c4c4c4;
+  --minimap-h1: #545454;
+  --minimap-h2: #6b6b6b;
+  --minimap-slider: #e3e3e3;
+  --backdrop: #e3e3e3;
+  --source-line: #ededed;
 }
 
 *,
@@ -1057,6 +1110,12 @@ body.resizing-panes .pane {
   --editor-scrollbar-width: 0px;
 }
 
+/* Two panes scrolling together: the editor follows the preview and shows
+   neither a scroll bar nor a minimap. */
+.editor-scroll-hidden {
+  --editor-scrollbar-width: 0px;
+}
+
 /* A page narrower than the panel is centred; the minimap then sits in the
    backdrop on the right, and the text keeps only the room it lacks there. */
 .has-minimap .editor-host {
@@ -1089,9 +1148,10 @@ body.resizing-panes .pane {
 
 /* ---------- Minimap ---------- */
 
-/* In the top right corner of the editor, against the toolbar (or the find
-   bar) and the preview panel, where the editor's scroll bar would be; the
-   height is set in src/minimap.ts. The bars take the box's text color. */
+/* In the top right corner of the panel it pictures (the editor with one
+   pane, the preview with two), against the toolbar (or the find bar) and
+   the panel's right edge, where its scroll bar would be; the height is set
+   in src/minimap.ts. The bars take the box's text color. */
 .minimap {
   position: absolute;
   top: 0;
@@ -1145,6 +1205,29 @@ body.resizing-panes .pane {
 }
 
 /* ---------- Preview ---------- */
+
+/* The panel holds the preview and its minimap. A size container, so the
+   preview can tell how much margin the centred text leaves for the minimap. */
+.pane-preview {
+  position: relative;
+  container-type: inline-size;
+}
+
+/* With the minimap the text keeps a margin for it on the right (only the
+   part the backdrop of a centred page does not cover), and the scroll bar
+   gives way to the box. */
+.has-preview-minimap .preview {
+  --minimap-space: clamp(
+    0px,
+    calc(var(--minimap-width) - (100cqw - var(--content-max-width) - 2 * var(--content-padding-x)) / 2),
+    var(--minimap-width)
+  );
+  padding-right: calc(max(var(--content-padding-x), calc((100% - var(--content-max-width)) / 2)) + var(--minimap-space));
+}
+
+.has-preview-minimap .preview::-webkit-scrollbar {
+  width: 0;
+}
 
 .preview {
   flex: 1;

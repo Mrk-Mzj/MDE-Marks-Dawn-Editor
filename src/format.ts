@@ -1,4 +1,4 @@
-// Markdown formatting commands of the toolbar (left panel). Each command is a
+// Markdown formatting commands of the toolbar (they act on the editor). Each command is a
 // single transaction, so one Ctrl+Z undoes it.
 
 import { ensureSyntaxTree, syntaxTree } from "@codemirror/language";

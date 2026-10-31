@@ -1,4 +1,4 @@
-// Formatting toolbar above the editor. Buttons that do not fit the panel move
+// Formatting toolbar above both panels. Buttons that do not fit the window move
 // to a "more" menu at the end of the toolbar.
 
 import { Menu, placeBelow } from "./menu";
@@ -37,6 +37,12 @@ export const icons = {
     '<path class="icon-fill" fill-rule="evenodd" d="M20.4,1.5C21.559,1.5 22.5,2.441 22.5,3.6L22.5,20.4C22.5,21.559 21.559,22.5 20.4,22.5L3.6,22.5C2.441,22.5 1.5,21.559 1.5,20.4L1.5,3.6C1.5,2.441 2.441,1.5 3.6,1.5L20.4,1.5ZM3.3,16.087L3.3,20.4C3.3,20.566 3.434,20.7 3.6,20.7L7.35,20.7L7.35,16.087L3.3,16.087ZM9.15,16.087L9.15,20.7L20.4,20.7C20.566,20.7 20.7,20.566 20.7,20.4L20.7,16.087L9.15,16.087ZM7.35,7.819L7.35,3.3L3.6,3.3C3.434,3.3 3.3,3.434 3.3,3.6L3.3,7.819L7.35,7.819ZM20.7,7.819L20.7,3.6C20.7,3.434 20.566,3.3 20.4,3.3L9.15,3.3L9.15,7.819L20.7,7.819ZM9.15,9.619L9.15,14.287L20.7,14.287L20.7,9.619L9.15,9.619ZM3.3,9.619L3.3,14.287L7.35,14.287L7.35,9.619L3.3,9.619Z"/>',
   mic: "M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v3",
   more: "M11 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0M18 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0",
+  // The colour scheme: Lucide "sun" and "moon" (its inner arc cut deeper for a
+  // thinner crescent), drawn like the other icons.
+  sun:
+    '<circle cx="12" cy="12" r="4"/>' +
+    '<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  moon: "M12 3a6.5 6.5 0 1 0 9 9 9 9 0 1 1-9-9Z",
 };
 
 /** An icon from `icons`: a path, or SVG markup (starting with `<`) for icons with several shapes. */
@@ -59,7 +65,8 @@ export interface ToolbarButton {
   kind: "button";
   label: string;
   shortcut?: string;
-  icon: string;
+  /** A function for an icon that follows a state (the colour scheme); `refresh` updates it. */
+  icon: string | (() => string);
   run: () => void;
   /** Whether the button shows as pressed (the line with the cursor already has this format). */
   pressed?: () => boolean;
@@ -92,6 +99,10 @@ interface Unit {
 }
 
 const GAP = 2;
+
+function iconOf(item: ToolbarItem): string {
+  return typeof item.icon === "function" ? item.icon() : item.icon;
+}
 
 export class Toolbar {
   private readonly units: Unit[] = [];
@@ -152,7 +163,7 @@ export class Toolbar {
   }
 
   private createUnit(item: ToolbarItem): Unit {
-    const button = this.createButton(item.label, item.icon, item.kind === "menu" ? undefined : item.shortcut);
+    const button = this.createButton(item.label, iconOf(item), item.kind === "menu" ? undefined : item.shortcut);
     if (item.kind === "button") {
       button.addEventListener("click", () => {
         item.run();
@@ -215,11 +226,17 @@ export class Toolbar {
     return unit && !unit.el.hidden ? { anchor: unit.el, align: "start" } : { anchor: this.moreAnchor, align: "end" };
   }
 
-  /** Updates the pressed state of the buttons for the line with the cursor. */
+  /** Updates the pressed state of the buttons for the line with the cursor, and the icons that follow a state. */
   refresh(): void {
     for (const unit of this.units) {
-      if (unit.item?.kind === "button" && unit.item.pressed && unit.button) {
-        unit.button.setAttribute("aria-pressed", String(unit.item.pressed()));
+      if (unit.item?.kind !== "button" || !unit.button) continue;
+      if (unit.item.pressed) unit.button.setAttribute("aria-pressed", String(unit.item.pressed()));
+      if (typeof unit.item.icon === "function") {
+        const path = unit.item.icon();
+        if (unit.button.dataset.icon !== path) {
+          unit.button.dataset.icon = path;
+          unit.button.replaceChildren(icon(path));
+        }
       }
     }
   }

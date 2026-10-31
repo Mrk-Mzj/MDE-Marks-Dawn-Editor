@@ -215,6 +215,37 @@ export async function spellCheck(lang: string, words: string[]): Promise<string[
   }
 }
 
+// ---------- Colour scheme (app-wide) ----------
+
+const THEME_KEY = "mde-theme";
+
+/** Whether the light colour scheme is on: set by the backend before the page starts; outside the app, the browser's storage. */
+export function initialLightTheme(): boolean {
+  const reported = (window as { __MDE_THEME__?: string }).__MDE_THEME__;
+  if (reported) return reported === "light";
+  try {
+    return localStorage.getItem(THEME_KEY) === "light";
+  } catch {
+    return false;
+  }
+}
+
+/** Switches every window to the light or dark scheme and remembers it for all sessions. */
+export async function setLightTheme(light: boolean): Promise<void> {
+  if (inTauri) {
+    await invoke("set_theme", { light });
+    return;
+  }
+  try {
+    localStorage.setItem(THEME_KEY, light ? "light" : "dark");
+  } catch {}
+}
+
+/** Calls `handler` when any window changed the colour scheme (this one too). */
+export async function onThemeChanged(handler: (light: boolean) => void): Promise<void> {
+  if (inTauri) await listen<boolean>("theme-changed", (event) => handler(event.payload));
+}
+
 // ---------- Session memory ----------
 
 export async function readSession(): Promise<string | null> {

@@ -25,7 +25,7 @@ use windows::Win32::UI::HiDpi::GetDpiForWindow;
 use windows::Win32::UI::Input::KeyboardAndMouse::{ReleaseCapture, SetCapture, TrackMouseEvent, TME_LEAVE, TRACKMOUSEEVENT};
 use windows::Win32::UI::Shell::{DefSubclassProc, SetWindowSubclass};
 use windows::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, GetClientRect, GetWindowLongPtrW, IsZoomed, LoadCursorW, PostMessageW, RegisterClassW,
+    CreateWindowExW, DefWindowProcW, FindWindowExW, GetClientRect, GetWindowLongPtrW, IsZoomed, LoadCursorW, PostMessageW, RegisterClassW,
     SendMessageW, SetWindowLongPtrW, SetWindowPos, CS_HREDRAW, CS_VREDRAW, GWLP_USERDATA, HWND_TOP, IDC_ARROW,
     MA_NOACTIVATE, SC_CLOSE, SC_MAXIMIZE, SC_MINIMIZE, SC_RESTORE, SIZE_MINIMIZED, SWP_NOACTIVATE,
     WM_CAPTURECHANGED, WM_ERASEBKGND, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEACTIVATE, WM_MOUSEMOVE,
@@ -40,12 +40,40 @@ const HEIGHT: f64 = 39.0;
 /// Size of the icon font in CSS pixels; Windows draws its own caption icons at 10px.
 const ICON_SIZE: f64 = 10.0;
 
-// Colors of docs/DESIGN.md (0x00BBGGRR): `topbar`, `accent`, `muted-foreground`,
-// `accent-foreground`, and `window-close` with white.
-const TOPBAR: COLORREF = rgb(0x15, 0x15, 0x15);
-const ACCENT: COLORREF = rgb(0x26, 0x26, 0x26);
-const MUTED_FOREGROUND: COLORREF = rgb(0xa1, 0xa1, 0xa1);
-const ACCENT_FOREGROUND: COLORREF = rgb(0xfa, 0xfa, 0xfa);
+/// Colors of docs/DESIGN.md (0x00BBGGRR) in one colour scheme: `topbar`,
+/// `accent`, `muted-foreground` and `accent-foreground`, and the close icon
+/// at rest. The X has only diagonal lines, which antialiasing spreads over
+/// more, paler pixels: on the light bar it is drawn darker than the other
+/// icons so it looks as dark as they do.
+struct Palette {
+    topbar: COLORREF,
+    accent: COLORREF,
+    muted_foreground: COLORREF,
+    accent_foreground: COLORREF,
+    close_foreground: COLORREF,
+}
+
+const DARK: Palette = Palette {
+    topbar: rgb(0x15, 0x15, 0x15),
+    accent: rgb(0x26, 0x26, 0x26),
+    muted_foreground: rgb(0xa1, 0xa1, 0xa1),
+    accent_foreground: rgb(0xfa, 0xfa, 0xfa),
+    close_foreground: rgb(0xa1, 0xa1, 0xa1),
+};
+
+const LIGHT: Palette = Palette {
+    topbar: rgb(0xe6, 0xe6, 0xe6),
+    accent: rgb(0xcf, 0xcf, 0xcf),
+    muted_foreground: rgb(0x5e, 0x5e, 0x5e),
+    accent_foreground: rgb(0x05, 0x05, 0x05),
+    close_foreground: rgb(0x38, 0x38, 0x38),
+};
+
+fn palette() -> &'static Palette {
+    if crate::settings::light() { &LIGHT } else { &DARK }
+}
+
+// `window-close` with white, the same in both colour schemes.
 const WINDOW_CLOSE: COLORREF = rgb(0xc4, 0x2b, 0x1c);
 const WINDOW_CLOSE_FOREGROUND: COLORREF = rgb(0xff, 0xff, 0xff);
 
@@ -89,6 +117,18 @@ struct Caption {
 }
 
 const SUBCLASS_ID: usize = 0x4d44_4543; // "MDEC"
+
+/// Draws the buttons of `parent` again (after the colour scheme changed).
+pub fn repaint(parent: HWND) {
+    // SAFETY: finding a child window and invalidating it is allowed from any
+    // thread; the paint itself runs on the window's own thread. Invalidating
+    // only the parent (even with its children) does not reach this window.
+    unsafe {
+        if let Ok(hwnd) = FindWindowExW(Some(parent), None, w!("MDECaptionButtons"), PCWSTR::null()) {
+            let _ = InvalidateRect(Some(hwnd), None, false);
+        }
+    }
+}
 
 /// Adds the buttons to the top right corner of `parent`'s client area.
 pub fn install(parent: HWND) -> windows::core::Result<()> {
@@ -378,7 +418,8 @@ unsafe fn paint(hwnd: HWND, caption: &Caption) {
     let memory = CreateCompatibleDC(Some(dc));
     let bitmap = CreateCompatibleBitmap(dc, client.right, client.bottom);
     let old_bitmap = SelectObject(memory, bitmap.into());
-    let background = CreateSolidBrush(TOPBAR);
+    let palette = palette();
+    let background = CreateSolidBrush(palette.topbar);
     FillRect(memory, &client, background);
     let _ = DeleteObject(background.into());
 
@@ -390,8 +431,9 @@ unsafe fn paint(hwnd: HWND, caption: &Caption) {
         let active = caption.hover == Some(index) || caption.pressed == Some(index);
         let (fill, color) = match (button, active) {
             (Button::Close, true) => (Some(WINDOW_CLOSE), WINDOW_CLOSE_FOREGROUND),
-            (_, true) => (Some(ACCENT), ACCENT_FOREGROUND),
-            _ => (None, MUTED_FOREGROUND),
+            (_, true) => (Some(palette.accent), palette.accent_foreground),
+            (Button::Close, false) => (None, palette.close_foreground),
+            _ => (None, palette.muted_foreground),
         };
         if let Some(fill) = fill {
             let brush = CreateSolidBrush(fill);

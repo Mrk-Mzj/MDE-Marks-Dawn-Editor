@@ -12,6 +12,7 @@ import { lang, t } from "./i18n";
 import { classifyHref, extensionOf, isMarkdownFile, needsConfirmation } from "./links";
 import { Menu } from "./menu";
 import { Minimap } from "./minimap";
+import { PreviewMinimap } from "./previewmap";
 import * as platform from "./platform";
 import type { FileFormat, GroupInfo, LineBreak, OpenedFile } from "./platform";
 import { Preview } from "./preview";
@@ -77,7 +78,7 @@ interface StoredSession {
   zoom?: number;
   /** Both panels scroll together (an app setting); on when missing. */
   syncScroll?: boolean;
-  /** The minimap in the editor panel is shown (an app setting); off when missing. */
+  /** The minimap is shown (an app setting; the editor's with one pane, the preview's with two); off when missing. */
   minimap?: boolean;
   /** The editor panel's share of the width, 0–1 (an app setting); 0.5 when missing. */
   split?: number;
@@ -116,7 +117,10 @@ const findBar = new FindBar($("#find"), search, editor.view, {
 });
 editor.subscribe(() => findBar.refresh());
 const scrollSync = new ScrollSync(editor, preview);
+// The minimap pictures the editor with one pane and the preview with two.
 const minimap = new Minimap($("#editor-area"), editor);
+const previewMinimap = new PreviewMinimap($(".pane-preview"), previewEl);
+let minimapOn = false;
 // Showing or hiding the minimap changes the width of the text: the editor
 // keeps showing the same place, and the preview follows it.
 minimap.onReflow(() => {
@@ -124,6 +128,7 @@ minimap.onReflow(() => {
   editor.rescale(scroll);
   scrollSync.followEditorSoon();
 });
+previewMinimap.onReflow(() => scrollSync.followEditorSoon());
 
 const splitter = new Splitter($(".workspace"), $(".pane-editor"), $(".pane-preview"), $(".pane-divider"), t.splitterTitle);
 splitter.onChange(scheduleSessionSave);
@@ -784,7 +789,7 @@ function saveSession(): Promise<void> {
       openTypes: [...trustedTypes],
       zoom,
       syncScroll: scrollSync.enabled,
-      minimap: minimap.enabled,
+      minimap: minimapOn,
       split: splitter.value,
       panes,
     };
@@ -855,7 +860,7 @@ async function restoreSession(): Promise<number> {
   applyZoom(validZoom(session.zoom));
   splitter.set(validSplit(session.split));
   if (typeof session.syncScroll === "boolean") scrollSync.setEnabled(session.syncScroll);
-  if (typeof session.minimap === "boolean") minimap.setEnabled(session.minimap);
+  if (typeof session.minimap === "boolean") minimapOn = session.minimap;
   panes = session.panes === 2 ? 2 : 1;
   if (Array.isArray(session.openTypes)) {
     trustedTypes = new Set(session.openTypes.filter((type): type is string => typeof type === "string"));
@@ -962,6 +967,10 @@ const inlineStyles = () => {
   return inlineCache.styles;
 };
 
+// Colour scheme: dark (default) or light, the same in every window and
+// session. The toolbar button shows the current one (a moon or a sun).
+let lightTheme = platform.initialLightTheme();
+
 const toolbar = new Toolbar(
   $("#toolbar"),
   [
@@ -984,10 +993,30 @@ const toolbar = new Toolbar(
       linkItem,
       { kind: "button", label: t.dictation, shortcut: "Win+H", icon: icons.mic, run: () => void platform.startDictation() },
     ],
+    [
+      { kind: "button", label: t.colourScheme, icon: () => (lightTheme ? icons.sun : icons.moon), run: toggleTheme },
+    ],
   ],
   { toolbar: t.formatting, more: t.more },
   () => editor.focus(),
 );
+
+const applyTheme = (light: boolean) => {
+  lightTheme = light;
+  if (light) document.documentElement.dataset.theme = "light";
+  else delete document.documentElement.dataset.theme;
+  toolbar.refresh();
+  // The minimaps are canvases: their colours change only when drawn again.
+  minimap.schedule();
+  previewMinimap.schedule();
+};
+applyTheme(lightTheme);
+void platform.onThemeChanged(applyTheme);
+function toggleTheme(): void {
+  // Outside the app no event comes back, so this window switches at once.
+  applyTheme(!lightTheme);
+  void platform.setLightTheme(lightTheme);
+}
 
 // The pressed state follows the cursor, at most once per frame.
 let toolbarFrame = 0;
@@ -1166,12 +1195,13 @@ spellStatus.addEventListener("click", async () => {
 
 const minimapStatus = $<HTMLButtonElement>("#minimap-status");
 function updateMinimapStatus(): void {
-  $("#minimap-status-text").textContent = t.minimapStatus(minimap.enabled);
-  minimapStatus.title = t.minimapTitle(minimap.enabled);
+  $("#minimap-status-text").textContent = t.minimapStatus(minimapOn);
+  minimapStatus.title = t.minimapTitle(minimapOn);
 }
 updateMinimapStatus();
 minimapStatus.addEventListener("click", () => {
-  minimap.setEnabled(!minimap.enabled);
+  minimapOn = !minimapOn;
+  applyMinimap();
   updateMinimapStatus();
   scheduleSessionSave();
   editor.focus();
@@ -1181,6 +1211,26 @@ const panesStatus = $<HTMLButtonElement>("#panes-status");
 function updatePanesStatus(): void {
   $("#panes-status-text").textContent = t.panesStatus(panes);
   panesStatus.title = t.panesTitle(panes);
+}
+
+let editorScrollHidden = false;
+/**
+ * Scroll bars and minimaps (the minimap takes the place of a scroll bar).
+ * One pane: the editor has one. Two panes scrolling together: only the
+ * preview has one, as the editor follows it. Two panes scrolling apart:
+ * both have one.
+ */
+function applyMinimap(): void {
+  const editorScrolls = panes === 1 || !scrollSync.enabled;
+  const scroll = editor.scrollPosition();
+  const hidden = document.documentElement.classList.toggle("editor-scroll-hidden", !editorScrolls);
+  minimap.setEnabled(minimapOn && editorScrolls);
+  previewMinimap.setEnabled(minimapOn && panes === 2);
+  // Without its scroll bar the editor's text gets wider: keep the same place.
+  if (hidden !== editorScrollHidden) {
+    editorScrollHidden = hidden;
+    editor.rescale(scroll);
+  }
 }
 
 /**
@@ -1193,6 +1243,7 @@ function setPanes(count: 1 | 2): void {
   document.documentElement.classList.toggle("single-pane", count === 1);
   editor.setLive(count === 1);
   editor.rescale(scroll);
+  applyMinimap();
   if (count === 2 && previewStale && active) renderPreview(editor.text(), active.previewScroll);
   scrollSync.setPaused(count === 1);
   findBar.refresh();
@@ -1220,6 +1271,7 @@ syncStatus.addEventListener("click", () => {
     return;
   }
   scrollSync.setEnabled(!scrollSync.enabled);
+  applyMinimap();
   updateSyncStatus();
   scheduleSessionSave();
   editor.focus();

@@ -6,6 +6,7 @@ mod context_menu;
 mod groups;
 mod runtime_check;
 mod session;
+mod settings;
 mod spell;
 mod textfile;
 
@@ -328,15 +329,22 @@ fn open_window(app: &AppHandle, group: Option<String>, files: Vec<String>) -> Re
         } else {
             "window.__MDE_LANG__ = 'en';"
         })
+        // The colour scheme is app-wide (src/settings.rs); the page applies it
+        // before its first paint.
+        .initialization_script(if settings::light() {
+            "window.__MDE_THEME__ = 'light';"
+        } else {
+            "window.__MDE_THEME__ = 'dark';"
+        })
         .inner_size(1200.0, 800.0)
         .min_inner_size(640.0, 400.0)
-        .theme(Some(tauri::Theme::Dark))
+        .theme(Some(settings::window_theme()))
         // The top bar replaces the title bar: the frontend draws the tabs,
         // src/caption.rs the window buttons. Windows keeps the shadow,
         // rounded corners and resize borders.
         .decorations(false)
         .shadow(true)
-        .background_color(tauri::window::Color(27, 27, 27, 255))
+        .background_color(settings::window_background())
         // Shown by the frontend after the first paint to avoid a flash.
         .visible(false)
         .on_navigation(is_app_url)
@@ -367,6 +375,7 @@ fn main() {
     if !runtime_check::ensure_webview2() {
         return;
     }
+    settings::load();
     tauri::Builder::default()
         // Must be the first plugin: a second MDE.exe hands its files over to
         // the running one and exits before anything else starts.
@@ -404,6 +413,7 @@ fn main() {
             start_dictation,
             open_language_settings,
             spell_check,
+            settings::set_theme,
             session::read_session,
             session::write_session,
             session::read_tab_text,
