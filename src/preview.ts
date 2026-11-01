@@ -2,6 +2,7 @@
 
 import MarkdownIt from "markdown-it";
 import { t } from "./i18n";
+import { imageSize, imageUrl, isDrivePath, isImageFile, loadImages, placeholderIcon } from "./images";
 import { classifyHref, classifyWikiTarget, WIKILINK, wikiHref, wikiLabel } from "./links";
 import { markRawHtml, sanitize } from "./sanitize";
 import { taskBoxHtml } from "./taskbox";
@@ -16,8 +17,10 @@ md.renderer.rules.html_block = (tokens, idx) => markRawHtml(tokens[idx].content)
 md.renderer.rules.html_inline = (tokens, idx) => markRawHtml(tokens[idx].content);
 
 // Only http, https, mailto and relative paths become links; anything else
-// (javascript:, data:, file:, unknown schemes) stays plain text.
-md.validateLink = (url) => classifyHref(url) !== null;
+// (javascript:, data:, file:, unknown schemes) stays plain text. A full path to
+// an image is let through for the images of a file not saved yet (images.ts
+// decides what loads).
+md.validateLink = (url) => classifyHref(url) !== null || (isDrivePath(url) && isImageFile(url));
 
 // Plain text "www.example.com" becomes a link too. Other addresses without a
 // scheme stay text: "README.md" would otherwise be a domain (.md is a TLD).
@@ -104,20 +107,28 @@ md.renderer.rules.task_box = (tokens, idx) =>
 md.renderer.rules.blank_lines = (tokens, idx) =>
   '<div class="blank-line" aria-hidden="true"></div>'.repeat((tokens[idx].meta as { count: number }).count);
 
-const imageIcon =
-  '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>';
+const escape = md.utils.escapeHtml;
 
-// Images are not supported: show a frame with the alt text, never load the file.
+/** An image that `loadImages` loads (see images.ts): no `src` yet, so nothing loads while it is staged. */
+function imageHtml(src: string, alt: string, wiki: boolean, title: string | null, width: string | null): string {
+  const attributes = [`data-src="${escape(src)}"`, `alt="${escape(alt)}"`];
+  if (wiki) attributes.push('data-wiki="1"');
+  if (title) attributes.push(`title="${escape(title)}"`);
+  if (width) attributes.push(`width="${width}"`);
+  return `<img ${attributes.join(" ")}>`;
+}
+
 md.renderer.rules.image = (tokens, idx, options, env, self) => {
   const token = tokens[idx];
   const alt = self.renderInlineAsText(token.children ?? [], options, env);
-  const src = String(token.attrGet("src") ?? "");
-  return `<span class="image-placeholder" title="${md.utils.escapeHtml(src)}">${imageIcon}<span>${md.utils.escapeHtml(alt)}</span></span>`;
+  const title = token.attrGet("title");
+  return imageHtml(String(token.attrGet("src") ?? ""), alt, false, title === null ? null : String(title), null);
 };
 
 // Obsidian wikilinks (an MDE extension beyond GFM, see docs/SPEC.md):
 // `[[Note]]`, `[[Note|text]]`, `[[Note#Heading]]`, `[[#Heading]]` become links
-// whose address is `[[target]]`; embeds `![[…]]` show as a frame, like images.
+// whose address is `[[target]]`. Embeds `![[…]]` of images show the image
+// (`![[a.png|300]]` 300 pixels wide), other embeds a frame with the name.
 md.inline.ruler.before("link", "wikilink", (state, silent) => {
   const { src, pos } = state;
   const embed = src.charCodeAt(pos) === 0x21; /* ! */
@@ -129,7 +140,7 @@ md.inline.ruler.before("link", "wikilink", (state, silent) => {
   if (!match || !classifyWikiTarget(target)) return false;
   if (!silent) {
     if (embed) {
-      state.push("wiki_embed", "", 0).meta = { name: target };
+      state.push("wiki_embed", "", 0).meta = { name: target, text: match[2]?.trim() ?? "" };
     } else {
       state.push("link_open", "a", 1).attrs = [["href", wikiHref(target)]];
       state.push("text", "", 0).content = match[2]?.trim() || wikiLabel(target);
@@ -141,8 +152,13 @@ md.inline.ruler.before("link", "wikilink", (state, silent) => {
 });
 
 md.renderer.rules.wiki_embed = (tokens, idx) => {
-  const name = md.utils.escapeHtml((tokens[idx].meta as { name: string }).name);
-  return `<span class="image-placeholder" title="${name}">${imageIcon}<span>${name}</span></span>`;
+  const { name, text } = tokens[idx].meta as { name: string; text: string };
+  if (isImageFile(name)) {
+    // Obsidian's `|300` or `|300x200` is a width; other text is the alt text.
+    const size = /^(\d+)(?:x\d+)?$/.exec(text);
+    return imageHtml(name, size ? name : text || name, true, null, imageSize(size?.[1]));
+  }
+  return `<span class="image-placeholder" title="${escape(name)}">${placeholderIcon}<span>${escape(name)}</span></span>`;
 };
 
 // Hovering a link shows its real target, so the link text cannot hide it.
@@ -175,7 +191,7 @@ export function headingsOf(source: string): { line: number; text: string }[] {
   return headings;
 }
 
-/** Renders a piece of Markdown as sanitized DOM, as the preview shows it. */
+/** Renders a piece of Markdown as sanitized DOM, as the preview shows it; its images load once `loadImages` is called. */
 export function renderFragment(source: string): DocumentFragment {
   const staging = document.createElement("template");
   staging.innerHTML = md.render(source);
@@ -193,26 +209,38 @@ export interface SourceMap {
   heights: number[];
 }
 
+/** An image as written in Markdown: `![alt](path)`, `![alt][ref]`, `![[name]]` or `<img …>`. */
+const IMAGE_SOURCE = /!\[[^\]\n]*\]\([^)\n]*\)|!\[[^\]\n]*\]\[[^\]\n]*\]|!\[\[[^\]\n]*\]\]|<img\b[^>\n]*>/gi;
+
 export class Preview {
   private timer = 0;
   // Rendered HTML is parsed here, where nothing runs or loads, and sanitized before it is shown.
   private readonly staging = document.createElement("template");
   private renders = 0;
-  private lineCount = 1;
+  private lines: string[] = [""];
   private map: { key: string; value: SourceMap } | null = null;
 
-  /** `onLink` gets the address of a clicked link; links never navigate the app themselves. */
+  /**
+   * `onLink` gets the address of a clicked link; links never navigate the app
+   * themselves. `onImage` gets the address of a clicked image (outside a link).
+   * `onImageLoad` runs when an image has loaded and changed the layout.
+   */
   constructor(
     readonly root: HTMLElement,
     onLink: (href: string) => void,
+    onImage: (src: string, wiki: boolean) => void,
+    private readonly onImageLoad: () => void,
   ) {
     root.addEventListener("click", (event) => {
-      const link = (event.target as Element).closest("a");
-      if (!link) return;
+      const target = event.target as Element;
+      const link = target.closest("a");
+      const image = link ? null : target.closest<HTMLImageElement>("img.md-image");
+      if (!link && !image) return;
       event.preventDefault();
       // Dragging to select text that starts on a link is not a click on it.
       if (window.getSelection()?.isCollapsed === false) return;
-      onLink(link.getAttribute("href") ?? "");
+      if (link) onLink(link.getAttribute("href") ?? "");
+      else if (image) onImage(image.dataset.src ?? "", image.dataset.wiki === "1");
     });
     root.addEventListener("auxclick", (event) => event.preventDefault());
   }
@@ -220,14 +248,37 @@ export class Preview {
   render(source: string): void {
     window.clearTimeout(this.timer);
     this.renders++;
-    this.lineCount = source.split("\n").length;
+    this.lines = source.split("\n");
     if (!source.trim()) {
       this.root.innerHTML = `<p class="preview-empty">${md.utils.escapeHtml(t.emptyPreview)}</p>`;
       return;
     }
     this.staging.innerHTML = md.render(source);
     sanitize(this.staging.content);
+    this.reuseImages(this.staging.content);
+    loadImages(this.staging.content, this.onImageLoad);
     this.root.replaceChildren(this.staging.content);
+  }
+
+  /**
+   * Keeps the images already shown: rendering again after every pause in
+   * typing would otherwise load them anew, and the text around would jump.
+   */
+  private reuseImages(fresh: DocumentFragment): void {
+    const shown = new Map<string, HTMLImageElement[]>();
+    const key = (img: HTMLImageElement, url: string | null) => `${url}|${img.getAttribute("width") ?? ""}`;
+    for (const img of this.root.querySelectorAll<HTMLImageElement>("img.md-image")) {
+      const k = key(img, img.getAttribute("src"));
+      shown.set(k, [...(shown.get(k) ?? []), img]);
+    }
+    if (shown.size === 0) return;
+    for (const img of fresh.querySelectorAll<HTMLImageElement>("img[data-src]")) {
+      const old = shown.get(key(img, imageUrl(img.dataset.src ?? "", img.dataset.wiki === "1")))?.shift();
+      if (!old) continue;
+      old.alt = img.alt;
+      old.title = img.title || (img.dataset.src ?? "");
+      img.replaceWith(old);
+    }
   }
 
   /** Re-renders after a short pause in typing, keeping the editor responsive. */
@@ -253,6 +304,7 @@ export class Preview {
       if (rect.width === 0 && rect.height === 0) continue;
       points.push([Number(element.dataset.line), rect.top - origin], [Number(element.dataset.lineEnd), rect.bottom - origin]);
     }
+    this.imagePoints(origin, points);
     points.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
     const value: SourceMap = { lines: [0], heights: [0] };
     for (const [line, height] of points) {
@@ -261,10 +313,45 @@ export class Preview {
       value.lines.push(line);
       value.heights.push(height);
     }
-    value.lines.push(Math.max(this.lineCount, value.lines[value.lines.length - 1]));
+    value.lines.push(Math.max(this.lines.length, value.lines[value.lines.length - 1]));
     value.heights.push(Math.max(root.scrollHeight, value.heights[value.heights.length - 1]));
     this.map = { key, value };
     return value;
+  }
+
+  /**
+   * Points for the images inside a block of text: an image is a few characters
+   * of a source line but takes much room in the preview, so without them the
+   * text around it would be matched as if the image's height were spread over
+   * the whole paragraph. The k-th image of a block is the k-th image written in
+   * its source lines; its place in the line is the share of the line before it
+   * (a long line wraps into rows of about the same length in the editor).
+   */
+  private imagePoints(origin: number, points: [number, number][]): void {
+    const selector = "img.md-image, .image-placeholder";
+    const blocks = new Set<HTMLElement>();
+    for (const image of this.root.querySelectorAll<HTMLElement>(selector)) {
+      const block = image.parentElement?.closest<HTMLElement>("[data-line]");
+      if (block) blocks.add(block);
+    }
+    for (const block of blocks) {
+      const images = [...block.querySelectorAll<HTMLElement>(selector)].filter((image) => image.parentElement?.closest("[data-line]") === block);
+      const written: [number, number][] = [];
+      for (let line = Number(block.dataset.line); line < Number(block.dataset.lineEnd) && line < this.lines.length; line++) {
+        const text = this.lines[line];
+        const length = Math.max(1, text.length);
+        for (const match of text.matchAll(IMAGE_SOURCE)) {
+          written.push([line + match.index / length, line + (match.index + match[0].length) / length]);
+        }
+      }
+      // Images not written plainly (e.g. in an HTML block): this block keeps its two points.
+      if (written.length !== images.length) continue;
+      images.forEach((image, k) => {
+        const rect = image.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) return;
+        points.push([written[k][0], rect.top - origin], [written[k][1], rect.bottom - origin]);
+      });
+    }
   }
 
   get scrollTop(): number {

@@ -4,6 +4,7 @@
 mod caption;
 mod context_menu;
 mod groups;
+mod images;
 mod runtime_check;
 mod session;
 mod settings;
@@ -484,6 +485,10 @@ fn main() {
             }
         }))
         .plugin(tauri_plugin_dialog::init())
+        // Reading a large photo takes a moment: off the main thread.
+        .register_asynchronous_uri_scheme_protocol(images::SCHEME, |_ctx, request, responder| {
+            tauri::async_runtime::spawn_blocking(move || responder.respond(images::respond(&request)));
+        })
         .manage(Documents::default())
         .manage(session::Registry::default())
         .manage(spell::Worker::start())
@@ -497,6 +502,8 @@ fn main() {
             resolve_wikilink,
             open_url,
             open_path,
+            images::image_path,
+            images::place_image,
             start_dictation,
             set_caption_dimmed,
             open_language_settings,

@@ -6,6 +6,7 @@ import { EditorSelection } from "@codemirror/state";
 import type { ChangeSpec, EditorState, Line } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import type { SyntaxNode, Tree } from "@lezer/common";
+import { markdownPath } from "./images";
 import { classifyHref, classifyWikiTarget, wikiLabel } from "./links";
 
 export type InlineStyle = "bold" | "italic" | "underline";
@@ -597,6 +598,83 @@ function applyWikiLink(view: EditorView, link: LinkInfo, url: string): void {
   } else {
     apply(view, [{ from: link.from, to: link.to, insert: `[${text.replace(/[[\]]/g, "\\$&")}](${linkAddress(address)})` }]);
   }
+}
+
+// ---------- Images ----------
+
+/** An image (`![alt](path)`, `![[name]]` or `<img src>`): the whole of it and the stretch holding its path. */
+export interface ImageInfo {
+  from: number;
+  to: number;
+  pathFrom: number;
+  pathTo: number;
+  kind: "markdown" | "wiki" | "html";
+  /** As the field shows it: percent-decoded. */
+  path: string;
+}
+
+const decoded = (path: string) => {
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
+};
+
+/**
+ * The image at the selection: all of it selected (in one pane a click selects
+ * an image), or the cursor inside its Markdown (two panes). An image without a
+ * path of its own (`![alt][reference]`) does not count.
+ */
+export function imageAt(state: EditorState, from: number, to = from): ImageInfo | null {
+  for (let node: SyntaxNode | null = syntaxTree(state).resolveInner(from, 1); node; node = node.parent) {
+    const text = state.sliceDoc(node.from, node.to);
+    const html = node.name === "HTMLTag" && /^<img[\s/>]/i.test(text);
+    if (node.name !== "Image" && node.name !== "WikiEmbed" && !html) continue;
+    const inside = from >= node.from && to <= node.to && (from < to || (from > node.from && from < node.to));
+    if (!inside) return null;
+    if (node.name === "Image") {
+      const url = node.getChild("URL");
+      if (!url) return null;
+      const path = state.sliceDoc(url.from, url.to).replace(/^<(.*)>$/, "$1");
+      return { from: node.from, to: node.to, pathFrom: url.from, pathTo: url.to, kind: "markdown", path: decoded(path) };
+    }
+    if (node.name === "WikiEmbed") {
+      const inner = text.slice(3, -2);
+      const target = inner.split("|")[0];
+      const [start, end] = trimmed(target, node.from + 3);
+      return { from: node.from, to: node.to, pathFrom: start, pathTo: end, kind: "wiki", path: target.trim() };
+    }
+    const src = /\ssrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/i.exec(text);
+    if (!src) return null;
+    const path = src[1] ?? src[2] ?? src[3];
+    return { from: node.from, to: node.to, pathFrom: node.from + src.index, pathTo: node.from + src.index + src[0].length, kind: "html", path: decoded(path) };
+  }
+  return null;
+}
+
+/**
+ * Sets the path of the image at the selection (written the way its kind
+ * needs), or removes the image for an empty path. The image stays selected.
+ */
+export function applyImagePath(view: EditorView, path: string): void {
+  const range = view.state.selection.main;
+  const image = imageAt(view.state, range.from, range.to);
+  if (!image) return;
+  const value = path.trim();
+  if (!value) {
+    apply(view, [{ from: image.from, to: image.to }], (map) => EditorSelection.single(map(image.from, -1)));
+    return;
+  }
+  const insert =
+    image.kind === "markdown"
+      ? markdownPath(value)
+      : image.kind === "wiki"
+        ? value.replace(/[[\]|\n]/g, "")
+        : ` src="${value.replace(/"/g, "%22")}"`;
+  apply(view, [{ from: image.pathFrom, to: image.pathTo, insert }], (map) =>
+    range.empty ? EditorSelection.single(map(range.head, 1)) : EditorSelection.single(map(image.from, -1), map(image.to, 1)),
+  );
 }
 
 /**

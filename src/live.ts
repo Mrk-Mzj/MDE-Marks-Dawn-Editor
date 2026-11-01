@@ -7,8 +7,10 @@
 // - Inline markers (`**`, `[`…`](url)`, `<u>`), block markers at the start of
 //   a line (`# `, `> `, `- `) and escapes are hidden; list markers show as a
 //   bullet or the rendered number.
-// - Tables, code blocks, raw HTML blocks, horizontal rules and images are
-//   rendered; they show their source while the cursor is in them.
+// - Tables, code blocks, raw HTML blocks and horizontal rules are rendered;
+//   they show their source while the cursor is in them. Images never show
+//   their source (nothing around them would jump): each is one character for
+//   the cursor, a click selects it, and the toolbar's image button edits its path.
 // - The cursor skips the hidden markers, Backspace and Delete never remove a
 //   single marker, and deleting all of a formatted stretch removes its markers.
 // - Enter continues lists and quotes, Backspace at the start of a formatted
@@ -22,6 +24,7 @@ import type { ChangeSpec, Extension, Line, Range, SelectionRange } from "@codemi
 import { Decoration, EditorView, keymap, ViewPlugin, WidgetType } from "@codemirror/view";
 import type { Command, DecorationSet, ViewUpdate } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
+import { imageSize, imageUrl, loadImage, loadImages } from "./images";
 import { classifyHref, wikiHref } from "./links";
 import { renderFragment } from "./preview";
 import { allowedColors } from "./sanitize";
@@ -32,10 +35,14 @@ export interface LiveConfig {
   followLink: (href: string) => void;
   /** Shown under the address of a link when hovering it ("Ctrl+click to open"). */
   linkHint: string;
+  /** Opens an image in the default Windows program (Ctrl+click); `src` as the document writes it. */
+  openImage: (src: string, wiki: boolean) => void;
+  /** Opens the path field of the selected image (a double click on it). */
+  editImage: () => void;
 }
 
 const liveConfig = Facet.define<LiveConfig, LiveConfig>({
-  combine: (values) => values[0] ?? { followLink: () => {}, linkHint: "" },
+  combine: (values) => values[0] ?? { followLink: () => {}, linkHint: "", openImage: () => {}, editImage: () => {} },
 });
 
 const liveFlag = Facet.define<boolean, boolean>({ combine: (values) => values.some(Boolean) });
@@ -51,7 +58,7 @@ type Role = "heading" | "quote" | "list";
 interface Hidden {
   from: number;
   to: number;
-  /** Shown instead (a bullet, an image frame, a character). */
+  /** Shown instead (a bullet, an image, a character). */
   widget?: WidgetType;
   /** A block marker at the start of a line. */
   role?: Role;
@@ -168,6 +175,11 @@ function analyze(state: EditorState, from: number, to: number, purpose: "view" |
     out.spans.push({ from: open.from, openTo: open.to, closeFrom: close.from, to: close.to });
   };
   const tags: { from: number; to: number; name: string; closing: boolean; text: string }[] = [];
+  // An image is always shown, outlined while a selection covers all of it.
+  const picture = (a: number, b: number, alt: string, src: string, wiki: boolean, width: string | null) => {
+    const selected = purpose === "view" && state.selection.ranges.some((range) => !range.empty && range.from <= a && range.to >= b);
+    hide({ from: a, to: b, widget: new ImageWidget(alt, src, wiki, width, selected) });
+  };
 
   tree.iterate({
     from,
@@ -277,10 +289,11 @@ function analyze(state: EditorState, from: number, to: number, purpose: "view" |
           if (purpose === "search") {
             hide({ from: marks[0].from, to: marks[0].to });
             hide({ from: marks[1].from, to: ref.to });
-          } else if (!revealed(ref.from, ref.to)) {
+          } else {
             const alt = doc.sliceString(marks[0].to, marks[1].from);
-            const src = url ? doc.sliceString(url.from, url.to) : "";
-            hide({ from: ref.from, to: ref.to, widget: new ImageWidget(alt, src) });
+            let src = url ? doc.sliceString(url.from, url.to).replace(/^<(.*)>$/, "$1") : "";
+            if (!url && label) src = references(state).get(doc.sliceString(label.from + 1, label.to - 1).trim().toLowerCase()) ?? "";
+            picture(ref.from, ref.to, alt, src, false, null);
           }
           return false;
         }
@@ -298,12 +311,14 @@ function analyze(state: EditorState, from: number, to: number, purpose: "view" |
         return;
       }
       if (name === "WikiEmbed") {
-        const target = doc.sliceString(ref.from + 3, ref.to - 2).split("|")[0].trim();
+        const [target, text = ""] = doc.sliceString(ref.from + 3, ref.to - 2).split("|").map((part) => part.trim());
         if (purpose === "search") {
           hide({ from: ref.from, to: ref.from + 3 });
           hide({ from: ref.to - 2, to: ref.to });
-        } else if (!revealed(ref.from, ref.to)) {
-          hide({ from: ref.from, to: ref.to, widget: new ImageWidget(target, target) });
+        } else {
+          // As in the preview: `|300` (or `|300x200`) is a width, other text the alt text.
+          const size = /^(\d+)(?:x\d+)?$/.exec(text);
+          picture(ref.from, ref.to, size ? target : text || target, target, true, imageSize(size?.[1]));
         }
         return false;
       }
@@ -367,6 +382,16 @@ function analyze(state: EditorState, from: number, to: number, purpose: "view" |
       if (name === "HTMLTag" || name === "Comment" || name === "ProcessingInstruction") {
         const text = doc.sliceString(ref.from, ref.to);
         const tag = /^<(\/?)([a-z][a-z0-9-]*)/i.exec(text);
+        if (tag && !tag[1] && tag[2].toLowerCase() === "img") {
+          // Shown like a Markdown image.
+          if (purpose === "search") {
+            hide({ from: ref.from, to: ref.to });
+          } else {
+            const img = imageTag(text);
+            picture(ref.from, ref.to, img.getAttribute("alt") ?? "", img.getAttribute("src") ?? "", false, imageSize(img.getAttribute("width")));
+          }
+          return;
+        }
         hide({ from: ref.from, to: ref.to, escape: tag && !tag[1] ? [ref.from] : undefined });
         if (tag) tags.push({ from: ref.from, to: ref.to, name: tag[2].toLowerCase(), closing: tag[1] === "/", text });
         return;
@@ -467,30 +492,48 @@ class ListWidget extends WidgetType {
   }
 }
 
-const imageIcon =
-  '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>';
-
-/** An image: a frame with the alt text, as in the preview. The file is never loaded. */
+/** An image as in the preview (see images.ts), or the frame with its alt text when it is not loaded. */
 class ImageWidget extends WidgetType {
+  /** Where the image loads from (it changes with the folder of the document too) and how it is shown. */
+  readonly key: string;
+
   constructor(
     readonly alt: string,
     readonly src: string,
+    readonly wiki: boolean,
+    readonly width: string | null,
+    readonly selected: boolean,
   ) {
     super();
+    this.key = JSON.stringify([imageUrl(src, wiki), src, alt, width]);
   }
 
   eq(other: ImageWidget): boolean {
-    return other.alt === this.alt && other.src === this.src;
+    return other.key === this.key && other.selected === this.selected;
   }
 
-  toDOM(): HTMLElement {
+  /** Selecting or unselecting the image keeps it, so it is not loaded again. */
+  updateDOM(dom: HTMLElement): boolean {
+    if (dom.dataset.key !== this.key) return false;
+    dom.classList.toggle("cm-live-picture-selected", this.selected);
+    return true;
+  }
+
+  toDOM(view: EditorView): HTMLElement {
+    // The image (or the frame that replaces a failed one) lives inside, so the
+    // editor never sees the widget itself change.
     const el = document.createElement("span");
-    el.className = "cm-live-image";
-    el.title = this.src;
-    el.innerHTML = imageIcon;
-    const alt = document.createElement("span");
-    alt.textContent = this.alt;
-    el.append(alt);
+    el.className = "cm-live-picture";
+    el.dataset.key = this.key;
+    el.classList.toggle("cm-live-picture-selected", this.selected);
+    const img = document.createElement("img");
+    img.dataset.src = this.src;
+    if (this.wiki) img.dataset.wiki = "1";
+    img.alt = this.alt;
+    if (this.width) img.width = Number(this.width);
+    el.append(img);
+    // The line grows once the image has loaded.
+    loadImage(img, () => view.requestMeasure());
     return el;
   }
 
@@ -518,6 +561,15 @@ class TextWidget extends WidgetType {
   ignoreEvent(): boolean {
     return false;
   }
+}
+
+// Parsed in a template, where nothing loads, only to read the attributes.
+const tagParser = document.createElement("template");
+
+/** The attributes of a raw `<img …>` tag. */
+function imageTag(text: string): Element {
+  tagParser.innerHTML = text;
+  return tagParser.content.querySelector("img") ?? document.createElement("img");
 }
 
 const entityDecoder = document.createElement("textarea");
@@ -548,13 +600,19 @@ class BlockWidget extends WidgetType {
     const el = document.createElement("div");
     el.className = "cm-live-block";
     el.append(renderFragment(this.source));
-    // A click shows the source; Ctrl+click on a link follows it.
+    loadImages(el, () => view.requestMeasure());
+    // A click shows the source; Ctrl+click on a link follows it, on an image opens it.
     el.addEventListener("mousedown", (event) => {
       if (event.button !== 0) return;
       event.preventDefault();
       const link = (event.target as Element).closest("a");
+      const image = (event.target as Element).closest<HTMLImageElement>("img.md-image");
       if (link && event.ctrlKey) {
         view.state.facet(liveConfig).followLink(link.getAttribute("href") ?? "");
+        return;
+      }
+      if (image && event.ctrlKey) {
+        view.state.facet(liveConfig).openImage(image.dataset.src ?? "", image.dataset.wiki === "1");
         return;
       }
       const pos = view.posAtDOM(el);
@@ -1039,15 +1097,42 @@ function toggleTask(event: MouseEvent, view: EditorView): boolean {
   return true;
 }
 
+/** A click on an image selects all of it (its Markdown, which stays hidden). */
+function selectImage(event: MouseEvent, view: EditorView): boolean {
+  const picture = (event.target as Element).closest(".cm-live-picture");
+  if (!picture || event.shiftKey) return false;
+  const pos = view.posAtDOM(picture);
+  const image = lineAnalysis(view.state, view.state.doc.lineAt(pos)).hidden.find((h) => h.from === pos && h.widget instanceof ImageWidget);
+  if (!image) return false;
+  event.preventDefault();
+  view.dispatch({ selection: EditorSelection.range(image.from, image.to), userEvent: "select.pointer" });
+  view.focus();
+  return true;
+}
+
 const linkEvents = EditorView.domEventHandlers({
-  // Ctrl+click follows a link; a plain click only places the cursor.
+  // Ctrl+click follows a link or opens an image; a plain click only places the
+  // cursor, or selects the image clicked.
   mousedown(event, view) {
-    if (event.button === 0 && !event.ctrlKey && toggleTask(event, view)) return true;
+    if (event.button === 0 && !event.ctrlKey && (toggleTask(event, view) || selectImage(event, view))) return true;
     if (event.button !== 0 || !event.ctrlKey) return false;
     const link = (event.target as Element).closest<HTMLElement>("[data-href]");
+    const image = (event.target as Element).closest<HTMLImageElement>("img.md-image");
+    if (image && !link) {
+      event.preventDefault();
+      view.state.facet(liveConfig).openImage(image.dataset.src ?? "", image.dataset.wiki === "1");
+      return true;
+    }
     if (!link) return false;
     event.preventDefault();
     view.state.facet(liveConfig).followLink(link.dataset.href ?? "");
+    return true;
+  },
+  // A double click on an image (the first click selected it) opens its path field.
+  dblclick(event, view) {
+    if (event.button !== 0 || event.ctrlKey || !(event.target as Element).closest(".cm-live-picture")) return false;
+    event.preventDefault();
+    view.state.facet(liveConfig).editImage();
     return true;
   },
   // The pointing hand shows over links while Ctrl is held.
@@ -1200,7 +1285,7 @@ const liveTheme = EditorView.theme({
     overflow: "visible",
     stroke: "var(--content-strong)",
   },
-  ".cm-live-image, .cm-live-block .image-placeholder": {
+  ".cm-live-picture .image-placeholder, .cm-live-block .image-placeholder": {
     display: "inline-flex",
     alignItems: "center",
     gap: "6px",
@@ -1212,7 +1297,15 @@ const liveTheme = EditorView.theme({
     fontSize: "0.875em",
     verticalAlign: "middle",
   },
-  ".cm-live-image svg, .cm-live-block .image-placeholder svg": icon,
+  ".cm-live-picture .image-placeholder svg, .cm-live-block .image-placeholder svg": icon,
+  // Images: their own size, made smaller to fit the text, never larger.
+  ".cm-live-picture img, .cm-live-block img.md-image": { maxWidth: "100%", height: "auto", verticalAlign: "bottom" },
+  // A selected image: a ring around it, outside, so nothing moves.
+  ".cm-live-picture-selected img, .cm-live-picture-selected .image-placeholder": {
+    outline: "2px solid var(--ring)",
+    outlineOffset: "2px",
+  },
+  "&.cm-live-ctrl .cm-live-picture img, &.cm-live-ctrl .cm-live-block img.md-image": { cursor: "pointer" },
   // Rendered blocks: the same look as in the preview.
   ".cm-live-block": {
     display: "flow-root",

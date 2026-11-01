@@ -56,11 +56,11 @@ Otwarty plik ma być wyświetlany w obszarze podzielonym na dwie części:
 
 1. lewy panel służy do edycji pliku. Wyświetla niesformatowaną składnię Markdown. 
 
-Nad nim (w trybie dwóch okien nad oboma panelami, na całą szerokość okna) jest pasek ikon pozwalających na typowe formatowanie zaznaczonego tekstu i akapitów, np.: bold, italic, podkreślenie, lista numerowana i punktowana, lista zadań, nagłówki H1 do H5 i tekst akapitowy, cytat, hiperłącze, tabela. Ikony są wyrównane do lewej. W trybie dwóch okien pierwsza z nich zaczyna się na tej samej pionowej linii co tekst pod paskiem; w trybie jednego okna tekst ma szerszy margines, a ikony zostają na swoim miejscu. Podkreślenie owija tekst w znacznik `<u>…</u>` (GFM nie ma własnej składni podkreślenia).
+Nad nim (w trybie dwóch okien nad oboma panelami, na całą szerokość okna) jest pasek ikon pozwalających na typowe formatowanie zaznaczonego tekstu i akapitów, np.: bold, italic, podkreślenie, lista numerowana i punktowana, lista zadań, nagłówki H1 do H5 i tekst akapitowy, cytat, tabela, obraz, hiperłącze. Ikony są wyrównane do lewej. W trybie dwóch okien pierwsza z nich zaczyna się na tej samej pionowej linii co tekst pod paskiem; w trybie jednego okna tekst ma szerszy margines, a ikony zostają na swoim miejscu. Podkreślenie owija tekst w znacznik `<u>…</u>` (GFM nie ma własnej składni podkreślenia).
 
 Lista zadań zamienia linie w zadania z polem wyboru (`- [ ] `). Zrobione zadanie (`- [x] `) wyświetla się jako obrysowe pole z białym ptaszkiem w środku, nie jako wypełnione pole. W trybie jednego okna kliknięcie pola zaznacza lub odznacza zadanie.
 
-Ikony stoją w kolejności: B, I, U, styl akapitu (H), lista punktowana, numerowana, lista zadań, cytat, tabela, hiperłącze, bez separatorów. Na końcu jest ikona mikrofonu „Dyktowanie”: uruchamia dyktowanie głosowe Windows (tak jak pozycja „Dyktowanie” w menu pod prawym przyciskiem myszy), a dyktowany tekst trafia w miejsce kursora. Za mikrofonem, po separatorze, stoi przycisk schematu barw (opisany w „Schemat barw”). Gdy okno jest zbyt wąskie, ikony, które się nie mieszczą (z mikrofonem i przyciskiem schematu włącznie), chowają się za przyciskiem „Więcej” (…).
+Ikony stoją w kolejności: B, I, U, styl akapitu (H), lista punktowana, numerowana, lista zadań, cytat, tabela, obraz, hiperłącze, bez separatorów. Na końcu jest ikona mikrofonu „Dyktowanie”: uruchamia dyktowanie głosowe Windows (tak jak pozycja „Dyktowanie” w menu pod prawym przyciskiem myszy), a dyktowany tekst trafia w miejsce kursora. Za mikrofonem, po separatorze, stoi przycisk schematu barw (opisany w „Schemat barw”). Gdy okno jest zbyt wąskie, ikony, które się nie mieszczą (z mikrofonem i przyciskiem schematu włącznie), chowają się za przyciskiem „Więcej” (…).
 
 Program może pokazywać miniaturowy podgląd całego dokumentu (minimapę) w formie okienka dosuniętego do prawego górnego narożnika panelu (styka się z paskiem narzędzi i z prawą krawędzią panelu). W trybie jednego okna minimapa odwzorowuje edytor, a w trybie dwóch okien — wyrenderowany podgląd i stoi przy prawej krawędzi prawego panelu. W trybie dwóch okien z włączonym „Przewijaj razem” lewy panel nie ma ani paska przewijania, ani minimapy (podąża za prawym), a prawy ma pasek przewijania albo minimapę, zależnie od przełącznika „Mapa”. Z wyłączonym „Przewijaj razem” oba panele mają to samo: dwie minimapy (każda przy prawej krawędzi swojego panelu) albo dwa paski przewijania. Okienko ma co najmniej 100 px wysokości, a dla dłuższych plików wydłuża się wraz z długością pliku, najwyżej do dołu panelu. Minimapa zajmuje miejsce paska przewijania swojego panelu, który jest wtedy ukryty. Na dolnym pasku, przy prawej krawędzi (za przełącznikiem „Przewijaj razem”), jest przełącznik z ikoną kartki z liniami tekstu: „Mapa: wł” / „wył”. „Wył” ukrywa minimapę, a tekst ma wtedy pełną szerokość panelu. Przy pierwszym uruchomieniu minimapa jest wyłączona. Ustawienie jest wspólne dla wszystkich kart okna, zapamiętywane w sesji osobno dla każdej grupy kart (i dla okna domyślnego). Gdy minimapa jest widoczna, tekst w jej panelu ma stały prawy margines na całej wysokości panelu, tak szeroki, by okienko miniatury nigdy nie zasłaniało tekstu. Fragment podglądu, który pokazuje obszar pliku widoczny na ekranie, jest oznaczony delikatnie jaśniejszym kolorem. Kliknięcie myszą i przeciągnięcie w górę lub w dół w rejonie miniatury przewija zawartość jej panelu.
 
@@ -103,7 +103,7 @@ W trybie jednego okna jeden panel zajmuje miejsce obu paneli i nie ma linii podz
 * Backspace: na początku nagłówka, punktu listy lub cytatu usuwa formatowanie tej linii i zamienia ją w zwykły akapit. Kolejny Backspace łączy ją z poprzednią linią.
 * Ukryte znaczniki: kursor je omija, a strzałki przeskakują je tak, jakby ich nie było. Pojedynczy Backspace ani Delete ich nie usuwa. Usunięcie całego sformatowanego fragmentu usuwa także jego znaczniki.
 * Linki: tekst linku wygląda jak w podglądzie. Zwykłe kliknięcie stawia kursor, a Ctrl+klik otwiera link według zasad z sekcji „Linki”. Podpowiedź pokazuje pełny adres i „Ctrl+klik, aby otworzyć”. Przycisk linku na pasku narzędzi otwiera okienko z polem adresu, w którym adres się wpisuje i zmienia.
-* Tabele, bloki kodu, HTML z białej listy, linia pozioma i obrazki: są wyrenderowane, a obrazki pokazane jako ramka z tekstem alt. Kliknięcie elementu lub wejście w niego kursorem pokazuje jego surowe źródło do edycji. Gdy kursor wyjdzie z elementu, znów jest wyrenderowany.
+* Tabele, bloki kodu, HTML z białej listy, linia pozioma i obrazki: są wyrenderowane. Kliknięcie elementu lub wejście w niego kursorem pokazuje jego surowe źródło do edycji. Gdy kursor wyjdzie z elementu, znów jest wyrenderowany.
 * Pojedynczy Enter i wiele pustych linii wyglądają tak samo jak w podglądzie.
 * Znajdź (Ctrl+F) przeszukuje tylko widoczny tekst i pomija ukryte znaczniki oraz adresy linków.
 * Bez zmian względem trybu dwóch okien: minimapa, sprawdzanie pisowni, Alt+strzałki i powiększanie. Licznik znaków nadal liczy cały plik razem ze składnią.
@@ -185,8 +185,21 @@ Obrazki:
 
 
 
-* nie obsługujemy
-* W podglądzie zamiast obrazka pokazujemy subtelną ramkę z ikoną obrazka i tekstem alt. Pliku obrazka nie wczytujemy.
+* Pokazujemy lokalne pliki graficzne (PNG, JPG/JPEG, GIF, WebP, AVIF, BMP, SVG) w podglądzie i w trybie jednego okna.
+* Obrazek wskazujemy ścieżką względną od pliku Markdown (`![opis](obrazy/foto.png)`, także z `../`), wikilinkiem Obsidiana (`![[foto.png]]`, szukanym tak jak notatki) albo znacznikiem `<img>` z białej listy.
+* Obrazek ma naturalny rozmiar, zmniejszony do szerokości tekstu, nigdy powiększony. Szerokość można podać w pliku: `![[foto.png|300]]` albo `<img src="foto.png" width="300">`.
+* Nie wczytujemy obrazków z internetu (http, https), ze ścieżek bezwzględnych (wyjątek: niezapisany plik, opisany niżej) ani z adresów file: i data:. Takie obrazki, a także brakujące lub nieczytelne pliki, pokazujemy jako subtelną ramkę z ikoną obrazka i tekstem alt.
+* SVG wczytujemy wyłącznie jako obrazek (`<img>`), nigdy nie wstawiamy jego kodu do strony, więc skrypty i odwołania zewnętrzne w pliku SVG się nie wykonują.
+* Obrazki wczytujemy dopiero, gdy zbliżają się do widocznego fragmentu, i nie blokują pisania. Plik bez obrazków otwiera się tak samo szybko jak bez tej funkcji.
+* Kliknięcie obrazka w podglądzie (w trybie jednego okna Ctrl+klik) otwiera go w domyślnym programie Windows.
+
+Wstawianie obrazka:
+
+* Przycisk „Wstaw obraz” na pasku formatowania otwiera systemowe okno wyboru pliku z filtrem obrazów. Plik graficzny upuszczony w oknie programu wstawiamy według tych samych zasad: w edytorze w miejscu upuszczenia, poza nim w miejscu kursora.
+* Obrazek leżący w folderze pliku Markdown lub w jego podfolderach (dowolnie głęboko), a jeśli plik leży w sejfie Obsidiana, w dowolnym miejscu tego sejfu, linkujemy ścieżką względną, bez kopiowania.
+* Obrazek spoza tego obszaru kopiujemy do folderu „obrazy” obok pliku Markdown (w Windows w innym języku niż polski: „images”) i linkujemy kopię. Jeśli obok pliku istnieje już folder „obrazy” albo „images”, używamy go. Plik o tej samej nazwie i treści nie jest kopiowany ponownie; przy innej treści kopia dostaje numer, np. „foto (2).png”.
+* Wstawiamy standardowy Markdown `![opis](ścieżka)` w miejscu kursora, ze spacjami w ścieżce zapisanymi jako `%20`. Opisem jest zaznaczony tekst, a bez zaznaczenia nazwa pliku bez rozszerzenia.
+* Plik jeszcze niezapisany („Bez tytułu”) nie ma folderu, więc obrazek linkujemy jego pełną ścieżką i tak go pokazujemy. Przy pierwszym zapisaniu pliku obrazki podlinkowane pełną ścieżką kopiujemy lub linkujemy według zasad powyżej, a ich adresy w tekście zamieniamy na ścieżki względne.
 
 
 Linki:
@@ -200,7 +213,7 @@ Linki:
 * Pliki wykonywalne i inne typy, które Windows uznaje za niebezpieczne (np. .exe, .bat, .cmd, .ps1, .vbs, .msi, .lnk, .chm, .hta), a także foldery i pliki bez rozszerzenia, zawsze wymagają potwierdzenia.
 * Zablokowane: javascript:, data: oraz file: i inne nieznane schematy, a także ścieżki bezwzględne (C:\…, /…, \\serwer\…).
 * Linki do nagłówków przewijają do nagłówka, także w innym pliku (`plik.md#nagłówek` otwiera plik w nowej karcie i przewija). Akceptujemy oba zapisy: GitHuba (slug: małe litery, spacje zamienione na dywizy, bez interpunkcji poza „-” i „_”, np. `#grupy-kart`; powtórzenia z końcówkami `-1`, `-2`) i Obsidiana (dosłowny tekst nagłówka, np. `#Grupy%20kart`), bez rozróżniania wielkości liter. Gdy nagłówka nie ma, kliknięcie nic nie robi. Odnośniki do bloków (`#^…`) są nieaktywne. Treść nie dostaje atrybutów `id`.
-* Wikilinki Obsidiana (rozszerzenie poza GFM): `[[Notatka]]`, `[[Notatka|tekst]]`, `[[Notatka#Nagłówek]]`, `[[Folder/Notatka]]` wyglądają jak zwykłe linki (widać tylko tekst albo nazwę) i otwierają plik `.md` w nowej karcie. Notatki szukamy najpierw w folderze bieżącego pliku, a jeśli wyżej jest folder `.obsidian`, w całym tym sejfie (jak Obsidian: przy kilku plikach o tej samej nazwie wybieramy ten o najkrótszej ścieżce). Wikilinki do plików innych typów podlegają tym samym zasadom co linki względne. Nieistniejąca notatka nie jest tworzona; kliknięcie nic nie robi. Osadzenia `![[…]]` pokazujemy jako ramkę z nazwą, jak obrazki.
+* Wikilinki Obsidiana (rozszerzenie poza GFM): `[[Notatka]]`, `[[Notatka|tekst]]`, `[[Notatka#Nagłówek]]`, `[[Folder/Notatka]]` wyglądają jak zwykłe linki (widać tylko tekst albo nazwę) i otwierają plik `.md` w nowej karcie. Notatki szukamy najpierw w folderze bieżącego pliku, a jeśli wyżej jest folder `.obsidian`, w całym tym sejfie (jak Obsidian: przy kilku plikach o tej samej nazwie wybieramy ten o najkrótszej ścieżce). Wikilinki do plików innych typów podlegają tym samym zasadom co linki względne. Nieistniejąca notatka nie jest tworzona; kliknięcie nic nie robi. Osadzenia obrazków `![[…]]` pokazujemy jak obrazki (sekcja „Obrazki”), a osadzenia notatek i innych plików jako ramkę z nazwą.
 * W podglądzie link działa po kliknięciu, a w trybie jednego okna po Ctrl+kliknięciu, jak inne linki.
 * Przy najechaniu pokazujemy pełny adres docelowy, żeby tekst linku nie ukrywał prawdziwego celu.
 
@@ -210,7 +223,7 @@ HTML w pliku (bezpieczeństwo):
 
 
 
-* Surowy HTML nie jest wykonywany. Domyślnie jest sanityzowany po białej liście: br, span (tylko color i background-color), details (z atrybutem open)/summary, sub, sup, kbd, u.
+* Surowy HTML nie jest wykonywany. Domyślnie jest sanityzowany po białej liście: br, span (tylko color i background-color), details (z atrybutem open)/summary, sub, sup, kbd, u, img (tylko src, alt, width, height; src według zasad z sekcji „Obrazki”).
 * Zawsze usuwane: script, iframe, object, embed, style, form, atrybuty on\* i adresy javascript:.
 * Renderer działa z restrykcyjnym CSP bez inline-skryptów i bez dostępu do systemu plików z poziomu treści. Jeśli to Electron lub WebView, wyłączamy nodeIntegration.
 

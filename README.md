@@ -12,7 +12,7 @@ Free and open source under the [GNU GPL v3](LICENSE).
 - [Download and installation](#download-and-installation)
   - [Requirements](#requirements)
   - [The Windows security warning](#the-windows-security-warning)
-- [Status: 1.2.1](#status-121)
+- [Status: 1.3.0](#status-130)
   - [Features](#features)
   - [Known limitations](#known-limitations)
 - [Building](#building)
@@ -72,13 +72,13 @@ Windows remembers the choice, so the warning does not come back for this file. A
 
 If there is no *Run anyway* button (some company or school PCs block unknown programs), right-click `MDE.zip` (before unpacking) or `MDE.exe` in Explorer, choose *Properties*, tick **Unblock** at the bottom of the *General* tab and click *OK*. If that option is missing too, your administrator does not allow such programs.
 
-# Status: 1.2.1
+# Status: 1.3.0
 
 ## Features
 
 - **One pane or two.** Edit with the text already formatted and the Markdown syntax hidden, like Notepad does, or edit the source next to a live preview.
 - **GitHub Flavored Markdown** with tables, task lists and a whitelist of safe HTML. Every Enter is a line break and blank lines show exactly as they are in the file.
-- **Formatting toolbar** and shortcuts: bold, italic, underline, headings, lists, task lists, quotes, tables, links and Windows dictation.
+- **Formatting toolbar** and shortcuts: bold, italic, underline, headings, lists, task lists, quotes, tables, images, links and Windows dictation.
 - **Tabs and tab groups.** Tabs can be dragged into a new order; a tab group is a saved set of tabs that opens in a window of its own.
 - **Session memory.** Open tabs, unsaved edits, scroll positions, the window and the settings come back after a restart.
 - **Minimap**, a small picture of the whole document for finding your way and scrolling.
@@ -88,6 +88,7 @@ If there is no *Run anyway* button (some company or school PCs block unknown pro
 - **Spell checking** in Polish and English, with the dictionaries of Windows.
 - **Byte-faithful saving, with no questions.** The encoding (UTF-8, UTF-16 or an older Windows one, e.g. Windows-1250 or 1252) and the line endings are kept; a file opened and saved without edits stays identical to the byte.
 - **Safe links and HTML.** Web links open in the browser, links to Markdown files in a new tab and other files after a question; nothing in a file is ever executed.
+- **Local images** (PNG, JPG, GIF, WebP, AVIF, BMP, SVG) inserted with a button or by dragging; one from elsewhere is copied into a folder next to the file.
 - **Clickable tables of contents and Obsidian links.** Links to headings work as on GitHub and in Obsidian, and `[[wikilinks]]` open notes from the same Obsidian vault in new tabs.
 - **Fast and portable**: a single exe of about 5 MB, no installer, starts in about half a second. The interface is Polish or English, following Windows.
 
@@ -107,7 +108,7 @@ Every feature is described in detail in [docs/FEATURES.md](docs/FEATURES.md).
 
 ## Known limitations
 
-- **Images are not shown** (by design): a frame with the alt text takes their place, and the image file is not read.
+- **Images from the web are not shown** (by design): only local image files are, and a frame with the alt text takes the place of the others.
 
 # Building
 
@@ -149,10 +150,10 @@ npm run release
 
 It writes `release/LICENSE.txt` (`tools/license-txt.mjs`: the text of `LICENSE` with each paragraph on one line and Windows line endings, so it opens in Notepad with a double click and wraps to the window width; the words are unchanged) and packs it with `MDE.exe` into `release/MDE.zip`.
 
-Then create a [GitHub release](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) with a version tag (e.g. `v1.2.1`) and attach the ZIP under the exact name `MDE.zip`, so the download link at the top of this file (`releases/latest/download/MDE.zip`) always points to the newest version. With the [GitHub CLI](https://cli.github.com/):
+Then create a [GitHub release](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) with a version tag (e.g. `v1.3.0`) and attach the ZIP under the exact name `MDE.zip`, so the download link at the top of this file (`releases/latest/download/MDE.zip`) always points to the newest version. With the [GitHub CLI](https://cli.github.com/):
 
 ```bash
-gh release create v1.2.1 release/MDE.zip --title "MDE 1.2.1" --notes "What changed"
+gh release create v1.3.0 release/MDE.zip --title "MDE 1.3.0" --notes "What changed"
 ```
 
 The app icon comes from `src-tauri/icons/icon.svg`. After changing it, rebuild `icon.ico` (16–256px) and `icon.png` (512px) with `npx tauri icon src-tauri/icons/icon.svg -o <temp folder>` and copy those two files into `src-tauri/icons/`; touch `src-tauri/build.rs` before the next build, or Cargo keeps the old icon in the exe.
@@ -192,6 +193,8 @@ src/                  frontend (TypeScript)
   preview.ts          markdown-it preview (right panel), incl. the blank-lines extension,
                       link clicks and the source-line map of its blocks
   sanitize.ts         whitelist sanitizer for raw HTML
+  images.ts           which images load and from where, the frame for the others,
+                      the Markdown of inserted images
   taskbox.ts          the task-list box (CSS frame, SVG tick), shared by the preview and one pane
   links.ts            which links are followed and how (web, relative, wikilinks, headings, blocked)
   format.ts           formatting commands (bold, headings, lists, quote, link, table);
@@ -216,6 +219,8 @@ src-tauri/            backend (Rust, Tauri 2)
                       voice typing (Win+H);
                       single instance; opening windows (default and tab groups)
   src/spell.rs        Windows Spell Checking API on a dedicated COM thread
+  src/images.rs       the mdeimg protocol serving local images; placing inserted images
+                      (linked in place or copied next to the file) + tests
   src/caption.rs      native minimize / maximize / close buttons over the top bar
   src/settings.rs     app-wide settings (the colour scheme) in %APPDATA%\MDE\settings.json
   src/context_menu.rs the right-click menu (WebView2 menu trimmed and reordered)

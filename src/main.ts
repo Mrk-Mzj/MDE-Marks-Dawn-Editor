@@ -7,8 +7,9 @@ import { countChars, Editor } from "./editor";
 import { FindBar, SearchQuery } from "./find";
 import { GroupsPopover } from "./groups";
 import type { ScrollPosition, Selection } from "./editor";
-import { applyLink, blockState, inlineState, insertLink, insertTable, linkAt, setHeading, toggleInline, toggleList, toggleQuote } from "./format";
+import { applyImagePath, applyLink, blockState, imageAt, inlineState, insertLink, insertTable, linkAt, setHeading, toggleInline, toggleList, toggleQuote } from "./format";
 import { lang, t } from "./i18n";
+import { forgetFailedImages, imageMarkdown, imageReference, isImageFile, markdownPath, setImageDocument } from "./images";
 import { classifyHref, extensionOf, findHeading, isMarkdownFile, needsConfirmation } from "./links";
 import type { LinkTarget } from "./links";
 import { Menu } from "./menu";
@@ -101,10 +102,22 @@ const noticeClose = $<HTMLButtonElement>("#notice-close");
 let onNoticeClose = () => {};
 noticeClose.addEventListener("click", () => onNoticeClose());
 const previewEl = $("#preview");
-const preview = new Preview(previewEl, followLink);
+const preview = new Preview(previewEl, followLink, openImage, () => {
+  // An image that loaded makes its paragraph taller; the text being read stays in place.
+  previewMinimap.schedule();
+  scrollSync.relink();
+});
 const spell = new SpellService(lang);
 const search = new SearchQuery();
-const editor = new Editor($("#editor"), onEdit, spell, search, { followLink, linkHint: t.linkCtrlClick });
+const editor = new Editor($("#editor"), onEdit, spell, search, {
+  followLink,
+  linkHint: t.linkCtrlClick,
+  openImage,
+  editImage: () => {
+    const { anchor, align } = toolbar.anchorOf(imageItem);
+    editImage(anchor, align, false);
+  },
+});
 const findBar = new FindBar($("#find"), search, editor.view, {
   find: t.findLabel,
   placeholder: t.findPlaceholder,
@@ -319,6 +332,9 @@ function activate(doc: Doc): void {
   }
   if (active && docs.includes(active)) stash();
   active = doc;
+  // Images lead from the folder of the tab's file.
+  setImageDocument(doc.path);
+  forgetFailedImages();
   editor.setState(doc.state, doc.scroll);
   renderPreview(doc.state.doc.toString(), doc.previewScroll);
   scrollSync.linkSoon();
@@ -422,6 +438,7 @@ async function openWithDialog(): Promise<void> {
 }
 
 async function writeTo(doc: Doc, path: string, format = doc.format): Promise<boolean> {
+  if (doc.path === null) await relinkImages(doc, path);
   const state = stateOf(doc);
   const text = state.doc.toString();
   const breaks = editor.lineBreaks(state);
@@ -439,6 +456,7 @@ async function writeTo(doc: Doc, path: string, format = doc.format): Promise<boo
     // Typing may have happened while the file was being written.
     doc.dirty = isDirty(doc, stateOf(doc).doc.toString());
     if (doc === active) {
+      setImageDocument(path);
       updateNotice();
       updateTitle();
     } else {
@@ -463,6 +481,97 @@ async function save(doc = active): Promise<boolean> {
 async function saveAs(doc = active): Promise<boolean> {
   const path = await platform.pickSavePath(doc.path ?? `${doc.name}.md`);
   return path ? writeTo(doc, path) : false;
+}
+
+// ---------- Images ----------
+
+// `![alt](C:/…)`: an image linked by its full path, in a file not saved yet.
+const FULL_PATH_IMAGE = /!\[(?:[^\]\\\n]|\\.)*\]\(\s*(<[a-z]:[\\/][^>\n]*>|[a-z]:[\\/][^\s()]*)/dgi;
+
+/**
+ * The first save of a file: images linked by their full path are linked from
+ * the file's folder instead, copied next to it when they lie elsewhere (see
+ * `platform.placeImage`). An image that cannot be placed keeps its full path.
+ */
+async function relinkImages(doc: Doc, path: string): Promise<void> {
+  const found = [...stateOf(doc).doc.toString().matchAll(FULL_PATH_IMAGE)];
+  const changes: { from: number; to: number; insert: string }[] = [];
+  for (const match of found) {
+    const [from, to] = match.indices![1]!;
+    let image: string;
+    try {
+      image = decodeURIComponent(match[1].replace(/^<(.*)>$/, "$1"));
+    } catch {
+      continue;
+    }
+    if (!isImageFile(image)) continue;
+    try {
+      changes.push({ from, to, insert: markdownPath(await platform.placeImage(path, image)) });
+    } catch {
+      // The image is gone or cannot be copied: the link stays as it is.
+    }
+  }
+  if (changes.length === 0) return;
+  // The new links lead from the file's folder.
+  if (doc === active) {
+    setImageDocument(path);
+    editor.view.dispatch({ changes, userEvent: "input.images" });
+  } else {
+    doc.state = doc.state.update({ changes }).state;
+    doc.textStale = true;
+  }
+}
+
+/** Inserts links to the image files at `pos` in the editor (the cursor when null); see `platform.placeImage`. */
+async function insertImages(images: string[], pos: number | null): Promise<void> {
+  const doc = active;
+  const links: string[] = [];
+  const range = editor.state.selection.main;
+  // The selected text describes the image.
+  const selected = pos === null ? editor.state.sliceDoc(range.from, range.to).trim() : "";
+  for (const image of images) {
+    const name = platform.fileNameOf(image);
+    const alt = (images.length === 1 && selected) || name.replace(/\.[^.]*$/, "");
+    try {
+      // A file not saved yet has no folder: the image is linked by its full path until the first save.
+      const target = doc.path ? await platform.placeImage(doc.path, image) : image;
+      links.push(imageMarkdown(alt, target));
+    } catch (err) {
+      await platform.showError(`${t.imageFailed(name)}\n\n${errorText(String(err))}`);
+    }
+  }
+  // Another tab may have become active meanwhile.
+  if (links.length === 0 || active !== doc) return;
+  const insert = links.join("\n");
+  const from = pos ?? editor.state.selection.main.from;
+  const to = pos ?? editor.state.selection.main.to;
+  editor.view.dispatch({
+    changes: { from, to, insert },
+    selection: { anchor: from + insert.length },
+    scrollIntoView: true,
+    userEvent: "input.images",
+  });
+  editor.focus();
+}
+
+async function insertImagesFromDialog(): Promise<void> {
+  const images = await platform.pickImages();
+  if (images.length > 0) await insertImages(images, null);
+}
+
+/** Opens an image of the active tab in the default Windows program. */
+function openImage(src: string, wiki: boolean): void {
+  const reference = imageReference(src, wiki);
+  if (reference === null) return;
+  void (async () => {
+    const path = await platform.imagePath(active.path ?? "", reference, wiki);
+    if (!path) return;
+    try {
+      await platform.openWithDefaultProgram(path);
+    } catch (err) {
+      await platform.showError(`${t.linkOpenFailed(platform.fileNameOf(path))}\n\n${errorText(String(err))}`);
+    }
+  })();
 }
 
 /** Asks about unsaved changes, then closes the tab. */
@@ -768,6 +877,8 @@ async function checkDisk(): Promise<void> {
 }
 
 function requestDiskCheck(): void {
+  // Image files may have been added meanwhile.
+  forgetFailedImages();
   if (busy) pendingDiskCheck = true;
   else void exclusive(checkDisk);
 }
@@ -975,6 +1086,22 @@ function editLink(anchor: HTMLElement, align: "start" | "end"): void {
 
 const linkItem: ToolbarPicker = { kind: "picker", label: t.link, shortcut: "Ctrl+K", icon: icons.link, open: editLink };
 
+const imageItem: ToolbarPicker = { kind: "picker", label: t.image, icon: icons.image, open: (anchor, align) => editImage(anchor, align) };
+
+// The image button inserts images, or edits the path of the image at the
+// selection (one pane: the image clicked; two panes: the cursor in its Markdown).
+const imagePicker = new LinkPicker({ title: t.imagePath, placeholder: t.imagePlaceholder }, () => editor.focus());
+
+function editImage(anchor: HTMLElement, align: "start" | "end", insert = true): void {
+  const range = editor.state.selection.main;
+  const image = imageAt(editor.state, range.from, range.to);
+  if (!image) {
+    if (insert) void exclusive(insertImagesFromDialog);
+    return;
+  }
+  imagePicker.show(anchor, align, image.path, (path) => format((view) => applyImagePath(view, path))());
+}
+
 const tablePicker = new TablePicker(
   { columns: 8, rows: 8 },
   { title: t.table, size: t.tableSize },
@@ -1022,6 +1149,7 @@ const toolbar = new Toolbar(
         pressed: () => blockState(editor.state).list === "task" },
       { kind: "button", label: t.quote, icon: icons.quote, run: formatting.quote, pressed: () => blockState(editor.state).quote },
       { kind: "picker", label: t.table, icon: icons.table, open: (anchor, align) => tablePicker.show(anchor, align) },
+      imageItem,
       linkItem,
       { kind: "button", label: t.dictation, shortcut: "Win+H", icon: icons.mic, run: () => void platform.startDictation() },
     ],
@@ -1313,6 +1441,22 @@ syncStatus.addEventListener("click", () => {
 editor.view.scrollDOM.addEventListener("scroll", scheduleSessionSave, { passive: true });
 $("#preview").addEventListener("scroll", scheduleSessionSave, { passive: true });
 
+/**
+ * Files dropped from Explorer: images are inserted where they were dropped in
+ * the editor (elsewhere at the cursor), other files open in tabs.
+ */
+function filesDropped(paths: string[], x: number, y: number): void {
+  const images = paths.filter(isImageFile);
+  // Into the tab shown now: the other files open (in new tabs) afterwards.
+  if (images.length > 0 && !busy) {
+    const box = editor.view.dom.getBoundingClientRect();
+    const inEditor = x >= box.left && x < box.right && y >= box.top && y < box.bottom;
+    const pos = inEditor ? editor.view.posAtCoords({ x, y }) : null;
+    void exclusive(() => insertImages(images, pos));
+  }
+  openRequested(paths.filter((path) => !isImageFile(path)));
+}
+
 /** Files from Explorer (drag and drop) or from another MDE.exe started meanwhile. */
 function openRequested(paths: string[]): void {
   if (paths.length === 0) return;
@@ -1331,7 +1475,7 @@ void platform.onDeleteGroupRequested(() => {
   if (busy) pendingGroupDelete = true;
   else void exclusive(closeForGroupDelete);
 });
-void platform.onFilesDropped(openRequested);
+void platform.onFilesDropped(filesDropped);
 void platform.onOpenFilesRequested(openRequested);
 void platform.onWindowFocused(requestDiskCheck);
 

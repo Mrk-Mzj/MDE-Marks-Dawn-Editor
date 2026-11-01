@@ -1581,6 +1581,14 @@ body.resizing-panes .pane {
   background: color-mix(in oklch, var(--card) 50%, transparent);
 }
 
+/* Images: their own size, made smaller to fit the text, never larger. */
+.markdown-body img.md-image {
+  max-width: 100%;
+  height: auto;
+  vertical-align: bottom;
+  cursor: pointer;
+}
+
 .markdown-body .image-placeholder {
   display: inline-flex;
   align-items: center;

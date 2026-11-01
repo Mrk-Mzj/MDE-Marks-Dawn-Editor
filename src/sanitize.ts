@@ -8,9 +8,11 @@
 // attributes), dropped with its content when it is dangerous, and replaced by
 // its content otherwise. Nothing the user wrote is ever serialized back to HTML.
 
+import { imageSize } from "./images";
+
 const PREFIX = "raw-";
 
-const ALLOWED_TAGS = new Set(["br", "span", "details", "summary", "sub", "sup", "kbd", "u"]);
+const ALLOWED_TAGS = new Set(["br", "span", "details", "summary", "sub", "sup", "kbd", "u", "img"]);
 
 // Removed together with everything inside them. <embed> and <frame> are not
 // here: they have no content, and as custom elements they would swallow (and
@@ -43,6 +45,8 @@ export function markRawHtml(html: string): string {
       // <br> has no content, but as a custom element it would swallow what follows.
       // [^<>] keeps a long run of unclosed "<br" from making this slow.
       .replace(/<\/?raw-br(?=[\s/>])[^<>]*>/gi, `<${PREFIX}br></${PREFIX}br>`)
+      // The same for <img>, which keeps its attributes.
+      .replace(/<raw-img(?=[\s/>])([^<>]*?)\/?>/gi, `<${PREFIX}img$1></${PREFIX}img>`)
   );
 }
 
@@ -70,6 +74,15 @@ function rebuild(source: Element, tag: string): Element {
   const clean = source.ownerDocument.createElement(tag);
   if (tag === "span") copyColors(source.getAttribute("style") ?? "", clean);
   if (tag === "details" && source.hasAttribute("open")) clean.setAttribute("open", "");
+  if (tag === "img") {
+    // No `src`: images.ts decides what loads (see `loadImages`).
+    clean.setAttribute("data-src", source.getAttribute("src") ?? "");
+    clean.setAttribute("alt", source.getAttribute("alt") ?? "");
+    for (const name of ["width", "height"]) {
+      const size = imageSize(source.getAttribute(name));
+      if (size) clean.setAttribute(name, size);
+    }
+  }
   return clean;
 }
 
@@ -96,7 +109,7 @@ export function sanitize(root: ParentNode): void {
     const children = Array.from(node.childNodes);
     if (!ALLOWED_TAGS.has(tag)) {
       node.replaceWith(...children);
-    } else if (tag === "br") {
+    } else if (tag === "br" || tag === "img") {
       node.replaceWith(rebuild(node, tag), ...children);
     } else {
       const clean = rebuild(node, tag);

@@ -298,6 +298,29 @@ export async function pickFilesToOpen(): Promise<string[]> {
   return picked ?? [];
 }
 
+const imageFilter = { name: t.imageFiles, extensions: ["png", "jpg", "jpeg", "gif", "webp", "avif", "bmp", "svg"] };
+
+export async function pickImages(): Promise<string[]> {
+  if (!inTauri) return [];
+  const picked = await open({ multiple: true, directory: false, filters: [imageFilter, allFilter] });
+  return picked ?? [];
+}
+
+/**
+ * Makes the image `image` usable from the file `document`: linked where it
+ * is, or copied next to the document (see src-tauri/src/images.rs). Returns
+ * the path to write in the link, relative to the document's folder.
+ */
+export async function placeImage(document: string, image: string): Promise<string> {
+  if (!inTauri) throw new Error("unavailable");
+  return invoke<string>("place_image", { document, image });
+}
+
+/** The full path of an image of `document` (empty when not saved yet), or `null` when it is not there. */
+export async function imagePath(document: string, reference: string, wiki: boolean): Promise<string | null> {
+  return inTauri ? invoke<string | null>("image_path", { document, reference, wiki }) : null;
+}
+
 export async function pickSavePath(suggestedName: string): Promise<string | null> {
   if (!inTauri) return null;
   return save({ defaultPath: suggestedName, filters: [markdownFilter, textFilter, allFilter] });
@@ -408,10 +431,12 @@ export async function onWindowFocused(handler: () => void): Promise<void> {
   });
 }
 
-/** Calls `handler` with the files dropped onto the window. */
-export async function onFilesDropped(handler: (paths: string[]) => void): Promise<void> {
+/** Calls `handler` with the files dropped onto the window and where (in CSS pixels of the page). */
+export async function onFilesDropped(handler: (paths: string[], x: number, y: number) => void): Promise<void> {
   if (!inTauri) return;
   await getCurrentWebview().onDragDropEvent((event) => {
-    if (event.payload.type === "drop") handler(event.payload.paths);
+    if (event.payload.type !== "drop") return;
+    const { x, y } = event.payload.position;
+    handler(event.payload.paths, x / devicePixelRatio, y / devicePixelRatio);
   });
 }
