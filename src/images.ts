@@ -5,7 +5,9 @@
 // the web, full paths in a saved file and file: or data: addresses never load;
 // they show as a frame with the alt text, like a file that is not there.
 
-const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "avif", "bmp", "svg"]);
+import { imageSizes } from "./platform";
+
+const IMAGE_EXTENSIONS =new Set(["png", "jpg", "jpeg", "gif", "webp", "avif", "bmp", "svg"]);
 
 const ORIGIN = "http://mdeimg.localhost/";
 
@@ -26,6 +28,11 @@ export function setImageDocument(path: string | null): void {
 /** Tries the images that could not be loaded again (the files may be there now). */
 export function forgetFailedImages(): void {
   failed.clear();
+}
+
+/** Reads the sizes of images anew (the files may have changed). */
+export function forgetImageSizes(): void {
+  sizes.clear();
 }
 
 export function isImageFile(path: string): boolean {
@@ -76,16 +83,114 @@ export function imagePlaceholder(alt: string, title: string): HTMLElement {
   return el;
 }
 
+/** Width and height in pixels, as an image is shown; 0 and 0 when its file tells no size. */
+type Size = [number, number];
+
+// Sizes read from the image files' headers (src-tauri/src/image_size.rs), by
+// address; null when the file is not there.
+const sizes = new Map<string, Size | null>();
+// Images waiting for their size, by address: asked together in one call.
+const waiting = new Map<string, { document: string; reference: string; wiki: boolean; then: ((size: Size | null) => void)[] }>();
+
+/** Calls `then` with the size of the image at `url` (at once when it is known). */
+function sizeOf(url: string, src: string, wiki: boolean, then: (size: Size | null) => void): void {
+  const known = sizes.get(url);
+  if (known !== undefined) return then(known);
+  const entry = waiting.get(url);
+  if (entry) return void entry.then.push(then);
+  const reference = imageReference(src, wiki);
+  if (reference === null) return then(null);
+  if (waiting.size === 0) queueMicrotask(askSizes);
+  waiting.set(url, { document: documentPath ?? "", reference, wiki, then: [then] });
+}
+
+async function askSizes(): Promise<void> {
+  const asked = [...waiting];
+  waiting.clear();
+  const byDocument = new Map<string, [string, (typeof asked)[number][1]][]>();
+  for (const item of asked) byDocument.set(item[1].document, [...(byDocument.get(item[1].document) ?? []), item]);
+  for (const [document, items] of byDocument) {
+    const answers = await imageSizes(document, items.map(([, { reference, wiki }]) => ({ reference, wiki }))).catch(() => []);
+    items.forEach(([url, entry], i) => {
+      const size = answers[i] ?? null;
+      sizes.set(url, size);
+      for (const then of entry.then) then(size);
+    });
+  }
+}
+
+/**
+ * Gives `img` the box of its image before it loads, so the text around it
+ * does not move when it does: the image's shape, and its width unless the
+ * document gives one.
+ */
+function reserve(img: HTMLElement, [width, height]: Size): void {
+  img.style.aspectRatio = `${width} / ${height}`;
+  if (!img.hasAttribute("width")) img.style.width = `${width}px`;
+}
+
+/**
+ * Like `loadImage`, but nothing loads: the image becomes a box of its size
+ * (an element of the class `image-box`), or the frame when the file is not
+ * there. Used for the picture of the document in the one-pane minimap.
+ * `onChange` runs when a size arrived later and changed the layout.
+ */
+export function sizeImages(root: ParentNode, onChange: () => void): void {
+  for (const img of root.querySelectorAll<HTMLImageElement>("img[data-src]")) {
+    const src = img.dataset.src ?? "";
+    const wiki = img.dataset.wiki === "1";
+    const url = imageUrl(src, wiki);
+    let sync = true;
+    const place = (size: Size | null) => {
+      const el = size ? document.createElement("span") : imagePlaceholder(img.alt || src, src);
+      if (size) {
+        el.className = "image-box";
+        el.style.width = `${img.getAttribute("width") ?? size[0]}px`;
+        el.style.aspectRatio = `${size[0]} / ${size[1]}`;
+      }
+      img.replaceWith(el);
+      if (!sync) onChange();
+    };
+    if (url === null || failed.has(url)) place(null);
+    // Without a size the box is the one browsers give such an image.
+    else sizeOf(url, src, wiki, (size) => place(size && size[0] > 0 ? size : size && [300, 150]));
+    sync = false;
+  }
+}
+
 /** Turns an <img data-src> into a loading image, or into the frame when it is not loaded. */
 export function loadImage(img: HTMLImageElement, onLoad?: () => void): HTMLElement {
   const src = img.dataset.src ?? "";
-  const url = imageUrl(src, img.dataset.wiki === "1");
+  const wiki = img.dataset.wiki === "1";
+  const url = imageUrl(src, wiki);
   const frame = () => {
     const el = imagePlaceholder(img.alt || src, src);
     img.replaceWith(el);
     return el;
   };
   if (url === null || failed.has(url)) return frame();
+  // The box comes at once when the size is known, else as soon as it is
+  // (unless the image has loaded by then and has its own size). An image
+  // whose file is not there is the frame at once, also far from the visible
+  // part, where it would not try to load yet.
+  let sync = true;
+  let missing = false;
+  sizeOf(url, src, wiki, (size) => {
+    if (!size) {
+      failed.add(url);
+      if (sync) missing = true;
+      else {
+        frame();
+        onLoad?.();
+      }
+      return;
+    }
+    if (size[0] === 0 || (img.complete && img.naturalWidth > 0)) return;
+    reserve(img, size);
+    if (!sync) onLoad?.();
+  });
+  sync = false;
+  if (missing) return frame();
   img.classList.add("md-image");
   img.title ||= src;
   img.draggable = false;

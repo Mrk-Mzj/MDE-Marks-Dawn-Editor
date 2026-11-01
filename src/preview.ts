@@ -2,7 +2,7 @@
 
 import MarkdownIt from "markdown-it";
 import { t } from "./i18n";
-import { imageSize, imageUrl, isDrivePath, isImageFile, loadImages, placeholderIcon } from "./images";
+import { imageSize, imageUrl, isDrivePath, isImageFile, loadImages, placeholderIcon, sizeImages } from "./images";
 import { classifyHref, classifyWikiTarget, WIKILINK, wikiHref, wikiLabel } from "./links";
 import { markRawHtml, sanitize } from "./sanitize";
 import { taskBoxHtml } from "./taskbox";
@@ -224,12 +224,15 @@ export class Preview {
    * `onLink` gets the address of a clicked link; links never navigate the app
    * themselves. `onImage` gets the address of a clicked image (outside a link).
    * `onImageLoad` runs when an image has loaded and changed the layout.
+   * Without `loadsImages` images are only boxes of their size (see
+   * `sizeImages`), for a preview that is never shown.
    */
   constructor(
     readonly root: HTMLElement,
     onLink: (href: string) => void,
     onImage: (src: string, wiki: boolean) => void,
     private readonly onImageLoad: () => void,
+    private readonly loadsImages = true,
   ) {
     root.addEventListener("click", (event) => {
       const target = event.target as Element;
@@ -250,13 +253,23 @@ export class Preview {
     this.renders++;
     this.lines = source.split("\n");
     if (!source.trim()) {
-      this.root.innerHTML = `<p class="preview-empty">${md.utils.escapeHtml(t.emptyPreview)}</p>`;
+      if (this.loadsImages) this.root.innerHTML = `<p class="preview-empty">${md.utils.escapeHtml(t.emptyPreview)}</p>`;
+      else this.root.replaceChildren();
       return;
     }
     this.staging.innerHTML = md.render(source);
     sanitize(this.staging.content);
-    this.reuseImages(this.staging.content);
-    loadImages(this.staging.content, this.onImageLoad);
+    if (this.loadsImages) {
+      this.reuseImages(this.staging.content);
+      loadImages(this.staging.content, this.onImageLoad);
+    } else {
+      sizeImages(this.staging.content, this.onImageLoad);
+      // The editor shows the blank lines at the end of the file (and the
+      // empty last line after a final Enter) as lines; so does this picture.
+      const ends = [...this.staging.content.children].filter((el): el is HTMLElement => el instanceof HTMLElement && "lineEnd" in el.dataset);
+      const trailing = this.lines.length - Math.max(0, ...ends.map((el) => Number(el.dataset.lineEnd)));
+      for (let i = 0; i < trailing; i++) this.staging.content.append(Object.assign(document.createElement("div"), { className: "blank-line" }));
+    }
     this.root.replaceChildren(this.staging.content);
   }
 
@@ -290,11 +303,18 @@ export class Preview {
     }, 60);
   }
 
-  /** The source map of the rendered blocks, measured again only after the layout changed. */
-  sourceMap(): SourceMap {
+  /**
+   * The source map of the rendered blocks, measured again only after the
+   * layout changed. Matched against the Markdown source (the editor with two
+   * panes), an image is placed where it is written in its line. Matched
+   * against the document rendered too (`rendered`: the one-pane editor,
+   * whose lines hold their images), a line is matched by its height, images
+   * and all, and every source line of a paragraph gets its own point.
+   */
+  sourceMap(rendered = false): SourceMap {
     const { root } = this;
     // Zoom, the panel width and opening <details> all change the content height or width.
-    const key = `${this.renders}:${root.scrollHeight}:${root.clientWidth}`;
+    const key = `${this.renders}:${root.scrollHeight}:${root.clientWidth}:${rendered}`;
     if (this.map?.key === key) return this.map.value;
     const origin = root.getBoundingClientRect().top - root.scrollTop;
     const points: [number, number][] = [];
@@ -302,11 +322,23 @@ export class Preview {
       const rect = element.getBoundingClientRect();
       // Not shown, e.g. inside a closed <details>.
       if (rect.width === 0 && rect.height === 0) continue;
-      points.push([Number(element.dataset.line), rect.top - origin], [Number(element.dataset.lineEnd), rect.bottom - origin]);
+      // The one-pane editor's line holds the block's margins too (a rule's, a table's).
+      let [above, below] = [0, 0];
+      if (rendered) {
+        const style = getComputedStyle(element);
+        [above, below] = [parseFloat(style.marginTop) || 0, parseFloat(style.marginBottom) || 0];
+      }
+      points.push([Number(element.dataset.line), rect.top - above - origin], [Number(element.dataset.lineEnd), rect.bottom + below - origin]);
     }
-    this.imagePoints(origin, points);
+    if (rendered) this.linePoints(origin, points);
+    else this.imagePoints(origin, points);
     points.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-    const value: SourceMap = { lines: [0], heights: [0] };
+    // Matched against the rendered editor, the text runs from the top to the
+    // bottom padding, as the editor's lines do.
+    const style = getComputedStyle(root);
+    const start = rendered ? parseFloat(style.paddingTop) || 0 : 0;
+    const end = root.scrollHeight - (rendered ? parseFloat(style.paddingBottom) || 0 : 0);
+    const value: SourceMap = { lines: [0], heights: [start] };
     for (const [line, height] of points) {
       // Margins can place a nested block above its parent's start; such points would break the order.
       if (height < value.heights[value.heights.length - 1]) continue;
@@ -314,9 +346,33 @@ export class Preview {
       value.heights.push(height);
     }
     value.lines.push(Math.max(this.lines.length, value.lines[value.lines.length - 1]));
-    value.heights.push(Math.max(root.scrollHeight, value.heights[value.heights.length - 1]));
+    value.heights.push(Math.max(end, value.heights[value.heights.length - 1]));
     this.map = { key, value };
     return value;
+  }
+
+  /**
+   * Points for the source lines inside a paragraph or heading: every Enter in
+   * the file is a line break there (see `breaks`), and the next source line
+   * starts below the line box that the break ends. A block with breaks that
+   * are not the file's (a raw `<br>`) keeps its two points.
+   */
+  private linePoints(origin: number, points: [number, number][]): void {
+    const lineHeight = parseFloat(getComputedStyle(this.root).lineHeight) || 0;
+    for (const block of this.root.querySelectorAll<HTMLElement>(":is(p, h1, h2, h3, h4, h5, h6)[data-line]")) {
+      const first = Number(block.dataset.line);
+      const end = Number(block.dataset.lineEnd);
+      if (end - first < 2) continue;
+      const breaks = [...block.querySelectorAll("br")].filter((br) => br.parentElement?.closest("[data-line]") === block);
+      if (breaks.length !== end - first - 1) continue;
+      breaks.forEach((br, k) => {
+        const rect = br.getBoundingClientRect();
+        if (rect.height === 0) return;
+        // The break's box is the font's height; the half-leading below it ends the line box.
+        const leading = Math.max(0, (parseFloat(getComputedStyle(br.parentElement!).lineHeight) || lineHeight) - rect.height) / 2;
+        points.push([first + k + 1, rect.bottom + leading - origin]);
+      });
+    }
   }
 
   /**
@@ -328,7 +384,7 @@ export class Preview {
    * (a long line wraps into rows of about the same length in the editor).
    */
   private imagePoints(origin: number, points: [number, number][]): void {
-    const selector = "img.md-image, .image-placeholder";
+    const selector = "img.md-image, .image-box, .image-placeholder";
     const blocks = new Set<HTMLElement>();
     for (const image of this.root.querySelectorAll<HTMLElement>(selector)) {
       const block = image.parentElement?.closest<HTMLElement>("[data-line]");

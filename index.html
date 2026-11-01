@@ -16,6 +16,12 @@
         </button>
       </div>
       <div id="tabs" class="tabs" data-slot="tabs"></div>
+      <button id="new-tab-button" class="icon-button" data-slot="button" type="button">
+        <!-- A plus 11×11px on the pixel grid (1 unit = 1px), its 1px lines through the middle pixel. -->
+        <svg class="icon new-tab-icon" viewBox="0 0 11 11" aria-hidden="true">
+          <path class="icon-fill" d="M5,0h1v5h5v1h-5v5h-1v-5h-5v-1h5Z" />
+        </svg>
+      </button>
       <div class="menu-anchor groups-anchor">
         <button id="groups-button" class="icon-button" data-slot="button" type="button">
           <!-- Drawn by the project owner on a 15×10px grid (3.125 units per pixel). -->

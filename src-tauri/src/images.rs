@@ -97,6 +97,32 @@ pub async fn image_path(document: String, reference: String, wiki: bool) -> Opti
         .map(|path| path.to_string_lossy().into_owned())
 }
 
+/// An image the page asks the size of: the reference as for `image_path`.
+#[derive(serde::Deserialize)]
+pub struct ImageRef {
+    reference: String,
+    wiki: bool,
+}
+
+/// The sizes of images in `document` (width and height in pixels, as shown),
+/// in the order asked: `None` for an image that is not there, `(0, 0)` for
+/// one whose header tells no size. Reads only the headers, so many images take
+/// a moment.
+#[tauri::command]
+pub async fn image_sizes(document: String, images: Vec<ImageRef>) -> Vec<Option<(u32, u32)>> {
+    tauri::async_runtime::spawn_blocking(move || {
+        images
+            .iter()
+            .map(|image| {
+                let path = resolve(&document, &image.reference, image.wiki)?;
+                Some(crate::image_size::of(&path).unwrap_or((0, 0)))
+            })
+            .collect()
+    })
+    .await
+    .unwrap_or_default()
+}
+
 /// Lower case components, for comparing Windows paths.
 fn parts(path: &Path) -> Vec<String> {
     path.components()

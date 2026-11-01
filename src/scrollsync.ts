@@ -41,7 +41,7 @@ const READING_LINE = 1 / 3;
 const GLIDE_MS = 50;
 
 /** Piecewise linear interpolation of `x` in ascending `xs` onto `ys`. */
-function interpolate(xs: number[], ys: number[], x: number): number {
+export function interpolate(xs: number[], ys: number[], x: number): number {
   const last = xs.length - 1;
   if (x <= xs[0]) return ys[0];
   if (x >= xs[last]) return ys[last];

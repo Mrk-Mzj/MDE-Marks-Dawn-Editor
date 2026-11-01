@@ -321,6 +321,11 @@ export async function imagePath(document: string, reference: string, wiki: boole
   return inTauri ? invoke<string | null>("image_path", { document, reference, wiki }) : null;
 }
 
+/** The sizes (width, height) of images of `document`, read from their files' headers: `null` for one that is not there, 0 and 0 for one that tells none. */
+export async function imageSizes(document: string, images: { reference: string; wiki: boolean }[]): Promise<([number, number] | null)[]> {
+  return inTauri ? invoke<([number, number] | null)[]>("image_sizes", { document, images }) : images.map(() => [0, 0]);
+}
+
 export async function pickSavePath(suggestedName: string): Promise<string | null> {
   if (!inTauri) return null;
   return save({ defaultPath: suggestedName, filters: [markdownFilter, textFilter, allFilter] });

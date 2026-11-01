@@ -32,15 +32,11 @@ Język interfejsu niech będzie spójny z wersją językową Windows użytkownik
 
 ### Zasady samodzielnej pracy
 
-Pytaj przed dodaniem zależności i uzasadniaj, czemu są potrzebne.
-
-Po wprowadzeniu zmian i nowych funkcjonalności przetestuj czy faktycznie wyglądają i działają zgodnie z założeniami. Popraw kod, jeśli tak nie jest. Dopiero potem pisz, że są gotowe.
-
-Funkcja jest skończona, gdy: działa po uruchomieniu, docs/FEATURES.md jest zaktualizowany (a README.md, jeśli dochodzi nowa funkcja albo zmienia się znane ograniczenie), a zmiany wizualne zgodne z docs/DESIGN.md.
-
-Plik portable (`npx tauri build` → `src-tauri/target/release/MDE.exe`) buduj tylko na moją prośbę.
-
-Commituj i wysyłaj na GitHuba tylko na moją prośbę.
+- Pytaj przed dodaniem zależności i uzasadniaj, czemu są potrzebne.
+- Po wprowadzeniu zmian i nowych funkcjonalności przetestuj czy faktycznie wyglądają i działają zgodnie z założeniami. Popraw kod, jeśli tak nie jest. Dopiero potem pisz, że są gotowe.
+- Funkcja jest skończona, gdy: działa po uruchomieniu, docs/FEATURES.md jest zaktualizowany (a README.md, jeśli dochodzi nowa funkcja albo zmienia się znane ograniczenie), a zmiany wizualne zgodne z docs/DESIGN.md.
+- Plik portable (`npx tauri build` → `src-tauri/target/release/MDE.exe`) buduj tylko na moją prośbę.
+- Commituj i wysyłaj na GitHuba tylko na moją prośbę. Nigdy nie uruchamiaj samodzielnie skilla jest_git ani podobnego, który pozwoliłby Ci samodzielnie zrobić commit i push
 
 
 

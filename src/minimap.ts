@@ -5,11 +5,13 @@
 // width of the box, and every row of text is a few pixels high. The part of
 // the text on screen is a lighter slider that can be dragged to scroll.
 //
-// In the one-pane mode the box pictures the editor (Minimap, below); with two
-// panes it pictures the preview (PreviewMinimap, src/previewmap.ts).
-// MinimapBox has what both share: the box, the slider, dragging and the wheel.
+// The rendered document (the preview with two panes, the editor with one) is
+// pictured by PreviewMinimap and LiveMinimap (src/previewmap.ts); the
+// Markdown source in the editor with two panes scrolling apart by Minimap,
+// below. MinimapBox has what they share: the box, the slider, dragging and
+// the wheel.
 //
-// The editor's minimap wraps every line itself, measuring the words in the
+// The source minimap wraps every line itself, measuring the words in the
 // editor's font at the editor's text width, so the picture is right also for
 // the parts of the file the editor has never displayed (it only estimates
 // their height). Scroll positions are matched by source line, like the two
@@ -40,11 +42,13 @@ export interface SliderGeometry {
   offset: number;
 }
 
-/** The bars of a picture: plain text, and the lines of H1 and H2 headings. */
+/** The bars of a picture: plain text, and the lines of H1 and H2 headings; and shapes under them: boxes of images, frames. */
 export interface MinimapPaths {
   text: Path2D;
   h1: Path2D;
   h2: Path2D;
+  images?: Path2D;
+  frames?: Path2D;
 }
 
 /** The box, its slider, dragging and the wheel; subclasses draw the picture. */
@@ -156,12 +160,12 @@ export abstract class MinimapBox {
   /**
    * The slider from the top and bottom of the panel's view in the picture.
    * When the picture is taller than the box it scrolls along with the
-   * slider, so both reach their ends together.
+   * slider, so both reach their ends together; `along` (from 0 to 1) is how
+   * far, by default how far the slider is along the picture.
    */
-  protected slide(top: number, bottom: number): SliderGeometry {
-    // How far the slider is along the picture, from 0 to 1.
+  protected slide(top: number, bottom: number, along?: number): SliderGeometry {
     const room = this.total - (bottom - top);
-    const along = room > 0 ? Math.min(1, Math.max(0, top / room)) : 0;
+    along = Math.min(1, Math.max(0, along ?? (room > 0 ? top / room : 0)));
     const ratio = window.devicePixelRatio || 1;
     const scrolled = along * Math.max(0, this.total - this.height);
     // Whole device pixels, so the bars do not shimmer while scrolling.
@@ -217,10 +221,18 @@ export abstract class MinimapBox {
     return { offset, inner, ratio };
   }
 
-  /** Fills the bars of text and of H1 and H2 headings, each in its colour. */
+  /** Fills the boxes of images and the frames, then the bars of text and of H1 and H2 headings, each in its colour. */
   protected fill(paths: MinimapPaths): void {
     const ctx = this.ctx;
     const boxStyle = getComputedStyle(this.box);
+    if (paths.images) {
+      ctx.fillStyle = boxStyle.getPropertyValue("--minimap-image");
+      ctx.fill(paths.images);
+    }
+    if (paths.frames) {
+      ctx.fillStyle = boxStyle.getPropertyValue("--minimap-frame");
+      ctx.fill(paths.frames);
+    }
     ctx.fillStyle = boxStyle.color;
     ctx.fill(paths.text);
     ctx.fillStyle = boxStyle.getPropertyValue("--minimap-h1");
@@ -282,7 +294,7 @@ interface Bar {
   width: number;
 }
 
-/** The minimap of the editor (the one-pane mode). */
+/** The minimap of the Markdown source in the editor (two panes scrolling apart). */
 export class Minimap extends MinimapBox {
   // Wrapping: word widths in the editor's font, and the rows of every line.
   private font = "";

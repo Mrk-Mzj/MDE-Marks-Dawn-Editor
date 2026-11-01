@@ -9,12 +9,12 @@ import { GroupsPopover } from "./groups";
 import type { ScrollPosition, Selection } from "./editor";
 import { applyImagePath, applyLink, blockState, imageAt, inlineState, insertLink, insertTable, linkAt, setHeading, toggleInline, toggleList, toggleQuote } from "./format";
 import { lang, t } from "./i18n";
-import { forgetFailedImages, imageMarkdown, imageReference, isImageFile, markdownPath, setImageDocument } from "./images";
+import { forgetFailedImages, forgetImageSizes, imageMarkdown, imageReference, isImageFile, markdownPath, setImageDocument } from "./images";
 import { classifyHref, extensionOf, findHeading, isMarkdownFile, needsConfirmation } from "./links";
 import type { LinkTarget } from "./links";
 import { Menu } from "./menu";
 import { Minimap } from "./minimap";
-import { PreviewMinimap } from "./previewmap";
+import { LiveMinimap, PreviewMinimap } from "./previewmap";
 import * as platform from "./platform";
 import type { FileFormat, GroupInfo, LineBreak, OpenedFile } from "./platform";
 import { headingsOf, Preview } from "./preview";
@@ -131,17 +131,22 @@ const findBar = new FindBar($("#find"), search, editor.view, {
 });
 editor.subscribe(() => findBar.refresh());
 const scrollSync = new ScrollSync(editor, preview);
-// The minimap pictures the editor with one pane and the preview with two.
+// The minimaps picture the rendered document: in the editor with one pane,
+// in the preview with two. With two panes scrolling apart the editor's
+// minimap pictures its Markdown source.
+const liveMinimap = new LiveMinimap($("#editor-area"), editor);
 const minimap = new Minimap($("#editor-area"), editor);
 const previewMinimap = new PreviewMinimap($(".pane-preview"), previewEl);
 let minimapOn = false;
 // Showing or hiding the minimap changes the width of the text: the editor
 // keeps showing the same place, and the preview follows it.
-minimap.onReflow(() => {
-  const scroll = editor.scrollPosition();
-  editor.rescale(scroll);
-  scrollSync.followEditorSoon();
-});
+for (const editorMinimap of [liveMinimap, minimap]) {
+  editorMinimap.onReflow(() => {
+    const scroll = editor.scrollPosition();
+    editor.rescale(scroll);
+    scrollSync.followEditorSoon();
+  });
+}
 previewMinimap.onReflow(() => scrollSync.followEditorSoon());
 
 const splitter = new Splitter($(".workspace"), $(".pane-editor"), $(".pane-preview"), $(".pane-divider"), t.splitterTitle);
@@ -337,6 +342,7 @@ function activate(doc: Doc): void {
   forgetFailedImages();
   editor.setState(doc.state, doc.scroll);
   renderPreview(doc.state.doc.toString(), doc.previewScroll);
+  liveMinimap.forget();
   scrollSync.linkSoon();
   updateNotice();
   updateTitle();
@@ -877,8 +883,9 @@ async function checkDisk(): Promise<void> {
 }
 
 function requestDiskCheck(): void {
-  // Image files may have been added meanwhile.
+  // Image files may have been added or changed meanwhile.
   forgetFailedImages();
+  forgetImageSizes();
   if (busy) pendingDiskCheck = true;
   else void exclusive(checkDisk);
 }
@@ -1033,6 +1040,22 @@ const commands = {
 
 const aboutDialog = new AboutDialog(() => editor.focus());
 
+// New tab, after the last one. The tabs have fractional widths, so the
+// button's left edge is moved onto the next whole device pixel, keeping its
+// icon sharp.
+const newTabButton = $<HTMLButtonElement>("#new-tab-button");
+newTabButton.title = `${t.newFile} (Ctrl+N)`;
+newTabButton.setAttribute("aria-label", t.newFile);
+newTabButton.addEventListener("click", () => void commands.newFile());
+const alignNewTabButton = () => {
+  newTabButton.style.marginLeft = "";
+  const ratio = window.devicePixelRatio || 1;
+  const left = newTabButton.getBoundingClientRect().left * ratio;
+  newTabButton.style.marginLeft = `${(Math.ceil(left - 0.001) - left) / ratio}px`;
+};
+new ResizeObserver(alignNewTabButton).observe($("#tabs"));
+window.addEventListener("resize", alignNewTabButton);
+
 new Menu($<HTMLButtonElement>("#menu-button"), [
   { label: t.newFile, shortcut: "Ctrl+N", run: commands.newFile },
   { label: t.open, shortcut: "Ctrl+O", run: commands.open },
@@ -1167,6 +1190,7 @@ const applyTheme = (light: boolean) => {
   else delete document.documentElement.dataset.theme;
   toolbar.refresh();
   // The minimaps are canvases: their colours change only when drawn again.
+  liveMinimap.schedule();
   minimap.schedule();
   previewMinimap.schedule();
 };
@@ -1384,7 +1408,11 @@ function applyMinimap(): void {
   const editorScrolls = panes === 1 || !scrollSync.enabled;
   const scroll = editor.scrollPosition();
   const hidden = document.documentElement.classList.toggle("editor-scroll-hidden", !editorScrolls);
-  minimap.setEnabled(minimapOn && editorScrolls);
+  // Both editor minimaps give the text its margin by the same class on
+  // <html>: the one that is not shown is turned off first.
+  const [unused, used] = panes === 1 ? [minimap, liveMinimap] : [liveMinimap, minimap];
+  unused.setEnabled(false);
+  used.setEnabled(minimapOn && editorScrolls);
   previewMinimap.setEnabled(minimapOn && panes === 2);
   // Without its scroll bar the editor's text gets wider: keep the same place.
   if (hidden !== editorScrollHidden) {

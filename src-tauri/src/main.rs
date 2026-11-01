@@ -4,6 +4,7 @@
 mod caption;
 mod context_menu;
 mod groups;
+mod image_size;
 mod images;
 mod runtime_check;
 mod session;
@@ -503,6 +504,7 @@ fn main() {
             open_url,
             open_path,
             images::image_path,
+            images::image_sizes,
             images::place_image,
             start_dictation,
             set_caption_dimmed,

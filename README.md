@@ -81,7 +81,7 @@ If there is no *Run anyway* button (some company or school PCs block unknown pro
 - **Formatting toolbar** and shortcuts: bold, italic, underline, headings, lists, task lists, quotes, tables, images, links and Windows dictation.
 - **Tabs and tab groups.** Tabs can be dragged into a new order; a tab group is a saved set of tabs that opens in a window of its own.
 - **Session memory.** Open tabs, unsaved edits, scroll positions, the window and the settings come back after a restart.
-- **Minimap**, a small picture of the whole document for finding your way and scrolling.
+- **Minimap**, a small picture of the whole document, with its tables, code blocks and images in place, for finding your way and scrolling.
 - **Dark or light colour scheme**, switched with one button for every window.
 - **Synchronized scrolling** of the source and the preview.
 - **Find** (Ctrl+F) with every match highlighted.
@@ -204,8 +204,9 @@ src/                  frontend (TypeScript)
   zoom.ts             zoom levels and stepping (Ctrl+plus/minus/0, Ctrl+wheel)
   scrollsync.ts       synchronized scrolling of the two panels (matched by source line)
   minimap.ts          minimap box (canvas drawing, dragging the slider) and the minimap
-                      of the editor panel (own word wrapping)
-  previewmap.ts       minimap of the preview panel (words measured in the rendered preview)
+                      of the Markdown source (own word wrapping)
+  previewmap.ts       minimaps of the rendered document: the preview's, and the one-pane
+                      editor's (from the document rendered out of sight)
   menu.ts             drop-down menus (hamburger menu, toolbar menus)
   about.ts            the About dialog (name, version, copyright, license)
   dialog.ts           in-app dialogs (questions and messages)
@@ -220,6 +221,7 @@ src-tauri/            backend (Rust, Tauri 2)
                       single instance; opening windows (default and tab groups)
   src/spell.rs        Windows Spell Checking API on a dedicated COM thread
   src/images.rs       the mdeimg protocol serving local images; placing inserted images
+  src/image_size.rs   image sizes read from file headers (PNG, JPEG, GIF, WebP, AVIF, BMP, SVG)
                       (linked in place or copied next to the file) + tests
   src/caption.rs      native minimize / maximize / close buttons over the top bar
   src/settings.rs     app-wide settings (the colour scheme) in %APPDATA%\MDE\settings.json
