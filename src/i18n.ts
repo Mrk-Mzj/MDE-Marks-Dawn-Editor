@@ -44,14 +44,8 @@ const en = {
   changedOnDisk: (name: string) => `“${name}” was changed by another program. Your changes are not saved yet.`,
   reload: "Refresh",
   keepMine: "Close and keep my changes",
-  windows1250Notice:
-    "This file is not UTF-8, so it was opened as Windows-1250. Check that accented letters look right; the file will be saved in Windows-1250.",
-  askUtf8: (name: string, chars: string) =>
-    `“${name}” uses the Windows-1250 encoding, which cannot store these characters: ${chars}
-
-Save the file in UTF-8 instead?`,
-  askUtf8Title: "Character encoding",
-  saveUtf8Button: "Save in UTF-8",
+  legacyEncodingNotice: (encoding: string) =>
+    `This file is not in UTF-8, so it was opened in the older ${encoding} encoding. Check that accented letters look right.`,
   closeNotice: "Close",
   emptyPreview: "The preview of the document will appear here.",
   linkNeedsSave: "Save the file first: a relative link leads from the folder the file is in.",
@@ -186,14 +180,8 @@ const pl: Strings = {
   changedOnDisk: (name) => `Plik „${name}” został zmieniony przez inny program. Twoje zmiany nie są jeszcze zapisane.`,
   reload: "Odśwież",
   keepMine: "Zamknij i zachowaj moje zmiany",
-  windows1250Notice:
-    "Plik nie jest zapisany w UTF-8, więc otwarto go jako Windows-1250. Sprawdź, czy polskie znaki wyglądają poprawnie; plik zostanie zapisany w Windows-1250.",
-  askUtf8: (name, chars) =>
-    `Plik „${name}” używa kodowania Windows-1250, w którym nie da się zapisać znaków: ${chars}
-
-Zapisać plik w UTF-8?`,
-  askUtf8Title: "Kodowanie znaków",
-  saveUtf8Button: "Zapisz w UTF-8",
+  legacyEncodingNotice: (encoding) =>
+    `Plik nie jest zapisany w UTF-8, więc otwarto go w starszym kodowaniu ${encoding}. Sprawdź, czy litery z ogonkami i akcentami wyglądają poprawnie.`,
   closeNotice: "Zamknij",
   emptyPreview: "Tu pojawi się podgląd dokumentu.",
   linkNeedsSave: "Najpierw zapisz plik: link względny prowadzi od folderu, w którym jest plik.",

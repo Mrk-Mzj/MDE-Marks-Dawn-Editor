@@ -199,7 +199,9 @@ Linki:
 * Względny link do pliku innego typu (np. .pdf, .txt): przy pierwszym kliknięciu danego typu program pyta o potwierdzenie (z opcją „nie pytaj więcej dla tego typu”), a potem otwiera plik w domyślnym programie Windows. Opcja „nie pytaj więcej dla tego typu” jest przyciskiem w oknie potwierdzenia.
 * Pliki wykonywalne i inne typy, które Windows uznaje za niebezpieczne (np. .exe, .bat, .cmd, .ps1, .vbs, .msi, .lnk, .chm, .hta), a także foldery i pliki bez rozszerzenia, zawsze wymagają potwierdzenia.
 * Zablokowane: javascript:, data: oraz file: i inne nieznane schematy, a także ścieżki bezwzględne (C:\…, /…, \\serwer\…).
-* Linki do nagłówków (#…) są nieaktywne.
+* Linki do nagłówków przewijają do nagłówka, także w innym pliku (`plik.md#nagłówek` otwiera plik w nowej karcie i przewija). Akceptujemy oba zapisy: GitHuba (slug: małe litery, spacje zamienione na dywizy, bez interpunkcji poza „-” i „_”, np. `#grupy-kart`; powtórzenia z końcówkami `-1`, `-2`) i Obsidiana (dosłowny tekst nagłówka, np. `#Grupy%20kart`), bez rozróżniania wielkości liter. Gdy nagłówka nie ma, kliknięcie nic nie robi. Odnośniki do bloków (`#^…`) są nieaktywne. Treść nie dostaje atrybutów `id`.
+* Wikilinki Obsidiana (rozszerzenie poza GFM): `[[Notatka]]`, `[[Notatka|tekst]]`, `[[Notatka#Nagłówek]]`, `[[Folder/Notatka]]` wyglądają jak zwykłe linki (widać tylko tekst albo nazwę) i otwierają plik `.md` w nowej karcie. Notatki szukamy najpierw w folderze bieżącego pliku, a jeśli wyżej jest folder `.obsidian`, w całym tym sejfie (jak Obsidian: przy kilku plikach o tej samej nazwie wybieramy ten o najkrótszej ścieżce). Wikilinki do plików innych typów podlegają tym samym zasadom co linki względne. Nieistniejąca notatka nie jest tworzona; kliknięcie nic nie robi. Osadzenia `![[…]]` pokazujemy jako ramkę z nazwą, jak obrazki.
+* W podglądzie link działa po kliknięciu, a w trybie jednego okna po Ctrl+kliknięciu, jak inne linki.
 * Przy najechaniu pokazujemy pełny adres docelowy, żeby tekst linku nie ukrywał prawdziwego celu.
 
 
@@ -228,10 +230,10 @@ Kodowanie:
 * Istniejące pliki:
 
   * Wykrywamy BOM (UTF-8, UTF-16 LE/BE) i zapisujemy w tym samym kodowaniu z tym samym BOM lub jego brakiem.
-  * Bez BOM najpierw próbujemy ścisłego UTF-8. Jeśli się nie uda, zakładamy Windows-1250 (ważne przy polskich znakach w starszych plikach) i pokazujemy ostrzeżenie.
+  * Bez BOM najpierw próbujemy ścisłego UTF-8. Jeśli się nie uda, zakładamy starsze kodowanie Windows właściwe dla języka systemu (np. Windows-1250 dla polskiego, Windows-1252 dla angielskiego, francuskiego czy hiszpańskiego) i pokazujemy ostrzeżenie.
   * Nigdy nie zamieniamy cicho nieczytelnych bajtów na znak .
-* Kodowanie i końce linii nie są wyświetlane na pasku stanu. Ostrzeżenie pokazujemy tylko przy fallbacku na Windows-1250. Zmiana kodowania jest dostępna w oknie „Zapisz jako” (wybór: UTF-8 / UTF-8 z BOM).
-* Opcja domyślna dla nowych plików w ustawieniach: UTF-8 bez BOM. Opcję „z BOM” dajemy tylko dla zgodności ze starymi programami.
+  * Gdy edytowany plik w starszym kodowaniu Windows zawiera znaki, których to kodowanie nie zapisze (np. emoji), zapisujemy go w UTF-8 bez pytania.
+* Kodowanie i końce linii są dla użytkownika przezroczyste: program nigdy nie pyta o nie przy otwieraniu ani zapisie i nie wyświetla ich na pasku stanu. Jedyny wyjątek to ostrzeżenie przy fallbacku na starsze kodowanie Windows.
 
 
 Końce linii:
@@ -240,7 +242,7 @@ Końce linii:
 
 * Nowe pliki: LF
 * Istniejące pliki: wykrywamy dominujący styl (LF, CRLF) i zachowujemy go przy zapisie. Wewnątrz edytora linie są normalizowane, a przy zapisie przywracane.
-* Pliki ze mieszanymi końcami: domyślnie zachowujemy je bez zmian. Normalizacja jest tylko świadomym wyborem użytkownika.
+* Pliki ze mieszanymi końcami: zachowujemy je bez zmian.
 * Nowy Enter i wklejany tekst dostają styl końców linii pliku.
 * Końcowy znak nowej linii na końcu pliku (jest lub go brak) i spacje na końcu linii (w Markdownie dwie spacje to twardy łamacz wiersza) są zachowywane.
 
@@ -254,7 +256,7 @@ Kryteria odbioru (do testów):
 
 
 1. Plik UTF-8 z BOM i CRLF, otwarty i zapisany bez edycji, jest bajt w bajt taki sam.
-2. To samo dla UTF-8 bez BOM z LF, dla pliku w Windows-1250 i dla pliku z mieszanymi końcami.
+2. To samo dla UTF-8 bez BOM z LF, dla pliku w starszym kodowaniu Windows (np. Windows-1250) i dla pliku z mieszanymi końcami.
 3. Trzy puste linie między akapitami po zapisie i ponownym otwarciu pozostają trzema i wyświetlają się jako odstęp trzech linii, tak samo w podglądzie i w trybie jednego okna.
 4. Plik z <script>, onerror= i linkiem javascript: nie wykonuje niczego i nie otwiera niczego.
 

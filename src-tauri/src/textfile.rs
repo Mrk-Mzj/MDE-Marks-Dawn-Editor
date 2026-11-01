@@ -4,18 +4,61 @@
 //! remember its encoding, its dominant line ending and every line break that
 //! differs from it, so that saving restores them.
 
+use windows::core::{BOOL, PCSTR};
+use windows::Win32::Globalization::{GetACP, MultiByteToWideChar, WideCharToMultiByte, MULTI_BYTE_TO_WIDE_CHAR_FLAGS, WC_NO_BEST_FIT_CHARS};
+
 const UTF8_BOM: &[u8] = &[0xEF, 0xBB, 0xBF];
 const UTF16LE_BOM: &[u8] = &[0xFF, 0xFE];
 const UTF16BE_BOM: &[u8] = &[0xFE, 0xFF];
 
+/// Single-byte Windows code pages ("ANSI") a file without a BOM may be read in:
+/// Thai, Central European, Cyrillic, Western European, Greek, Turkish, Hebrew,
+/// Arabic, Baltic and Vietnamese. Each maps every byte to a character of its
+/// own, so no byte is ever replaced or lost.
+const CODE_PAGES: [u16; 10] = [874, 1250, 1251, 1252, 1253, 1254, 1255, 1256, 1257, 1258];
+
+/// Passed to the frontend as "utf8", "utf8bom", "utf16le", "utf16be" or
+/// "windows<code page>" (e.g. "windows1250").
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(into = "String", try_from = "String")]
 pub enum Encoding {
     Utf8,
     Utf8Bom,
     Utf16Le,
     Utf16Be,
-    Windows1250,
+    /// One of `CODE_PAGES`.
+    Windows(u16),
+}
+
+impl From<Encoding> for String {
+    fn from(encoding: Encoding) -> String {
+        match encoding {
+            Encoding::Utf8 => "utf8".to_owned(),
+            Encoding::Utf8Bom => "utf8bom".to_owned(),
+            Encoding::Utf16Le => "utf16le".to_owned(),
+            Encoding::Utf16Be => "utf16be".to_owned(),
+            Encoding::Windows(cp) => format!("windows{cp}"),
+        }
+    }
+}
+
+impl TryFrom<String> for Encoding {
+    type Error = String;
+
+    fn try_from(name: String) -> Result<Self, String> {
+        match name.as_str() {
+            "utf8" => Ok(Encoding::Utf8),
+            "utf8bom" => Ok(Encoding::Utf8Bom),
+            "utf16le" => Ok(Encoding::Utf16Le),
+            "utf16be" => Ok(Encoding::Utf16Be),
+            _ => name
+                .strip_prefix("windows")
+                .and_then(|cp| cp.parse().ok())
+                .filter(|cp| CODE_PAGES.contains(cp))
+                .map(Encoding::Windows)
+                .ok_or_else(|| format!("unknown encoding: {name}")),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -71,28 +114,29 @@ impl DecodeError {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum EncodeError {
-    /// Characters the target encoding cannot store (distinct, in order of appearance).
-    Unrepresentable(String),
+    /// The text has characters the code page cannot store (e.g. emoji); the
+    /// frontend then saves the file in UTF-8.
+    Unrepresentable,
 }
 
 impl EncodeError {
-    /// Stable error code passed to the frontend: `unrepresentable:<chars>`.
+    /// Stable error code passed to the frontend.
     pub fn code(&self) -> String {
         match self {
-            EncodeError::Unrepresentable(chars) => format!("unrepresentable:{chars}"),
+            EncodeError::Unrepresentable => "unrepresentable".to_owned(),
         }
     }
 }
 
 pub fn decode(bytes: &[u8]) -> Result<Decoded, DecodeError> {
     let (raw, encoding) = if let Some(body) = bytes.strip_prefix(UTF8_BOM) {
-        (decode_utf8_or_1250(body).0, Encoding::Utf8Bom)
+        (decode_utf8_or_ansi(body).0, Encoding::Utf8Bom)
     } else if let Some(body) = bytes.strip_prefix(UTF16LE_BOM) {
         (decode_utf16(body, u16::from_le_bytes)?, Encoding::Utf16Le)
     } else if let Some(body) = bytes.strip_prefix(UTF16BE_BOM) {
         (decode_utf16(body, u16::from_be_bytes)?, Encoding::Utf16Be)
     } else {
-        decode_utf8_or_1250(bytes)
+        decode_utf8_or_ansi(bytes)
     };
     let (text, eol, breaks) = split_line_breaks(&raw);
     Ok(Decoded {
@@ -120,30 +164,59 @@ pub fn encode(text: &str, encoding: Encoding, eol: Eol, breaks: &[LineBreak]) ->
             out.extend_from_slice(UTF16BE_BOM);
             raw.encode_utf16().for_each(|u| out.extend_from_slice(&u.to_be_bytes()));
         }
-        Encoding::Windows1250 => {
-            let mut missing = String::new();
-            for ch in raw.chars() {
-                match to_windows_1250(ch) {
-                    Some(b) => out.push(b),
-                    None if !missing.contains(ch) => missing.push(ch),
-                    None => {}
-                }
-            }
-            if !missing.is_empty() {
-                return Err(EncodeError::Unrepresentable(missing));
-            }
-        }
+        Encoding::Windows(cp) => out = encode_ansi(&raw, cp).ok_or(EncodeError::Unrepresentable)?,
     }
     Ok(out)
 }
 
-/// Strict UTF-8 first; anything else is read as Windows-1250, which maps every
-/// byte to a character, so no byte is ever replaced or lost.
-fn decode_utf8_or_1250(bytes: &[u8]) -> (String, Encoding) {
+/// The legacy code page of the Windows language (the "ANSI code page": 1250 on
+/// Polish Windows, 1252 on English, French or Spanish Windows); Western
+/// European where that is not a single-byte one (e.g. Japanese).
+fn system_code_page() -> u16 {
+    let cp = unsafe { GetACP() };
+    u16::try_from(cp).ok().filter(|cp| CODE_PAGES.contains(cp)).unwrap_or(1252)
+}
+
+/// Strict UTF-8 first; anything else is read in the Windows code page.
+fn decode_utf8_or_ansi(bytes: &[u8]) -> (String, Encoding) {
     match std::str::from_utf8(bytes) {
         Ok(text) => (text.to_owned(), Encoding::Utf8),
-        Err(_) => (bytes.iter().map(|&b| from_windows_1250(b)).collect(), Encoding::Windows1250),
+        Err(_) => {
+            let cp = system_code_page();
+            (decode_ansi(bytes, cp), Encoding::Windows(cp))
+        }
     }
+}
+
+/// Decodes as Windows itself does. Unassigned bytes become characters of their
+/// own (C1 controls or private use), so they survive a round trip.
+fn decode_ansi(bytes: &[u8], cp: u16) -> String {
+    if bytes.is_empty() {
+        return String::new();
+    }
+    // A single-byte code page gives one UTF-16 unit per byte.
+    let mut units = vec![0u16; bytes.len()];
+    let len = unsafe { MultiByteToWideChar(cp.into(), MULTI_BYTE_TO_WIDE_CHAR_FLAGS(0), bytes, Some(&mut units)) };
+    units.truncate(len.max(0) as usize);
+    String::from_utf16_lossy(&units)
+}
+
+/// `None` when the text has characters the code page cannot store exactly.
+fn encode_ansi(text: &str, cp: u16) -> Option<Vec<u8>> {
+    if text.is_empty() {
+        return Some(Vec::new());
+    }
+    let units: Vec<u16> = text.encode_utf16().collect();
+    let mut out = vec![0u8; units.len()];
+    let mut replaced = BOOL(0);
+    // No "best fit" (ł → l and the like): a character is stored exactly or not at all.
+    let len = unsafe { WideCharToMultiByte(cp.into(), WC_NO_BEST_FIT_CHARS, &units, Some(&mut out), PCSTR::null(), Some(&mut replaced)) };
+    if len <= 0 || replaced.as_bool() {
+        return None;
+    }
+    out.truncate(len as usize);
+    // Reading the bytes back must give the same text.
+    (decode_ansi(&out, cp) == text).then_some(out)
 }
 
 fn decode_utf16(body: &[u8], unit: fn([u8; 2]) -> u16) -> Result<String, DecodeError> {
@@ -152,37 +225,6 @@ fn decode_utf16(body: &[u8], unit: fn([u8; 2]) -> u16) -> Result<String, DecodeE
     }
     let units: Vec<u16> = body.chunks_exact(2).map(|c| unit([c[0], c[1]])).collect();
     String::from_utf16(&units).map_err(|_| DecodeError::InvalidUtf16)
-}
-
-/// Windows-1250 bytes 0x80–0xFF, as decoded by Windows itself. The five
-/// unassigned bytes (0x81, 0x83, 0x88, 0x90, 0x98) map to the C1 controls of
-/// the same value, so they survive a round trip.
-const WINDOWS_1250_HIGH: [u16; 128] = [
-    0x20AC, 0x0081, 0x201A, 0x0083, 0x201E, 0x2026, 0x2020, 0x2021, 0x0088, 0x2030, 0x0160, 0x2039, 0x015A, 0x0164, 0x017D, 0x0179,
-    0x0090, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014, 0x0098, 0x2122, 0x0161, 0x203A, 0x015B, 0x0165, 0x017E, 0x017A,
-    0x00A0, 0x02C7, 0x02D8, 0x0141, 0x00A4, 0x0104, 0x00A6, 0x00A7, 0x00A8, 0x00A9, 0x015E, 0x00AB, 0x00AC, 0x00AD, 0x00AE, 0x017B,
-    0x00B0, 0x00B1, 0x02DB, 0x0142, 0x00B4, 0x00B5, 0x00B6, 0x00B7, 0x00B8, 0x0105, 0x015F, 0x00BB, 0x013D, 0x02DD, 0x013E, 0x017C,
-    0x0154, 0x00C1, 0x00C2, 0x0102, 0x00C4, 0x0139, 0x0106, 0x00C7, 0x010C, 0x00C9, 0x0118, 0x00CB, 0x011A, 0x00CD, 0x00CE, 0x010E,
-    0x0110, 0x0143, 0x0147, 0x00D3, 0x00D4, 0x0150, 0x00D6, 0x00D7, 0x0158, 0x016E, 0x00DA, 0x0170, 0x00DC, 0x00DD, 0x0162, 0x00DF,
-    0x0155, 0x00E1, 0x00E2, 0x0103, 0x00E4, 0x013A, 0x0107, 0x00E7, 0x010D, 0x00E9, 0x0119, 0x00EB, 0x011B, 0x00ED, 0x00EE, 0x010F,
-    0x0111, 0x0144, 0x0148, 0x00F3, 0x00F4, 0x0151, 0x00F6, 0x00F7, 0x0159, 0x016F, 0x00FA, 0x0171, 0x00FC, 0x00FD, 0x0163, 0x02D9,
-];
-
-fn from_windows_1250(b: u8) -> char {
-    if b < 0x80 {
-        b as char
-    } else {
-        // Every table entry is a valid scalar value.
-        char::from_u32(WINDOWS_1250_HIGH[(b - 0x80) as usize] as u32).unwrap()
-    }
-}
-
-fn to_windows_1250(ch: char) -> Option<u8> {
-    if (ch as u32) < 0x80 {
-        return Some(ch as u8);
-    }
-    let code = u16::try_from(ch as u32).ok()?;
-    WINDOWS_1250_HIGH.iter().position(|&c| c == code).map(|i| 0x80 + i as u8)
 }
 
 /// Normalizes `\r\n`, `\r` and `\n` to `\n` (as CodeMirror does), returning the
@@ -324,26 +366,47 @@ mod tests {
     }
 
     #[test]
-    fn windows_1250_falls_back_and_roundtrips() {
+    fn non_utf8_falls_back_to_the_windows_code_page_and_roundtrips() {
         // "Zażółć gęślą jaźń" in Windows-1250 is not valid UTF-8.
         let bytes = b"Za\xBF\xF3\xB3\xE6 g\xEA\x9Cl\xB9 ja\x9F\xF1\r\n\x81\x83\x88\x90\x98";
         let d = decode(bytes).unwrap();
-        assert_eq!(d.encoding, Encoding::Windows1250);
-        assert!(d.text.starts_with("Zażółć gęślą jaźń\n"));
+        assert_eq!(d.encoding, Encoding::Windows(system_code_page()));
         assert_eq!(roundtrip(bytes), bytes);
+        assert!(decode_ansi(bytes, 1250).starts_with("Zażółć gęślą jaźń\r\n"));
     }
 
     #[test]
-    fn windows_1250_table_is_a_bijection() {
-        for b in 0..=255u8 {
-            assert_eq!(to_windows_1250(from_windows_1250(b)), Some(b));
+    fn windows_1252_reads_western_letters() {
+        // "Señor, à côté" in Windows-1252.
+        assert_eq!(decode_ansi(b"Se\xF1or, \xE0 c\xF4t\xE9", 1252), "Señor, à côté");
+        assert_eq!(encode_ansi("Señor, à côté", 1252).unwrap(), b"Se\xF1or, \xE0 c\xF4t\xE9");
+    }
+
+    #[test]
+    fn every_code_page_roundtrips_every_byte() {
+        let bytes: Vec<u8> = (0..=255).collect();
+        for cp in CODE_PAGES {
+            let text = decode_ansi(&bytes, cp);
+            assert_eq!(text.chars().count(), 256, "code page {cp}");
+            assert_eq!(encode_ansi(&text, cp), Some(bytes.clone()), "code page {cp}");
         }
     }
 
     #[test]
-    fn windows_1250_reports_unrepresentable_characters() {
-        let err = encode("ok 😀 → 😀", Encoding::Windows1250, Eol::Lf, &[]).unwrap_err();
-        assert_eq!(err, EncodeError::Unrepresentable("😀→".to_owned()));
+    fn code_pages_report_unrepresentable_characters() {
+        for text in ["ok 😀", "→", "ł", "\u{FFFD}"] {
+            assert_eq!(encode(text, Encoding::Windows(1252), Eol::Lf, &[]), Err(EncodeError::Unrepresentable), "{text}");
+        }
+        assert_eq!(encode("ł", Encoding::Windows(1250), Eol::Lf, &[]), Ok(vec![0xB3]));
+    }
+
+    #[test]
+    fn encoding_names_roundtrip() {
+        for encoding in [Encoding::Utf8, Encoding::Utf8Bom, Encoding::Utf16Le, Encoding::Utf16Be, Encoding::Windows(1250), Encoding::Windows(874)] {
+            assert_eq!(Encoding::try_from(String::from(encoding)), Ok(encoding));
+        }
+        assert_eq!(String::from(Encoding::Windows(1250)), "windows1250");
+        assert!(Encoding::try_from("windows932".to_owned()).is_err());
     }
 
     #[test]

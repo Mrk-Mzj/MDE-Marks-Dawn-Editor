@@ -11,7 +11,8 @@ import { showDialog } from "./dialog";
 import { t } from "./i18n";
 
 export type Eol = "lf" | "crlf" | "cr";
-export type Encoding = "utf8" | "utf8bom" | "utf16le" | "utf16be" | "windows1250";
+/** `windows<code page>`: a legacy single-byte Windows code page, e.g. `windows1250`. */
+export type Encoding = "utf8" | "utf8bom" | "utf16le" | "utf16be" | `windows${number}`;
 
 /** A line break that differs from the file's dominant style; `line` is 0-based. */
 export interface LineBreak {
@@ -91,6 +92,14 @@ export async function fileStamp(path: string): Promise<string | null> {
 /** Where `relative` leads from the folder of the file `document`, or `null` when nothing is there. */
 export async function resolveLink(document: string, relative: string): Promise<ResolvedLink | null> {
   return inTauri ? invoke<ResolvedLink | null>("resolve_link", { document, relative }) : null;
+}
+
+/**
+ * Where an Obsidian wikilink `[[name]]` in the file `document` leads: next to
+ * it, or anywhere in its Obsidian vault; `null` when no such note exists.
+ */
+export async function resolveWikilink(document: string, name: string): Promise<ResolvedLink | null> {
+  return inTauri ? invoke<ResolvedLink | null>("resolve_wikilink", { document, name }) : null;
 }
 
 /** Opens a web or mail address in the default program. */
@@ -241,6 +250,14 @@ export async function setLightTheme(light: boolean): Promise<void> {
   } catch {}
 }
 
+/**
+ * Dims the native window buttons while a modal dialog is open, as its
+ * backdrop dims the page. Call after a dialog opens or closes.
+ */
+export function syncCaptionDimmed(): void {
+  if (inTauri) void invoke("set_caption_dimmed", { dimmed: document.querySelector(":modal") !== null });
+}
+
 /** Calls `handler` when any window changed the colour scheme (this one too). */
 export async function onThemeChanged(handler: (light: boolean) => void): Promise<void> {
   if (inTauri) await listen<boolean>("theme-changed", (event) => handler(event.payload));
@@ -324,19 +341,6 @@ export async function askOpenLinked(name: string, path: string, extension: strin
       { label: t.cancelButton, value: "cancel" },
     ],
     cancel: "cancel",
-  });
-}
-
-/** Asks whether to save in UTF-8 because the file's encoding cannot store `chars`. */
-export async function askSaveAsUtf8(name: string, chars: string): Promise<boolean> {
-  return showDialog({
-    title: t.askUtf8Title,
-    text: t.askUtf8(name, chars),
-    buttons: [
-      { label: t.saveUtf8Button, value: true },
-      { label: t.cancelButton, value: false },
-    ],
-    cancel: false,
   });
 }
 

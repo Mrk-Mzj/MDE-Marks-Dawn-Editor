@@ -6,6 +6,7 @@ import { EditorSelection } from "@codemirror/state";
 import type { ChangeSpec, EditorState, Line } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import type { SyntaxNode, Tree } from "@lezer/common";
+import { classifyHref, classifyWikiTarget, wikiLabel } from "./links";
 
 export type InlineStyle = "bold" | "italic" | "underline";
 export type ListKind = "bullet" | "ordered" | "task";
@@ -504,7 +505,10 @@ export function insertLink(view: EditorView, placeholder: string): void {
   );
 }
 
-/** A link `[text](url)`: the whole of it, its text and its address. */
+/**
+ * A link `[text](url)` or an Obsidian wikilink `[[url|text]]`: the whole of it,
+ * its text and its address. A wikilink without its own text has the address as its text.
+ */
 export interface LinkInfo {
   from: number;
   to: number;
@@ -512,16 +516,32 @@ export interface LinkInfo {
   textTo: number;
   urlFrom: number;
   urlTo: number;
+  wiki: boolean;
+}
+
+/** `from`–`to` without the spaces at either end of that stretch of `text` (which starts at `start`). */
+function trimmed(text: string, start: number): [number, number] {
+  return [start + text.length - text.trimStart().length, start + text.trimEnd().length];
+}
+
+function wikiLinkInfo(state: EditorState, node: SyntaxNode): LinkInfo {
+  const start = node.from + 2;
+  const inner = state.sliceDoc(start, node.to - 2);
+  const pipe = inner.indexOf("|");
+  const [urlFrom, urlTo] = trimmed(pipe < 0 ? inner : inner.slice(0, pipe), start);
+  const [textFrom, textTo] = pipe < 0 ? [urlFrom, urlTo] : trimmed(inner.slice(pipe + 1), start + pipe + 1);
+  return { from: node.from, to: node.to, textFrom, textTo, urlFrom, urlTo, wiki: true };
 }
 
 /** The link with an address (not a reference) that `from`–`to` lies in, if any. */
 export function linkAt(state: EditorState, from: number, to = from): LinkInfo | null {
   for (let node: SyntaxNode | null = syntaxTree(state).resolveInner(from, 1); node; node = node.parent) {
+    if (node.name === "WikiLink") return from < node.from || to > node.to ? null : wikiLinkInfo(state, node);
     if (node.name !== "Link") continue;
     const marks = node.getChildren("LinkMark");
     const url = node.getChild("URL");
     if (marks.length < 2 || !url || from < node.from || to > node.to) return null;
-    return { from: node.from, to: node.to, textFrom: marks[0].to, textTo: marks[1].from, urlFrom: url.from, urlTo: url.to };
+    return { from: node.from, to: node.to, textFrom: marks[0].to, textTo: marks[1].from, urlFrom: url.from, urlTo: url.to, wiki: false };
   }
   return null;
 }
@@ -538,6 +558,10 @@ export function applyLink(view: EditorView, url: string): void {
   const { state } = view;
   const range = state.selection.main;
   const link = linkAt(state, range.from, range.to);
+  if (link?.wiki) {
+    applyWikiLink(view, link, url);
+    return;
+  }
   if (link) {
     if (url) {
       apply(view, [{ from: link.urlFrom, to: link.urlTo, insert: linkAddress(url) }]);
@@ -553,6 +577,26 @@ export function applyLink(view: EditorView, url: string): void {
   const text = range.empty ? url.replace(/[[\]]/g, "\\$&") : state.sliceDoc(range.from, range.to);
   const insert = `[${text}](${linkAddress(url)})`;
   apply(view, [{ from: range.from, to: range.to, insert }], () => EditorSelection.single(range.from + insert.length));
+}
+
+/**
+ * A wikilink keeps its form while the new address is a note (`Note#Heading`);
+ * a web address, or one a wikilink cannot hold, turns it into `[text](url)`.
+ * An empty address leaves the text it showed.
+ */
+function applyWikiLink(view: EditorView, link: LinkInfo, url: string): void {
+  const { state } = view;
+  const target = state.sliceDoc(link.urlFrom, link.urlTo);
+  const hasText = link.textFrom !== link.urlFrom;
+  const text = hasText ? state.sliceDoc(link.textFrom, link.textTo) : wikiLabel(target);
+  const address = url.trim();
+  if (!address) {
+    apply(view, [{ from: link.from, to: link.to, insert: text }]);
+  } else if (classifyHref(address)?.kind !== "external" && !/[[\]|\n]/.test(address) && classifyWikiTarget(address)) {
+    apply(view, [{ from: link.urlFrom, to: link.urlTo, insert: address }]);
+  } else {
+    apply(view, [{ from: link.from, to: link.to, insert: `[${text.replace(/[[\]]/g, "\\$&")}](${linkAddress(address)})` }]);
+  }
 }
 
 /**

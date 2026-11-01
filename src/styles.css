@@ -31,6 +31,8 @@
   /* Find: background of every match and of the current (selected) one. */
   --search-match: #656565;
   --search-current: #e58b00;
+  /* Underline of links in the panels (value chosen by the project owner). */
+  --link-underline: #009bf1;
   /* Surfaces of the window chrome (values chosen by the project owner). */
   --topbar: #151515;
   --topbar-separator: #2c2d2d;
@@ -101,6 +103,7 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
+  --link-underline: #04aeff;
   --background: #f2f2f2;
   --foreground: #050505;
   --card: #e8e8e8;
@@ -777,6 +780,16 @@ button {
   min-width: 96px;
 }
 
+/* About's OK takes the amber of the spelling underline, with black text. */
+.about .about-ok {
+  background: var(--warning);
+  color: #000000;
+}
+
+.about .about-ok:hover {
+  background: color-mix(in oklch, var(--warning) 90%, transparent);
+}
+
 .about-icon {
   width: 64px;
   height: 64px;
@@ -822,14 +835,15 @@ button {
 .about-links a {
   color: var(--foreground);
   text-decoration: underline;
-  text-decoration-color: var(--muted-foreground);
+  text-decoration-color: var(--link-underline);
+  text-decoration-thickness: 1px;
   text-underline-offset: 3px;
   cursor: pointer;
-  transition: text-decoration-color 150ms;
 }
 
+/* Hover: the line gets one pixel thicker (downwards), its colour stays. */
 .about-links a:hover {
-  text-decoration-color: var(--foreground);
+  text-decoration-thickness: 2px;
 }
 
 .about-links a:focus-visible {
@@ -1427,14 +1441,30 @@ body.resizing-panes .pane {
 .markdown-body a {
   color: var(--foreground);
   text-decoration: underline;
-  text-decoration-color: var(--muted-foreground);
+  text-decoration-color: var(--link-underline);
+  text-decoration-thickness: 1px;
   text-underline-offset: 3px;
   cursor: pointer;
-  transition: text-decoration-color 150ms;
 }
 
+/* Hover: the line gets one pixel thicker (downwards), its colour stays. */
 .markdown-body a:hover {
-  text-decoration-color: var(--foreground);
+  text-decoration-thickness: 2px;
+}
+
+/* Like the one-pane mode; in line with the underline of links. */
+.markdown-body u {
+  text-underline-offset: 3px;
+}
+
+/* <u> inside a link: the link's colour, so underlined link text has one line, the link's. */
+.markdown-body a u {
+  text-decoration-color: var(--link-underline);
+  text-decoration-thickness: 1px;
+}
+
+.markdown-body a:hover u {
+  text-decoration-thickness: 2px;
 }
 
 .markdown-body a:focus-visible,

@@ -159,13 +159,90 @@ struct LinkTarget {
 /// Where a relative link in the file `document` points, or `None` when nothing is there.
 #[tauri::command]
 fn resolve_link(document: String, relative: String) -> Option<LinkTarget> {
-    let target = std::path::absolute(Path::new(&document).parent()?.join(relative)).ok()?;
+    link_target(Path::new(&document).parent()?.join(relative))
+}
+
+fn link_target(path: PathBuf) -> Option<LinkTarget> {
+    let target = std::path::absolute(path).ok()?;
     let meta = std::fs::metadata(&target).ok()?;
     Some(LinkTarget {
         dangerous: meta.is_file() && is_dangerous_type(&target),
         path: target.to_string_lossy().into_owned(),
         kind: if meta.is_dir() { "dir" } else { "file" },
     })
+}
+
+/// Where an Obsidian wikilink `[[name]]` in the file `document` points, or
+/// `None` when there is no such file. Searching a large vault takes a moment,
+/// so it runs off the main thread.
+#[tauri::command]
+async fn resolve_wikilink(document: String, name: String) -> Option<LinkTarget> {
+    tauri::async_runtime::spawn_blocking(move || find_wikilink(Path::new(&document), &name))
+        .await
+        .ok()
+        .flatten()
+}
+
+/// Like Obsidian: `[[Note]]` is `Note.md` (a name with another extension,
+/// `[[report.pdf]]`, is that file). It is looked for next to the document
+/// first, then anywhere in the document's vault (the nearest folder above it
+/// that holds `.obsidian`), where `[[Folder/Note]]` matches the end of a path
+/// and the shortest matching path wins.
+fn find_wikilink(document: &Path, name: &str) -> Option<LinkTarget> {
+    let folder = document.parent()?;
+    let name = name.replace('\\', "/");
+    let mut candidates = Vec::new();
+    if Path::new(&name).extension().is_some() {
+        candidates.push(name.clone());
+    }
+    candidates.push(format!("{name}.md"));
+
+    for candidate in &candidates {
+        let path = folder.join(candidate);
+        if path.is_file() {
+            return link_target(path);
+        }
+    }
+
+    let vault = folder.ancestors().find(|dir| dir.join(".obsidian").is_dir())?;
+    let wanted: Vec<String> = candidates.iter().map(|c| c.to_lowercase()).collect();
+    let mut best: Option<(usize, String, PathBuf)> = None;
+    // Folders still to look into, relative to the vault ("" is the vault itself).
+    let mut pending = vec![(vault.to_path_buf(), String::new())];
+    // A bound on the work, so a vault on a huge drive cannot hang the search.
+    let mut budget = 200_000usize;
+    'search: while let Some((dir, relative)) = pending.pop() {
+        let Ok(entries) = std::fs::read_dir(&dir) else { continue };
+        for entry in entries.flatten() {
+            let Some(left) = budget.checked_sub(1) else { break 'search };
+            budget = left;
+            let file_name = entry.file_name().to_string_lossy().into_owned();
+            // `.obsidian`, `.trash`, `.git`: Obsidian does not link into hidden folders.
+            if file_name.starts_with('.') {
+                continue;
+            }
+            // Links (symbolic or junctions) are not followed, so the search cannot loop.
+            let Ok(kind) = entry.file_type() else { continue };
+            let path_in_vault = if relative.is_empty() { file_name.clone() } else { format!("{relative}/{file_name}") };
+            if kind.is_dir() {
+                pending.push((entry.path(), path_in_vault));
+                continue;
+            }
+            if !kind.is_file() {
+                continue;
+            }
+            let lower = path_in_vault.to_lowercase();
+            let matches = wanted.iter().any(|w| lower == *w || lower.ends_with(&format!("/{w}")));
+            if !matches {
+                continue;
+            }
+            let depth = path_in_vault.matches('/').count();
+            if best.as_ref().map_or(true, |(d, p, _)| (depth, &lower) < (*d, p)) {
+                best = Some((depth, lower, entry.path()));
+            }
+        }
+    }
+    link_target(best?.2)
 }
 
 /// Whether Windows itself treats the file's type as unsafe to open (programs,
@@ -238,6 +315,15 @@ async fn open_path(path: String) -> Result<(), String> {
         return Err("not_found".to_owned());
     }
     tauri::async_runtime::spawn_blocking(move || shell_open(&path)).await.map_err(|e| e.to_string())?
+}
+
+/// Dims the native window buttons while the page shows a modal dialog, like
+/// the dialog's backdrop dims the rest of the window.
+#[tauri::command]
+fn set_caption_dimmed(dimmed: bool, window: tauri::WebviewWindow) {
+    if let Ok(hwnd) = window.hwnd() {
+        caption::set_dimmed(hwnd, dimmed);
+    }
 }
 
 /// Starts Windows voice typing (Dictation) for the focused text field by
@@ -408,9 +494,11 @@ fn main() {
             file_stamp,
             initial_files,
             resolve_link,
+            resolve_wikilink,
             open_url,
             open_path,
             start_dictation,
+            set_caption_dimmed,
             open_language_settings,
             spell_check,
             settings::set_theme,
@@ -469,5 +557,41 @@ mod tests {
         for name in ["a.txt", "a.pdf", "a.md"] {
             assert!(!is_dangerous_type(Path::new(name)), "{name}");
         }
+    }
+
+    #[test]
+    fn wikilinks_are_found_next_to_the_note_and_in_the_vault() {
+        let vault = std::env::temp_dir().join(format!("mde-vault-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&vault);
+        for dir in [".obsidian", ".trash", "Notes/Deep", "Other", "Notes/Deep/Deeper"] {
+            std::fs::create_dir_all(vault.join(dir)).unwrap();
+        }
+        for file in [
+            "Notes/Start.md",
+            "Notes/Sibling.md",
+            "Other/Far.md",
+            "Notes/Deep/Twice.md",
+            "Notes/Deep/Deeper/Twice.md",
+            "Other/report.pdf",
+            ".trash/Hidden.md",
+        ] {
+            std::fs::write(vault.join(file), "").unwrap();
+        }
+        let start = vault.join("Notes/Start.md");
+        let found = |name: &str| find_wikilink(&start, name).map(|t| t.path.replace('\\', "/"));
+        let ends = |name: &str, tail: &str| found(name).is_some_and(|p| p.ends_with(tail));
+
+        assert!(ends("Sibling", "/Notes/Sibling.md"));
+        assert!(ends("far", "/Other/Far.md"), "case does not matter");
+        assert!(ends("Twice", "/Notes/Deep/Twice.md"), "the shortest path wins");
+        assert!(ends("Deeper/Twice", "/Deeper/Twice.md"));
+        assert!(ends("report.pdf", "/Other/report.pdf"));
+        assert_eq!(found("Hidden"), None, "hidden folders are skipped");
+        assert_eq!(found("Missing"), None);
+        // Outside a vault only the note's own folder counts.
+        std::fs::remove_dir_all(vault.join(".obsidian")).unwrap();
+        assert_eq!(found("Far"), None);
+        assert!(ends("Sibling", "/Notes/Sibling.md"));
+        let _ = std::fs::remove_dir_all(&vault);
     }
 }

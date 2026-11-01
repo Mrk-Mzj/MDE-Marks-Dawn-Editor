@@ -7,10 +7,12 @@ import { Compartment, EditorSelection, EditorState, StateEffect, StateField } fr
 import type { Extension, Text } from "@codemirror/state";
 import { drawSelection, EditorView, keymap } from "@codemirror/view";
 import { GFM, parser } from "@lezer/markdown";
+import type { MarkdownConfig } from "@lezer/markdown";
 import { searchHighlighting } from "./find";
 import type { SearchQuery } from "./find";
 import { liveMode } from "./live";
 import type { LiveConfig } from "./live";
+import { classifyWikiTarget, WIKILINK } from "./links";
 import { moveBlock } from "./moveblock";
 import type { Eol, LineBreak } from "./platform";
 import { spellChecking } from "./spell";
@@ -43,9 +45,30 @@ const lineBreaks = StateField.define<readonly TrackedBreak[]>({
   },
 });
 
+// Obsidian wikilinks (`[[Note|text]]`) and embeds (`![[…]]`) as single nodes,
+// read like the preview reads them (see preview.ts).
+const wikiLinks: MarkdownConfig = {
+  defineNodes: ["WikiLink", "WikiEmbed"],
+  parseInline: [
+    {
+      name: "WikiLink",
+      before: "Link",
+      parse(cx, next, pos) {
+        const embed = next === 33; /* ! */
+        const start = embed ? pos + 1 : pos;
+        if (cx.char(start) !== 91 /* [ */ || cx.char(start + 1) !== 91) return -1;
+        WIKILINK.lastIndex = 0;
+        const match = WIKILINK.exec(cx.slice(start, cx.end));
+        if (!match || !classifyWikiTarget(match[1].trim())) return -1;
+        return cx.addElement(cx.elt(embed ? "WikiEmbed" : "WikiLink", pos, start + match[0].length));
+      },
+    },
+  ],
+};
+
 // GFM syntax tree, kept up to date incrementally while typing. The formatting
 // toolbar reads it to find bold, italic and underlined text; nothing is highlighted.
-const markdown = new Language(defineLanguageFacet(), parser.configure(GFM), [], "markdown");
+const markdown = new Language(defineLanguageFacet(), parser.configure([GFM, wikiLinks]), [], "markdown");
 
 // Styles use the design tokens (CSS custom properties inherit into the shadow
 // root). See docs/DESIGN.md.
@@ -84,7 +107,8 @@ const theme = EditorView.theme(
       textDecoration: "underline",
       textDecorationColor: "var(--warning)",
       textDecorationThickness: "1px",
-      textUnderlineOffset: "3px",
+      // 2px below the underline of links and <u>, so both stay visible.
+      textUnderlineOffset: "5px",
     },
     // Find: every match, and the selected one more strongly.
     ".cm-search-match": {
@@ -274,6 +298,17 @@ export class Editor {
       this.view.scrollDOM.scrollTop = 0;
     }
     this.notify();
+  }
+
+  /** Puts the cursor at the start of `line` (from 0) and scrolls the line to the top of the panel, as at the start of the file. */
+  jumpToLine(line: number): void {
+    const { doc } = this.view.state;
+    const pos = doc.line(Math.min(line + 1, doc.lines)).from;
+    this.view.dispatch({
+      selection: EditorSelection.cursor(pos),
+      effects: EditorView.scrollIntoView(pos, { y: "start", yMargin: this.view.documentPadding.top }),
+      userEvent: "select",
+    });
   }
 
   /** Scrolls so the top of the text of the line at `scroll.pos` is `scroll.margin` below the top of the panel. */

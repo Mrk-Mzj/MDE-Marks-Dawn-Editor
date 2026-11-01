@@ -12,7 +12,7 @@ Free and open source under the [GNU GPL v3](LICENSE).
 - [Download and installation](#download-and-installation)
   - [Requirements](#requirements)
   - [The Windows security warning](#the-windows-security-warning)
-- [Status: 1.2.0](#status-120)
+- [Status: 1.2.1](#status-121)
   - [Features](#features)
   - [Known limitations](#known-limitations)
 - [Building](#building)
@@ -72,7 +72,7 @@ Windows remembers the choice, so the warning does not come back for this file. A
 
 If there is no *Run anyway* button (some company or school PCs block unknown programs), right-click `MDE.zip` (before unpacking) or `MDE.exe` in Explorer, choose *Properties*, tick **Unblock** at the bottom of the *General* tab and click *OK*. If that option is missing too, your administrator does not allow such programs.
 
-# Status: 1.2.0
+# Status: 1.2.1
 
 ## Features
 
@@ -86,8 +86,9 @@ If there is no *Run anyway* button (some company or school PCs block unknown pro
 - **Synchronized scrolling** of the source and the preview.
 - **Find** (Ctrl+F) with every match highlighted.
 - **Spell checking** in Polish and English, with the dictionaries of Windows.
-- **Byte-faithful saving.** The encoding (UTF-8, UTF-16, Windows-1250) and the line endings are kept; a file opened and saved without edits stays identical to the byte.
+- **Byte-faithful saving, with no questions.** The encoding (UTF-8, UTF-16 or an older Windows one, e.g. Windows-1250 or 1252) and the line endings are kept; a file opened and saved without edits stays identical to the byte.
 - **Safe links and HTML.** Web links open in the browser, links to Markdown files in a new tab and other files after a question; nothing in a file is ever executed.
+- **Clickable tables of contents and Obsidian links.** Links to headings work as on GitHub and in Obsidian, and `[[wikilinks]]` open notes from the same Obsidian vault in new tabs.
 - **Fast and portable**: a single exe of about 5 MB, no installer, starts in about half a second. The interface is Polish or English, following Windows.
 
 | Command | Shortcut |
@@ -106,9 +107,6 @@ Every feature is described in detail in [docs/FEATURES.md](docs/FEATURES.md).
 
 ## Known limitations
 
-- **Changing the encoding** in the *Save as* dialog (UTF-8 / UTF-8 with BOM) is not available yet; a Windows-1250 file is converted to UTF-8 only when it contains characters Windows-1250 cannot store.
-- **Start-up** takes about 0.55–0.65 s from launch to a visible window with the file loaded (the target is under 0.5 s).
-- **The minimap in the one-pane mode** draws the Markdown source lines (markers included), not the formatted text.
 - **Images are not shown** (by design): a frame with the alt text takes their place, and the image file is not read.
 
 # Building
@@ -151,15 +149,15 @@ npm run release
 
 It writes `release/LICENSE.txt` (`tools/license-txt.mjs`: the text of `LICENSE` with each paragraph on one line and Windows line endings, so it opens in Notepad with a double click and wraps to the window width; the words are unchanged) and packs it with `MDE.exe` into `release/MDE.zip`.
 
-Then create a [GitHub release](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) with a version tag (e.g. `v1.2.0`) and attach the ZIP under the exact name `MDE.zip`, so the download link at the top of this file (`releases/latest/download/MDE.zip`) always points to the newest version. With the [GitHub CLI](https://cli.github.com/):
+Then create a [GitHub release](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) with a version tag (e.g. `v1.2.1`) and attach the ZIP under the exact name `MDE.zip`, so the download link at the top of this file (`releases/latest/download/MDE.zip`) always points to the newest version. With the [GitHub CLI](https://cli.github.com/):
 
 ```bash
-gh release create v1.2.0 release/MDE.zip --title "MDE 1.2.0" --notes "What changed"
+gh release create v1.2.1 release/MDE.zip --title "MDE 1.2.1" --notes "What changed"
 ```
 
 The app icon comes from `src-tauri/icons/icon.svg`. After changing it, rebuild `icon.ico` (16–256px) and `icon.png` (512px) with `npx tauri icon src-tauri/icons/icon.svg -o <temp folder>` and copy those two files into `src-tauri/icons/`; touch `src-tauri/build.rs` before the next build, or Cargo keeps the old icon in the exe.
 
-Rust tests (encoding and line ending round-trips: UTF-8 ± BOM, UTF-16 LE/BE, Windows-1250, LF/CRLF/CR, mixed endings after edits):
+Rust tests (encoding and line ending round-trips: UTF-8 ± BOM, UTF-16 LE/BE, every byte of each Windows code page, LF/CRLF/CR, mixed endings after edits):
 
 ```bash
 cargo test --manifest-path src-tauri/Cargo.toml
@@ -195,7 +193,7 @@ src/                  frontend (TypeScript)
                       link clicks and the source-line map of its blocks
   sanitize.ts         whitelist sanitizer for raw HTML
   taskbox.ts          the task-list box (CSS frame, SVG tick), shared by the preview and one pane
-  links.ts            which links are followed and how (web, relative, blocked)
+  links.ts            which links are followed and how (web, relative, wikilinks, headings, blocked)
   format.ts           formatting commands (bold, headings, lists, quote, link, table);
                       bold/italic/underline work on the GFM syntax tree (@lezer/markdown)
   toolbar.ts          formatting toolbar, its "more" menu, the table size picker and the
@@ -225,8 +223,8 @@ src-tauri/            backend (Rust, Tauri 2)
                       folder per window; the open windows and their groups
   src/groups.rs       tab groups: the list (groups.json), creating, renaming, deleting,
                       opening a group's window
-  src/textfile.rs     byte-faithful decoding/encoding (UTF-8, UTF-16, Windows-1250,
-                      per-line line endings) + tests
+  src/textfile.rs     byte-faithful decoding/encoding (UTF-8, UTF-16, the Windows
+                      code pages, per-line line endings) + tests
   windows-app-manifest.xml  exe manifest (common controls 6, Windows 10/11 compatibility)
   tauri.conf.json     app config, Content Security Policy
   capabilities/       permissions granted to the frontend

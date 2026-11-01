@@ -6,7 +6,7 @@ Celem projektu jest opracowanie szybkiego i lekkiego edytora plików Markdown. W
 
 ### Stos technologiczny (zatwierdzony)
 
-* **Tauri 2** — powłoka aplikacji: backend w **Rust**, interfejs w HTML/CSS/TypeScript renderowany przez systemowy **WebView2** (preinstalowany w Windows 11). Cel: pojedynczy exe ≈ 5–10 MB, start < 0,5 s.
+* **Tauri 2** — powłoka aplikacji: backend w **Rust**, interfejs w HTML/CSS/TypeScript renderowany przez systemowy **WebView2** (preinstalowany w Windows 11). Cel: pojedynczy exe ≈ 5–10 MB, start < 1 s.
 * **CodeMirror 6** — edytor w lewym panelu.
 * **markdown-it** — parser GFM dla podglądu w prawym panelu (z własnymi regułami, np. wiele pustych linii) i sanityzacją HTML po białej liście z docs/SPEC.md.
 * **Rust (backend)** — odczyt i zapis plików z zachowaniem kodowania i końców linii (w tym Windows-1250), pamięć sesji i ustawień, jedna instancja, otwieranie pliku z argumentu wiersza poleceń, sprawdzanie pisowni przez Windows Spell Checking API.

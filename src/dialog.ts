@@ -1,5 +1,7 @@
 // In-app modal dialogs (docs/DESIGN.md, section 7): questions and messages in
-// the dark style of the app, in place of the light native message boxes.
+// the style of the app, in place of the light native message boxes.
+
+import { syncCaptionDimmed } from "./platform";
 
 export interface DialogButton<T> {
   label: string;
@@ -59,6 +61,7 @@ function ask<T>({ title, text, buttons, cancel }: DialogOptions<T>): Promise<T> 
       // Closing puts the focus back where it was before the dialog opened.
       dialog.close();
       dialog.remove();
+      syncCaptionDimmed();
       resolve(value);
     };
 
@@ -88,5 +91,6 @@ function ask<T>({ title, text, buttons, cancel }: DialogOptions<T>): Promise<T> 
     dialog.append(content);
     document.body.append(dialog);
     dialog.showModal();
+    syncCaptionDimmed();
   });
 }

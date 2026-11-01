@@ -2,7 +2,7 @@
 
 import MarkdownIt from "markdown-it";
 import { t } from "./i18n";
-import { classifyHref } from "./links";
+import { classifyHref, classifyWikiTarget, WIKILINK, wikiHref, wikiLabel } from "./links";
 import { markRawHtml, sanitize } from "./sanitize";
 import { taskBoxHtml } from "./taskbox";
 
@@ -115,6 +115,36 @@ md.renderer.rules.image = (tokens, idx, options, env, self) => {
   return `<span class="image-placeholder" title="${md.utils.escapeHtml(src)}">${imageIcon}<span>${md.utils.escapeHtml(alt)}</span></span>`;
 };
 
+// Obsidian wikilinks (an MDE extension beyond GFM, see docs/SPEC.md):
+// `[[Note]]`, `[[Note|text]]`, `[[Note#Heading]]`, `[[#Heading]]` become links
+// whose address is `[[target]]`; embeds `![[…]]` show as a frame, like images.
+md.inline.ruler.before("link", "wikilink", (state, silent) => {
+  const { src, pos } = state;
+  const embed = src.charCodeAt(pos) === 0x21; /* ! */
+  const start = embed ? pos + 1 : pos;
+  if (src.charCodeAt(start) !== 0x5b /* [ */ || src.charCodeAt(start + 1) !== 0x5b || state.linkLevel > 0) return false;
+  WIKILINK.lastIndex = start;
+  const match = WIKILINK.exec(src);
+  const target = match?.[1].trim() ?? "";
+  if (!match || !classifyWikiTarget(target)) return false;
+  if (!silent) {
+    if (embed) {
+      state.push("wiki_embed", "", 0).meta = { name: target };
+    } else {
+      state.push("link_open", "a", 1).attrs = [["href", wikiHref(target)]];
+      state.push("text", "", 0).content = match[2]?.trim() || wikiLabel(target);
+      state.push("link_close", "a", -1);
+    }
+  }
+  state.pos = start + match[0].length;
+  return true;
+});
+
+md.renderer.rules.wiki_embed = (tokens, idx) => {
+  const name = md.utils.escapeHtml((tokens[idx].meta as { name: string }).name);
+  return `<span class="image-placeholder" title="${name}">${imageIcon}<span>${name}</span></span>`;
+};
+
 // Hovering a link shows its real target, so the link text cannot hide it.
 const defaultLinkOpen =
   md.renderer.rules.link_open ?? ((tokens, idx, options, _env, self) => self.renderToken(tokens, idx, options));
@@ -125,9 +155,25 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
   // Web addresses written without a scheme show (and open) their full form.
   const shown = target?.kind === "external" ? target.url : href;
   token.attrSet("href", shown);
-  token.attrSet("title", shown);
+  // A wikilink shows its target without the brackets.
+  token.attrSet("title", href.startsWith("[[") ? href.slice(2, -2) : shown);
   return defaultLinkOpen(tokens, idx, options, env, self);
 };
+
+/** The headings of a document, in order: their source line (from 0) and plain text. */
+export function headingsOf(source: string): { line: number; text: string }[] {
+  const tokens = md.parse(source, {});
+  const headings: { line: number; text: string }[] = [];
+  for (let i = 0; i + 1 < tokens.length; i++) {
+    if (tokens[i].type !== "heading_open" || !tokens[i].map) continue;
+    const text = (tokens[i + 1].children ?? [])
+      .filter((child) => child.type === "text" || child.type === "code_inline")
+      .map((child) => child.content)
+      .join("");
+    headings.push({ line: tokens[i].map![0], text });
+  }
+  return headings;
+}
 
 /** Renders a piece of Markdown as sanitized DOM, as the preview shows it. */
 export function renderFragment(source: string): DocumentFragment {

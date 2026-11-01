@@ -28,7 +28,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, FindWindowExW, GetClientRect, GetWindowLongPtrW, IsZoomed, LoadCursorW, PostMessageW, RegisterClassW,
     SendMessageW, SetWindowLongPtrW, SetWindowPos, CS_HREDRAW, CS_VREDRAW, GWLP_USERDATA, HWND_TOP, IDC_ARROW,
     MA_NOACTIVATE, SC_CLOSE, SC_MAXIMIZE, SC_MINIMIZE, SC_RESTORE, SIZE_MINIMIZED, SWP_NOACTIVATE,
-    WM_CAPTURECHANGED, WM_ERASEBKGND, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEACTIVATE, WM_MOUSEMOVE,
+    WM_APP, WM_CAPTURECHANGED, WM_ERASEBKGND, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEACTIVATE, WM_MOUSEMOVE,
     WM_NCDESTROY, WM_PAINT, WM_SIZE, WM_SYSCOMMAND, WNDCLASSW, WS_CHILD, WS_CLIPSIBLINGS, WS_EX_LAYERED, WS_EX_TOPMOST, LWA_ALPHA, SetLayeredWindowAttributes, WS_POPUP,
     WS_VISIBLE,
 };
@@ -81,6 +81,15 @@ const fn rgb(r: u8, g: u8, b: u8) -> COLORREF {
     COLORREF(r as u32 | (g as u32) << 8 | (b as u32) << 16)
 }
 
+/// `color` under the page's dialog backdrop (black at 50%).
+fn dim(color: COLORREF) -> COLORREF {
+    COLORREF((color.0 >> 1) & 0x007f_7f7f)
+}
+
+/// Message telling the buttons' window that a modal dialog opened (`wparam` 1)
+/// or closed (0) in the page.
+const WM_SET_DIMMED: u32 = WM_APP + 1;
+
 #[derive(Clone, Copy, PartialEq)]
 enum Button {
     Minimize,
@@ -114,6 +123,8 @@ struct Caption {
     pressed: Option<usize>,
     tracking: bool,
     maximized: bool,
+    /// A modal dialog dims the page; the buttons are dimmed with it.
+    dimmed: bool,
 }
 
 const SUBCLASS_ID: usize = 0x4d44_4543; // "MDEC"
@@ -126,6 +137,16 @@ pub fn repaint(parent: HWND) {
     unsafe {
         if let Ok(hwnd) = FindWindowExW(Some(parent), None, w!("MDECaptionButtons"), PCWSTR::null()) {
             let _ = InvalidateRect(Some(hwnd), None, false);
+        }
+    }
+}
+
+/// Dims the buttons of `parent` while the page shows a modal dialog.
+pub fn set_dimmed(parent: HWND, dimmed: bool) {
+    // SAFETY: as in `repaint`; the state changes on the window's own thread.
+    unsafe {
+        if let Ok(hwnd) = FindWindowExW(Some(parent), None, w!("MDECaptionButtons"), PCWSTR::null()) {
+            let _ = PostMessageW(Some(hwnd), WM_SET_DIMMED, WPARAM(dimmed as usize), LPARAM(0));
         }
     }
 }
@@ -186,6 +207,7 @@ pub fn install(parent: HWND) -> windows::core::Result<()> {
             pressed: None,
             tracking: false,
             maximized: IsZoomed(parent).as_bool(),
+            dimmed: false,
         });
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, Box::into_raw(caption) as isize);
         for index in 0..BUTTONS.len() {
@@ -314,6 +336,11 @@ unsafe extern "system" fn caption_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lpa
             LRESULT(0)
         }
         WM_ERASEBKGND => LRESULT(1),
+        WM_SET_DIMMED => {
+            caption.dimmed = wparam.0 != 0;
+            let _ = InvalidateRect(Some(hwnd), None, false);
+            LRESULT(0)
+        }
         // Clicking a button leaves the keyboard focus in the editor.
         WM_MOUSEACTIVATE => LRESULT(MA_NOACTIVATE as isize),
         WM_MOUSEMOVE => {
@@ -419,7 +446,8 @@ unsafe fn paint(hwnd: HWND, caption: &Caption) {
     let bitmap = CreateCompatibleBitmap(dc, client.right, client.bottom);
     let old_bitmap = SelectObject(memory, bitmap.into());
     let palette = palette();
-    let background = CreateSolidBrush(palette.topbar);
+    let shade = |color| if caption.dimmed { dim(color) } else { color };
+    let background = CreateSolidBrush(shade(palette.topbar));
     FillRect(memory, &client, background);
     let _ = DeleteObject(background.into());
 
@@ -436,7 +464,7 @@ unsafe fn paint(hwnd: HWND, caption: &Caption) {
             _ => (None, palette.muted_foreground),
         };
         if let Some(fill) = fill {
-            let brush = CreateSolidBrush(fill);
+            let brush = CreateSolidBrush(shade(fill));
             FillRect(memory, &rect, brush);
             let _ = DeleteObject(brush.into());
         }
@@ -447,7 +475,7 @@ unsafe fn paint(hwnd: HWND, caption: &Caption) {
             Button::Close => '\u{E8BB}',
         };
         let mut text: Vec<u16> = glyph.to_string().encode_utf16().collect();
-        SetTextColor(memory, color);
+        SetTextColor(memory, shade(color));
         DrawTextW(memory, &mut text, &mut rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     }
     SelectObject(memory, old_font);

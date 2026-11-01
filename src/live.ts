@@ -22,7 +22,7 @@ import type { ChangeSpec, Extension, Line, Range, SelectionRange } from "@codemi
 import { Decoration, EditorView, keymap, ViewPlugin, WidgetType } from "@codemirror/view";
 import type { Command, DecorationSet, ViewUpdate } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
-import { classifyHref } from "./links";
+import { classifyHref, wikiHref } from "./links";
 import { renderFragment } from "./preview";
 import { allowedColors } from "./sanitize";
 import { taskBoxHtml } from "./taskbox";
@@ -296,6 +296,41 @@ function analyze(state: EditorState, from: number, to: number, purpose: "view" |
         out.spans.push({ from: ref.from, openTo: marks[0].to, closeFrom: marks[1].from, to: ref.to });
         // Formatting inside the link text.
         return;
+      }
+      if (name === "WikiEmbed") {
+        const target = doc.sliceString(ref.from + 3, ref.to - 2).split("|")[0].trim();
+        if (purpose === "search") {
+          hide({ from: ref.from, to: ref.from + 3 });
+          hide({ from: ref.to - 2, to: ref.to });
+        } else if (!revealed(ref.from, ref.to)) {
+          hide({ from: ref.from, to: ref.to, widget: new ImageWidget(target, target) });
+        }
+        return false;
+      }
+      if (name === "WikiLink") {
+        // `[[target|text]]` shows the text; `[[Note#Heading]]` shows "Note > Heading".
+        const inner = doc.sliceString(ref.from + 2, ref.to - 2);
+        const pipe = inner.indexOf("|");
+        const target = (pipe < 0 ? inner : inner.slice(0, pipe)).trim();
+        const href = wikiHref(target);
+        const attributes = { title: `${target}\n${config.linkHint}`, "data-href": href };
+        // Spaces around the shown part are hidden with the brackets, as in the preview.
+        const shown = pipe < 0 ? inner : inner.slice(pipe + 1);
+        const openTo = ref.from + 2 + (pipe + 1) + shown.length - shown.trimStart().length;
+        const closeFrom = Math.max(openTo, ref.to - 2 - (shown.length - shown.trimEnd().length));
+        if (pipe < 0) {
+          for (let i = 0; i < target.length; i++) {
+            if (target[i] !== "#") continue;
+            const at = openTo + i;
+            const widget = i === 0 || target[i - 1] === "#" ? undefined : new TextWidget(" > ");
+            hide({ from: at, to: at + 1, widget });
+          }
+        }
+        hide({ from: ref.from, to: openTo, escape: [ref.from] });
+        hide({ from: closeFrom, to: ref.to });
+        mark(openTo, closeFrom, "cm-live-link", attributes);
+        out.spans.push({ from: ref.from, openTo, closeFrom, to: ref.to });
+        return false;
       }
       if (name === "Autolink") {
         const url = node.getChild("URL");
@@ -1125,11 +1160,15 @@ const liveTheme = EditorView.theme({
   ".cm-live-sup": { verticalAlign: "super", fontSize: "0.75em" },
   ".cm-live-link": {
     textDecoration: "underline",
-    textDecorationColor: "var(--muted-foreground)",
+    textDecorationColor: "var(--link-underline)",
+    textDecorationThickness: "1px",
     textUnderlineOffset: "3px",
-    transition: "text-decoration-color 150ms",
   },
-  ".cm-live-link:hover": { textDecorationColor: "var(--foreground)" },
+  // Hover: the line gets one pixel thicker (downwards), its colour stays.
+  ".cm-live-link:hover": { textDecorationThickness: "2px" },
+  // <u> inside a link: the link's colour, so underlined link text has one line, the link's.
+  ".cm-live-link .cm-live-u": { textDecorationColor: "var(--link-underline)", textDecorationThickness: "1px" },
+  ".cm-live-link:hover .cm-live-u": { textDecorationThickness: "2px" },
   "&.cm-live-ctrl .cm-live-link": { cursor: "pointer" },
   // Bullets, numbers and task boxes start the marker column; a bullet sits
   // on the axis of a task box, 30% larger than the glyph.
@@ -1220,7 +1259,11 @@ const liveTheme = EditorView.theme({
   ".cm-live-block th": { borderColor: "var(--background) var(--background) var(--warning)", background: "var(--table-header)", color: "var(--table-header-foreground)", fontWeight: "700" },
   ".cm-live-block th *": { color: "inherit" },
   ".cm-live-block tr:nth-child(2n) td": { background: "color-mix(in oklch, var(--card) 50%, transparent)" },
-  ".cm-live-block a": { color: "var(--foreground)", textDecoration: "underline", textDecorationColor: "var(--muted-foreground)", textUnderlineOffset: "3px" },
+  ".cm-live-block a": { color: "var(--foreground)", textDecoration: "underline", textDecorationColor: "var(--link-underline)", textDecorationThickness: "1px", textUnderlineOffset: "3px" },
+  ".cm-live-block a:hover": { textDecorationThickness: "2px" },
+  ".cm-live-block u": { textUnderlineOffset: "3px" },
+  ".cm-live-block a u": { textDecorationColor: "var(--link-underline)", textDecorationThickness: "1px" },
+  ".cm-live-block a:hover u": { textDecorationThickness: "2px" },
   "&.cm-live-ctrl .cm-live-block a": { cursor: "pointer" },
   ".cm-live-block kbd": {
     padding: "0.1em 0.4em",

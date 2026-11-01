@@ -3,7 +3,7 @@
 
 import appIcon from "../src-tauri/icons/icon.svg";
 import { t } from "./i18n";
-import { appVersion, openUrl } from "./platform";
+import { appVersion, openUrl, syncCaptionDimmed } from "./platform";
 
 const NAME = 'MDE: Mark\'s "Dawn" Editor';
 const COPYRIGHT = "Copyright © 2026 Marek Mazij";
@@ -65,7 +65,7 @@ export class AboutDialog {
 
     const ok = document.createElement("button");
     ok.type = "button";
-    ok.className = "button button-primary";
+    ok.className = "button button-primary about-ok";
     ok.dataset.slot = "button";
     ok.textContent = t.okButton;
     ok.autofocus = true;
@@ -110,10 +110,12 @@ export class AboutDialog {
 
   show(): void {
     if (!this.dialog.open) this.dialog.showModal();
+    syncCaptionDimmed();
   }
 
   private close(): void {
     this.dialog.close();
+    syncCaptionDimmed();
     this.onClose();
   }
 }

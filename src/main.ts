@@ -9,13 +9,14 @@ import { GroupsPopover } from "./groups";
 import type { ScrollPosition, Selection } from "./editor";
 import { applyLink, blockState, inlineState, insertLink, insertTable, linkAt, setHeading, toggleInline, toggleList, toggleQuote } from "./format";
 import { lang, t } from "./i18n";
-import { classifyHref, extensionOf, isMarkdownFile, needsConfirmation } from "./links";
+import { classifyHref, extensionOf, findHeading, isMarkdownFile, needsConfirmation } from "./links";
+import type { LinkTarget } from "./links";
 import { Menu } from "./menu";
 import { Minimap } from "./minimap";
 import { PreviewMinimap } from "./previewmap";
 import * as platform from "./platform";
 import type { FileFormat, GroupInfo, LineBreak, OpenedFile } from "./platform";
-import { Preview } from "./preview";
+import { headingsOf, Preview } from "./preview";
 import { ScrollSync } from "./scrollsync";
 import { isSpellMode, SpellService } from "./spell";
 import { Splitter, validSplit } from "./split";
@@ -40,7 +41,7 @@ interface Doc {
   missing: boolean;
   /** The file changed on disk while the tab had unsaved changes. */
   conflict: boolean;
-  /** The Windows-1250 warning was closed. */
+  /** The legacy encoding warning was closed. */
   hideEncodingNotice: boolean;
   dirty: boolean;
   /** Editor state of an inactive tab; the active tab's state lives in the editor. */
@@ -293,8 +294,8 @@ function updateNotice(): void {
       () => void exclusive(() => keepMine(doc)),
       t.keepMine,
     );
-  } else if (doc.format.encoding === "windows1250" && !doc.hideEncodingNotice) {
-    showNotice(t.windows1250Notice, [], () => {
+  } else if (doc.format.encoding.startsWith("windows") && !doc.hideEncodingNotice) {
+    showNotice(t.legacyEncodingNotice(`Windows-${doc.format.encoding.slice("windows".length)}`), [], () => {
       doc.hideEncodingNotice = true;
       updateNotice();
     });
@@ -394,11 +395,12 @@ async function openPaths(paths: string[]): Promise<void> {
   for (const path of paths) await openPath(path);
 }
 
-async function openPath(path: string): Promise<void> {
+/** Whether the file is now shown in the active tab. */
+async function openPath(path: string): Promise<boolean> {
   const open = docs.find((doc) => doc.path !== null && samePath(doc.path, path));
   if (open) {
     activate(open);
-    return;
+    return true;
   }
   // A lone empty "Untitled" tab is replaced rather than kept next to the file.
   const blank = docs.length === 1 && active.path === null && !active.dirty && editor.length() === 0 ? active : null;
@@ -406,10 +408,12 @@ async function openPath(path: string): Promise<void> {
   try {
     addDoc(docFromFile(id, await platform.openFile(id, path)));
     if (blank) removeDoc(blank);
+    return true;
   } catch (err) {
     // The window may still be hidden when a start-up file fails to open.
     await platform.showWindow();
     await platform.showError(`${t.openFailed(platform.fileNameOf(path))}\n\n${errorText(String(err))}`);
+    return false;
   }
 }
 
@@ -444,13 +448,9 @@ async function writeTo(doc: Doc, path: string, format = doc.format): Promise<boo
     return true;
   } catch (err) {
     const code = String(err);
-    // The text has characters Windows-1250 cannot store: offer UTF-8 instead
-    // of replacing them.
-    if (code.startsWith("unrepresentable:")) {
-      const chars = [...code.slice("unrepresentable:".length)].slice(0, 20).join(" ");
-      if (!(await platform.askSaveAsUtf8(doc.name, chars))) return false;
-      return writeTo(doc, path, { ...format, encoding: "utf8" });
-    }
+    // The text has characters the file's legacy code page cannot store (e.g.
+    // emoji): save it in UTF-8, which stores every character, without asking.
+    if (code === "unrepresentable") return writeTo(doc, path, { ...format, encoding: "utf8" });
     await platform.showError(`${t.saveFailed(platform.fileNameOf(path))}\n\n${errorText(code)}`);
     return false;
   }
@@ -614,24 +614,56 @@ function followLink(href: string): void {
   const link = classifyHref(href);
   if (link?.kind === "external") {
     void platform.openUrl(link.url).catch((err) => platform.showError(`${t.linkOpenFailed(link.url)}\n\n${errorText(String(err))}`));
-  } else if (link?.kind === "relative") {
-    void exclusive(() => openRelative(active, link.path));
+  } else if (link?.kind === "relative" || link?.kind === "wiki") {
+    void exclusive(() => openRelative(active, link));
+  } else if (link?.kind === "anchor") {
+    jumpToHeading(link.heading);
   }
 }
 
-async function openRelative(doc: Doc, relative: string): Promise<void> {
+/**
+ * Scrolls the active tab to the heading a link's `#…` part points to (see
+ * `findHeading`); nothing happens when there is none. Both panels show the
+ * heading at the top and stay linked there.
+ */
+function jumpToHeading(fragment: string): void {
+  const headings = headingsOf(editor.text());
+  const index = findHeading(
+    headings.map((heading) => heading.text),
+    fragment,
+  );
+  if (index < 0) return;
+  const { line } = headings[index];
+  editor.jumpToLine(line);
+  if (panes === 2) {
+    const element = previewEl.querySelector<HTMLElement>(`:is(h1, h2, h3, h4, h5, h6)[data-line="${line}"]`);
+    // As far below the top as the start of the file: the panel's own padding.
+    const padding = parseFloat(getComputedStyle(previewEl).paddingTop) || 0;
+    if (element) previewEl.scrollTop += element.getBoundingClientRect().top - previewEl.getBoundingClientRect().top - padding;
+    scrollSync.linkSoon();
+  }
+}
+
+async function openRelative(doc: Doc, link: Extract<LinkTarget, { kind: "relative" | "wiki" }>): Promise<void> {
+  const wiki = link.kind === "wiki";
+  const written = link.kind === "wiki" ? link.name : link.path;
   if (!doc.path) {
-    await platform.showError(t.linkNeedsSave);
+    // An Obsidian note that is not there is not created: the link does nothing.
+    if (!wiki) await platform.showError(t.linkNeedsSave);
     return;
   }
-  const target = await platform.resolveLink(doc.path, relative);
+  const target = wiki ? await platform.resolveWikilink(doc.path, written) : await platform.resolveLink(doc.path, written);
   if (!target) {
-    await platform.showError(t.linkNotFound(relative));
+    if (!wiki) await platform.showError(t.linkNotFound(written));
     return;
   }
   const extension = extensionOf(target.path);
   if (target.kind === "file" && isMarkdownFile(extension)) {
-    await openPath(target.path);
+    if ((await openPath(target.path)) && link.heading !== null) {
+      // The new tab's panels lay out first.
+      const heading = link.heading;
+      requestAnimationFrame(() => jumpToHeading(heading));
+    }
     return;
   }
 
