@@ -12,7 +12,7 @@ Free and open source under the [GNU GPL v3](LICENSE).
 - [Download and installation](#download-and-installation)
   - [Requirements](#requirements)
   - [The Windows security warning](#the-windows-security-warning)
-- [Status: 1.3.0](#status-130)
+- [Status: 1.3.1](#status-131)
   - [Features](#features)
   - [Known limitations](#known-limitations)
 - [Building](#building)
@@ -72,7 +72,7 @@ Windows remembers the choice, so the warning does not come back for this file. A
 
 If there is no *Run anyway* button (some company or school PCs block unknown programs), right-click `MDE.zip` (before unpacking) or `MDE.exe` in Explorer, choose *Properties*, tick **Unblock** at the bottom of the *General* tab and click *OK*. If that option is missing too, your administrator does not allow such programs.
 
-# Status: 1.3.0
+# Status: 1.3.1
 
 ## Features
 
@@ -108,6 +108,7 @@ Every feature is described in detail in [docs/FEATURES.md](docs/FEATURES.md).
 
 ## Known limitations
 
+- **No setext headings** (by design): headings are `#` only, so `---` right under text is a horizontal rule; GitHub shows it as an H2 heading.
 - **Images from the web are not shown** (by design): only local image files are, and a frame with the alt text takes the place of the others.
 
 # Building
@@ -150,10 +151,10 @@ npm run release
 
 It writes `release/LICENSE.txt` (`tools/license-txt.mjs`: the text of `LICENSE` with each paragraph on one line and Windows line endings, so it opens in Notepad with a double click and wraps to the window width; the words are unchanged) and packs it with `MDE.exe` into `release/MDE.zip`.
 
-Then create a [GitHub release](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) with a version tag (e.g. `v1.3.0`) and attach the ZIP under the exact name `MDE.zip`, so the download link at the top of this file (`releases/latest/download/MDE.zip`) always points to the newest version. With the [GitHub CLI](https://cli.github.com/):
+Then create a [GitHub release](https://github.com/Mrk-Mzj/MDE-Marks-Dawn-Editor/releases) with a version tag (e.g. `v1.3.1`) and attach the ZIP under the exact name `MDE.zip`, so the download link at the top of this file (`releases/latest/download/MDE.zip`) always points to the newest version. With the [GitHub CLI](https://cli.github.com/):
 
 ```bash
-gh release create v1.3.0 release/MDE.zip --title "MDE 1.3.0" --notes "What changed"
+gh release create v1.3.1 release/MDE.zip --title "MDE 1.3.1" --notes "What changed"
 ```
 
 The app icon comes from `src-tauri/icons/icon.svg`. After changing it, rebuild `icon.ico` (16–256px) and `icon.png` (512px) with `npx tauri icon src-tauri/icons/icon.svg -o <temp folder>` and copy those two files into `src-tauri/icons/`; touch `src-tauri/build.rs` before the next build, or Cargo keeps the old icon in the exe.

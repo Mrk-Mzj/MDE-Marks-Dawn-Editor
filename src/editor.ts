@@ -68,7 +68,15 @@ const wikiLinks: MarkdownConfig = {
 
 // GFM syntax tree, kept up to date incrementally while typing. The formatting
 // toolbar reads it to find bold, italic and underlined text; nothing is highlighted.
-const markdown = new Language(defineLanguageFacet(), parser.configure([GFM, wikiLinks]), [], "markdown");
+// Setext headings (text underlined with `===` / `---`) are off, as in the
+// preview: headings are `#` only, and `---` under text is a horizontal rule
+// (an MDE departure from GFM, see docs/SPEC.md).
+const markdown = new Language(
+  defineLanguageFacet(),
+  parser.configure([GFM, wikiLinks, { remove: ["SetextHeading"] }]),
+  [],
+  "markdown",
+);
 
 // Styles use the design tokens (CSS custom properties inherit into the shadow
 // root). See docs/DESIGN.md.

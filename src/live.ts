@@ -201,13 +201,6 @@ function analyze(state: EditorState, from: number, to: number, purpose: "view" |
         lineClass(ref.from, ref.from, `cm-live-h${atx[1]}`);
         return;
       }
-      const setext = /^SetextHeading(\d)$/.exec(name);
-      if (setext) {
-        // The underline is hidden by `blockField`.
-        const underline = doc.lineAt(ref.to);
-        if (underline.from > ref.from) lineClass(ref.from, underline.from - 1, `cm-live-h${setext[1]}`);
-        return;
-      }
       if (name === "HeaderMark") {
         const heading = node.parent;
         if (!heading?.name.startsWith("ATX")) return;
@@ -648,7 +641,7 @@ function colorClass(tag: string): string | undefined {
 
 // ---------- Decorations ----------
 
-/** Rendered blocks and hidden setext underlines; they span lines, so they come from a state field. */
+/** Rendered blocks; they span lines, so they come from a state field. */
 function buildBlocks(state: EditorState): DecorationSet {
   const { doc } = state;
   const ranges: Range<Decoration>[] = [];
@@ -660,9 +653,6 @@ function buildBlocks(state: EditorState): DecorationSet {
       const from = doc.lineAt(node.from).from;
       const to = doc.lineAt(end).to;
       ranges.push(Decoration.replace({ widget: new BlockWidget(doc.sliceString(from, to)), block: true }).range(from, to));
-    } else if (node.name.startsWith("SetextHeading")) {
-      const underline = doc.lineAt(node.to);
-      if (underline.from > node.from) ranges.push(Decoration.replace({}).range(underline.from - 1, underline.to));
     }
   }
   return Decoration.set(ranges, true);

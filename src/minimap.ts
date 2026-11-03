@@ -454,7 +454,7 @@ export class Minimap extends MinimapBox {
       from: doc.line(lo + 1).from,
       to: doc.line(Math.max(lo + 1, last)).to,
       enter: (node) => {
-        const level = /^(?:ATX|Setext)Heading([12])$/.exec(node.name)?.[1];
+        const level = /^ATXHeading([12])$/.exec(node.name)?.[1];
         if (!level) return;
         for (let n = doc.lineAt(node.from).number; n <= doc.lineAt(node.to).number; n++) headings.set(n - 1, level === "1" ? paths.h1 : paths.h2);
         return false;

@@ -13,6 +13,10 @@ import { taskBoxHtml } from "./taskbox";
 // extension beyond GFM, see docs/SPEC.md).
 const md = new MarkdownIt({ html: true, linkify: true, typographer: false, breaks: true });
 
+// Setext headings are off (as in the editor, see editor.ts): headings are `#`
+// only, and `---` under text is a horizontal rule.
+md.disable("lheading");
+
 md.renderer.rules.html_block = (tokens, idx) => markRawHtml(tokens[idx].content);
 md.renderer.rules.html_inline = (tokens, idx) => markRawHtml(tokens[idx].content);
 

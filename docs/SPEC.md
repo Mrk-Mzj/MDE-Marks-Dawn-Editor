@@ -178,6 +178,11 @@ Rozszerzenia poza GFM:
   * W podglądzie każde złamanie linii w pliku (pojedynczy Enter, bez pustej linii) jest wyświetlane jako nowa linia, tak jak w edytorze. W czystym GFM byłoby to „miękkie złamanie” wyświetlane jako spacja.
   * Plik pozostaje czystym Markdownem. Inne programy (np. GitHub) mogą wyświetlić takie linie połączone w jeden akapit.
 
+* Nagłówki tylko z `#`:
+
+  * Tekst podkreślony linią `===` lub `---` (tzw. nagłówek setext) nie jest nagłówkiem. `---` tuż pod tekstem rysuje linię poziomą, także bez pustej linii nad nią, a `-`, `--` i `===` pod tekstem są zwykłym tekstem akapitu.
+  * Inne programy (np. GitHub) mogą pokazać taki tekst jako nagłówek H2. To świadomy kompromis, bo plik pozostaje czystym Markdownem.
+
 * Puste linie:
 
   * Plik jest źródłem prawdy. Każda pusta linia jest zapisywana dokładnie tak, jak wpisał ją użytkownik, bez zamiany na <br> ani \&nbsp;.

@@ -87,7 +87,7 @@ interface Mark {
 }
 
 /** Blocks whose content is inline text. */
-const inlineBlock = /^(?:Paragraph|ATXHeading\d|SetextHeading\d|TableCell)$/;
+const inlineBlock = /^(?:Paragraph|ATXHeading\d|TableCell)$/;
 
 function blockAt(tree: Tree, pos: number, side: -1 | 1): SyntaxNode | null {
   for (let node: SyntaxNode | null = tree.resolveInner(pos, side); node; node = node.parent) {
